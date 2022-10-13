@@ -44,52 +44,99 @@ from gramps.gen.lib import StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.plug import Gramplet
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
+from gramps.gui.dialog import OptionDialog
 from gramps.gui.editors import EditPerson
 from gramps.gui.listmodel import ListModel, NOSORT
+from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
+# lokaloj 
+# from session import Session
+from getmyancestors.classes.session import Session
+from getmyancestors.classes.tree import Tree
+
+import sys
+import os
+import time
+
+
+
 _ = glocale.translation.gettext
+
+
+#-------------------------------------------------------------------------
+#
+# configuration
+#
+#-------------------------------------------------------------------------
+
+GRAMPLET_CONFIG_NAME = "PersonFS"
+CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
+CONFIG.register("preferences.fs_userid", '')
+CONFIG.register("preferences.fs_passwd", '')
+CONFIG.load()
+
+
 
 class PersonFS(Gramplet):
   """
   Gramplet to display ancestors of the active person.
   """
   def init(self):
+    self.fs_userid = CONFIG.get("preferences.fs_userid")
+    self.fs_passwd = CONFIG.get("preferences.fs_passwd")
+    print("userid = " + self.fs_userid)
+    print("pass = " + self.fs_passwd)
+
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
     self.gui.get_container_widget().add_with_viewport(self.gui.WIDGET)
     self.gui.WIDGET.show_all()
+    self.fs = Session(self.fs_userid, self.fs_passwd, False, False, 10)
+    self.tree = Tree(self.fs)
+
 
   def krei_gui(self):
     """
     krei the GUI interface.
     """
-    vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-    vbox.set_spacing(4)
+    grid = Gtk.Grid()
     tags = [StyledTextTag(StyledTextTagType.LINK, 'https://familysearch.org', [(0, len('family search'))])]
     textelien = StyledText('family search', tags)
     self.label = StyledTextEditor()
     self.label.set_editable(False)
     self.label.set_text(textelien)
     self.label.set_halign(Gtk.Align.START)
+    self.propGr = StyledTextEditor()
+    self.propGr.set_editable(False)
+    self.propGr.set_halign(Gtk.Align.START)
+    self.propFs = StyledTextEditor()
+    self.propFs.set_editable(False)
 
 
-    self.view = Gtk.TreeView()
-    self.view.set_tooltip_column(3)
-    titles = [(_('Name'), 0, 230),
-                  (_('Birth'), 2, 100),
-                  ('', NOSORT, 1),
-                  ('', NOSORT, 1), # tooltip
-                  ('', NOSORT, 100)] # handle
-    self.model = ListModel(self.view, titles, list_mode="tree",
-                               event_func=self.cb_double_click)
-    vbox.pack_start(self.label, False, True, 0)
-    vbox.pack_start(self.view, False, True, 0)
-    return vbox
+    grid.add(self.label)
+    button = IconButton( self.pref_clicked, None, 'gtk-preferences')
+    grid.attach(button, 4, 0, 1, 2)
+    grid.attach(self.propGr, 1, 2, 1, 1)
+    grid.attach(self.propFs, 3, 2, 1, 1)
+    return grid
+
+  def pref_clicked(self, obj, event, handle):
+    print ("clicked")
+    # dialog = OptionDialog("Préférences de PersonFS", "Préférences",
+    #                              "Sauvegarder",None, "Annuler",None)
+    # texteNom = StyledText('compte family search', None)
+    # self.labelNom = StyledTextEditor()
+    # self.labelNom.set_editable(False)
+    # self.labelNom.set_text(textelien)
+    # dialog.
+    # res = dialog.run()
+    # print ("res = " + str(res))
+    
 
   def get_has_data(self, active_handle):
     """
-    Return True if the gramplet has data, else return False.
+    " Return True if the gramplet has data, else return False.
     """
     if active_handle:
       person = self.dbstate.db.get_person_from_handle(active_handle)
@@ -100,21 +147,6 @@ class PersonFS(Gramplet):
                        family.get_mother_handle()):
           return True
     return False
-
-  def cb_double_click(self, treeview):
-    """
-    Handle double click on treeview.
-    """
-    (model, iter_) = treeview.get_selection().get_selected()
-    if not iter_:
-      return
-
-    try:
-      handle = model.get_value(iter_, 4)
-      person = self.dbstate.db.get_person_from_handle(handle)
-      EditPerson(self.dbstate, self.uistate, [], person)
-    except WindowActiveError:
-      pass
 
   def db_changed(self):
     self.update()
@@ -131,71 +163,42 @@ class PersonFS(Gramplet):
 
   def main(self):
     active_handle = self.get_active('Person')
-    self.model.clear()
+    self.propGr.set_text(StyledText('',None))
+    self.propFs.set_text(StyledText('',None))
     if active_handle:
-      self.add_to_tree(1, None, active_handle)
-      self.view.expand_all()
+      self.compareFs(active_handle)
       self.set_has_data(self.get_has_data(active_handle))
     else:
       self.set_has_data(False)
 
-  def add_to_tree(self, depth, parent_id, person_handle):
+  def compareFs(self, person_handle):
     """
-    Add a person to the tree.
+    Komparu gramps kaj FamilySearch
     """
-    if depth > config.get('behavior.generation-depth'):
-      return
 
     person = self.dbstate.db.get_person_from_handle(person_handle)
-    name = name_displayer.display(person)
-    if parent_id is None:
-      fsid = ''
-      for attr in person.get_attribute_list():
-        if attr.get_type() == '_FSFTID':
-          fsid = attr.get_value()
-      text = name + '';
-      if fsid == '':
-        lien = 'https://familysearch.org'
-      else:
-        lien = 'https://familysearch.org/tree/person/' + fsid
-      tags = [StyledTextTag(StyledTextTagType.LINK, lien, [(0, len(text))])]
-      textelien = StyledText(text, tags)
-      self.label.set_text(textelien)
+    fsid = ''
+    for attr in person.get_attribute_list():
+      if attr.get_type() == '_FSFTID':
+        fsid = attr.get_value()
+    lien = ''
+    tags = None
+    lien = 'https://familysearch.org/tree/person/' + fsid
+    text = name_displayer.display(person)
+    if fsid == '':
+      text = 'family search'
+    tags = [StyledTextTag(StyledTextTagType.LINK, lien, [(0, len(text))])]
+    textelien = StyledText(text, tags)
+    self.label.set_text(textelien)
+    if fsid == '':
+      return
 
-    birth = get_birth_or_fallback(self.dbstate.db, person)
-    death = get_death_or_fallback(self.dbstate.db, person)
+    self.tree.add_indis([fsid])
+    endGr = self.propGr.textbuffer.get_end_iter()
+    endFs = self.propFs.textbuffer.get_end_iter()
+    name = person.primary_name
+    print(name.serialize())
+    self.propGr.textbuffer.insert( endGr, name.get_primary_surname().surname + ', ' + name.first_name+'\n')
+    self.propFs.textbuffer.insert( endFs, self.tree.indi[fsid].name.surname +  ', ' + self.tree.indi[fsid].name.given+'\n')
 
-    birth_text = birth_date = birth_sort = ''
-    if birth:
-      birth_date = get_date(birth)
-      birth_sort = '%012d' % birth.get_date_object().get_sort_value()
-      birth_text = _('%(abbr)s %(date)s') % \
-                         {'abbr': birth.type.get_abbreviation(),
-                          'date': birth_date}
-
-    death_date = death_sort = death_text = ''
-    if death:
-      death_date = get_date(death)
-      death_sort = '%012d' % death.get_date_object().get_sort_value()
-      death_text = _('%(abbr)s %(date)s') % \
-                         {'abbr': death.type.get_abbreviation(),
-                          'date': death_date}
-
-    tooltip = name + '\n' + birth_text + '\n' + death_text
-
-    label = _('%(depth)s. %(name)s') % {'depth': depth, 'name': name}
-    item_id = self.model.add([label, birth_date, birth_sort,
-                                  tooltip, person_handle], node=parent_id)
-
-    family_handle = person.get_main_parents_family_handle()
-    if family_handle:
-      family = self.dbstate.db.get_family_from_handle(family_handle)
-      if family:
-        father_handle = family.get_father_handle()
-        if father_handle:
-          self.add_to_tree(depth + 1, item_id, father_handle)
-        mother_handle = family.get_mother_handle()
-        if mother_handle:
-          self.add_to_tree(depth + 1, item_id, mother_handle)
-
-    return item_id
+    return
