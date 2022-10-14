@@ -85,8 +85,6 @@ class PersonFS(Gramplet):
   def init(self):
     self.fs_userid = CONFIG.get("preferences.fs_userid")
     self.fs_passwd = CONFIG.get("preferences.fs_passwd")
-    print("userid = " + self.fs_userid)
-    print("pass = " + self.fs_passwd)
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
@@ -98,7 +96,7 @@ class PersonFS(Gramplet):
 
   def krei_gui(self):
     """
-    krei the GUI interface.
+    krei GUI interfaco.
     """
     grid = Gtk.Grid()
     tags = [StyledTextTag(StyledTextTagType.LINK, 'https://familysearch.org', [(0, len('family search'))])]
@@ -197,7 +195,6 @@ class PersonFS(Gramplet):
     endGr = self.propGr.textbuffer.get_end_iter()
     endFs = self.propFs.textbuffer.get_end_iter()
     name = person.primary_name
-    print(name.serialize())
     self.propGr.textbuffer.insert( endGr, name.get_primary_surname().surname + ', ' + name.first_name+'\n')
     self.propFs.textbuffer.insert( endFs, self.tree.indi[fsid].name.surname +  ', ' + self.tree.indi[fsid].name.given+'\n')
 

@@ -27,7 +27,7 @@
 
 register(GRAMPLET,
          id = "FS Gramplet",
-         name = _("FS"),
+         name = _("PersonFS"),
          description = _("interfaco por FamilySearch"),
          status = STABLE,
          fname="PersonFS.py",
@@ -37,7 +37,7 @@ register(GRAMPLET,
          gramplet_title=_("FS"),
          detached_width = 500,
          detached_height = 500,
-         version="1.0.0",
+         version="0.0.1",
          gramps_target_version= '5.1',
          navtypes=["Person"],
          )
