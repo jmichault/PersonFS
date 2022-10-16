@@ -40,7 +40,8 @@ from gramps.gen.const import GRAMPS_LOCALE as glocale
 from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import EventType, EventRoleType, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib import Date, EventType, EventRoleType, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
@@ -78,6 +79,35 @@ CONFIG.register("preferences.fs_pasvorto", '')
 CONFIG.load()
 
 
+def grdato_al_formal( dato) :
+  res=''
+  gdato = gregorian(dato)
+  if gdato.modifier == Date.MOD_ABOUT :
+    res = 'A'
+  elif gdato.modifier == Date.MOD_BEFORE:
+    res = '/'
+  if gdato.dateval[Date._POS_YR] < 0 :
+    res = res + '-'
+  else :
+    res = res + '+'
+  if gdato.dateval[Date._POS_DAY] > 0 :
+    val = "%04d-%02d-%02d" % (
+                gdato.dateval[Date._POS_YR], gdato.dateval[Date._POS_MON],
+                gdato.dateval[Date._POS_DAY])
+  elif gdato.dateval[Date._POS_MON] > 0 :
+    val = "%04d-%02d" % (
+                gdato.dateval[Date._POS_YR], gdato.dateval[Date._POS_MON])
+  elif gdato.dateval[Date._POS_YR] > 0 :
+    val = "%04d" % ( gdato.dateval[Date._POS_YR] )
+  else :
+    res = gdato.text
+    val=''
+  res = res+val
+  if gdato.modifier == Date.MOD_AFTER:
+    res = res + '/'
+  # à faire : range ?  estimate ? calculate ?
+  
+  return res
 
 class PersonFS(Gramplet):
   """
@@ -235,7 +265,7 @@ class PersonFS(Gramplet):
 		, fsName.surname +  ', ' + fsName.given
 		) )
     grNasko = self.get_grevent(person, EventType(EventType.BIRTH))
-    grNaskoDato = str(grNasko.date)
+    grNaskoDato = grdato_al_formal(grNasko.date)
     fsNasko = self.get_fsfact (self.tree.indi[fsid], "http://gedcomx.org/Birth" )
     if fsNasko != None :
       fsNaskoDato = fsNasko.date
