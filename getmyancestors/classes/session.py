@@ -38,8 +38,12 @@ class Session:
         """retrieve FamilySearch session ID
         (https://familysearch.org/developers/docs/guides/oauth2)
         """
+        nbtry = 1
         while True:
             try:
+                if nbtry > 3 :
+                  return False
+                nbtry = nbtry + 1
                 url = "https://www.familysearch.org/auth/familysearch/login"
                 self.write_log("Downloading: " + url)
                 r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
