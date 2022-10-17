@@ -40,7 +40,7 @@ from gramps.gen.const import GRAMPS_LOCALE as glocale
 from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventType, EventRoleType, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib import Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
@@ -142,14 +142,14 @@ class PersonFS(Gramplet):
     self.top.add_from_file(glade_file)
 
     self.res = self.top.get_object("PersonFSRes")
-    self.propGr = self.top.get_object("propGr")
+    self.propKomp = self.top.get_object("propKomp")
     titles = [  
                 (_('Coloro'), 1, 10,COLOR),
 		( _('Propreco'), 2, 100),
                 (_('Gramps Valoro'), 3, 200),
                 (_('FS Valoro'), 4, 200),
              ]
-    self.modelGr = ListModel(self.propGr, titles)
+    self.modelKomp = ListModel(self.propKomp, titles)
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
 	})
@@ -203,7 +203,7 @@ class PersonFS(Gramplet):
 
   def main(self):
     active_handle = self.get_active('Person')
-    self.modelGr.clear()
+    self.modelKomp.clear()
     if active_handle:
       self.compareFs(active_handle)
       self.set_has_data(self.get_has_data(active_handle))
@@ -255,27 +255,121 @@ class PersonFS(Gramplet):
 
     self.tree.add_indis([fsid])
 
+    fsPerso = self.tree.indi[fsid]
+
     grName = person.primary_name
-    fsName = self.tree.indi[fsid].name
+    fsName = fsPerso.name
     coloro = "orange"
     if (grName.get_primary_surname().surname == fsName.surname) and (grName.first_name == fsName.given) :
       coloro = "green"
-    rowGr = self.modelGr.add( ( coloro , _('Nomo:')
+    self.modelKomp.add( ( coloro , _('Nomo:')
 		, grName.get_primary_surname().surname + ', ' + grName.first_name 
 		, fsName.surname +  ', ' + fsName.given
 		) )
-    grNasko = self.get_grevent(person, EventType(EventType.BIRTH))
-    grNaskoDato = grdato_al_formal(grNasko.date)
-    fsNasko = self.get_fsfact (self.tree.indi[fsid], "http://gedcomx.org/Birth" )
+
+    if person.get_gender() == Person.MALE :
+      grSekso = _("male")
+    elif person.get_gender() == Person.FEMALE :
+      grSekso = _("female")
+    else :
+      grSekso = _("unknown")
+    if fsPerso.gender == "M" :
+      fsSekso = _("male")
+    elif fsPerso.gender == "F" :
+      fsSekso = _("female")
+    else :
+      fsSekso = _("unknown")
+    coloro = "orange"
+    if (grSekso == fsSekso) :
+      coloro = "green"
+    self.modelKomp.add( ( coloro , _('Sekso:')
+		, grSekso
+		, fsSekso
+		) )
+
+    self.addFactKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
+    self.addFactKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
+    self.addFactKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
+    self.addFactKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
+
+    family_handle = person.get_main_parents_family_handle()
+    if family_handle:
+      family = self.dbstate.db.get_family_from_handle(family_handle)
+      handle = family.get_father_handle()
+      if handle:
+        father = self.dbstate.db.get_person_from_handle(handle)
+        father_name = name_displayer.display(father)
+      else:
+        father_name = ''
+      handle = family.get_mother_handle()
+      if handle:
+        mother = self.dbstate.db.get_person_from_handle(handle)
+        mother_name = name_displayer.display(mother)
+      else:
+        mother_name = ''
+    else:
+      father_name = ''
+      mother_name = ''
+
+    if len(fsPerso.parents) > 0 :
+      fs_parents = next(iter(fsPerso.parents))
+      fsfather_id = fs_parents[0] 
+      fsmother_id = fs_parents[1] 
+      self.tree.add_indis([fsfather_id,fsmother_id])
+      fsFather = self.tree.indi[fsfather_id]
+      fs_father_name = fsFather.name.surname + ', ' + fsFather.name.given
+      fsMother = self.tree.indi[fsmother_id]
+      fs_mother_name = fsMother.name.surname + ', ' + fsMother.name.given
+    else :
+      fsfather_id = ''
+      fsmother_id = ''
+      fs_father_name = ''
+      fs_mother_name = ''
+
+    coloro = "orange"
+    if (father_name == fs_father_name) :
+      coloro = "green"
+    self.modelKomp.add( ( coloro , _('Father')
+		, father_name
+		, fs_father_name
+		) )
+    coloro = "orange"
+    if (mother_name == fs_mother_name) :
+      coloro = "green"
+    self.modelKomp.add( ( coloro , _('Mother')
+		, mother_name
+		, fs_mother_name
+		) )
+
+
+    return
+
+  def addFactKomp(self, person, fsPerso, grEvent , fsFact ) :
+    grNasko = self.get_grevent(person, EventType(grEvent))
+    titolo = str(EventType(grEvent))
+    if grNasko != None :
+      grNaskoDato = grdato_al_formal(grNasko.date)
+      place = self.dbstate.db.get_place_from_handle(grNasko.place)
+      grNaskoLoko = place.name.value
+    else :
+      grNaskoDato = ''
+      grNaskoLoko = ''
+
+    fsNasko = self.get_fsfact (fsPerso, fsFact )
     if fsNasko != None :
       fsNaskoDato = fsNasko.date
+      fsNaskoLoko = fsNasko.place
     else :
       fsNaskoDato = ''
+      fsNaskoLoko = ''
     coloro = "orange"
     if (grNaskoDato == fsNaskoDato) :
       coloro = "green"
-    rowGr = self.modelGr.add( ( coloro , _('Nasko:')
-		, grNaskoDato
-		, fsNaskoDato
+    if grNaskoDato == '' and grNaskoLoko == '' and fsNaskoDato == '' and fsNaskoLoko == '' :
+      return
+    self.modelKomp.add( ( coloro , titolo
+		, grNaskoDato +' ; ' + grNaskoLoko
+		, fsNaskoDato +' ; ' + fsNaskoLoko
 		) )
+
     return
