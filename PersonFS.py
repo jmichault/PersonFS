@@ -349,19 +349,23 @@ class PersonFS(Gramplet):
     titolo = str(EventType(grEvent))
     if grNasko != None :
       grNaskoDato = grdato_al_formal(grNasko.date)
-      place = self.dbstate.db.get_place_from_handle(grNasko.place)
-      grNaskoLoko = place.name.value
+      if grNasko.place and grNasko.place != None :
+        place = self.dbstate.db.get_place_from_handle(grNasko.place)
+        grNaskoLoko = place.name.value
+      else :
+        grNaskoLoko = ''
     else :
       grNaskoDato = ''
       grNaskoLoko = ''
 
     fsNasko = self.get_fsfact (fsPerso, fsFact )
+    fsNaskoDato = ''
+    fsNaskoLoko = ''
     if fsNasko != None :
-      fsNaskoDato = fsNasko.date
-      fsNaskoLoko = fsNasko.place
-    else :
-      fsNaskoDato = ''
-      fsNaskoLoko = ''
+      if fsNasko.date :
+        fsNaskoDato = fsNasko.date
+      if fsNasko.place :
+        fsNaskoLoko = fsNasko.place
     coloro = "orange"
     if (grNaskoDato == fsNaskoDato) :
       coloro = "green"
