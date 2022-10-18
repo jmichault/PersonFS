@@ -80,6 +80,10 @@ CONFIG.load()
 
 
 def grdato_al_formal( dato) :
+  """
+  " konverti gramps-daton al «formal» dato
+  "   «formal» dato : <https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md>
+  """
   res=''
   gdato = gregorian(dato)
   if gdato.modifier == Date.MOD_ABOUT :
@@ -105,13 +109,13 @@ def grdato_al_formal( dato) :
   res = res+val
   if gdato.modifier == Date.MOD_AFTER:
     res = res + '/'
-  # à faire : range ?  estimate ? calculate ?
+  # FARINDAĴO : range ?  estimate ? calculate ? heure ?
   
   return res
 
 class PersonFS(Gramplet):
   """
-  Gramplet to display ancestors of the active person.
+  " Interfaco kun familySearch
   """
   def init(self):
     self.fs_id = CONFIG.get("preferences.fs_id")
@@ -134,7 +138,7 @@ class PersonFS(Gramplet):
 
   def krei_gui(self):
     """
-    krei GUI interfaco.
+    " krei GUI interfaco.
     """
     self.top = Gtk.Builder()
     base = os.path.dirname(__file__)
@@ -212,7 +216,7 @@ class PersonFS(Gramplet):
 
   def get_grevent(self, person, event_type):
     """
-    Liveras la unuan eventon de la donita tipo.
+    " Liveras la unuan eventon de la donita tipo.
     """
     for event_ref in person.get_event_ref_list():
       if int(event_ref.get_role()) == EventRoleType.PRIMARY:
@@ -223,50 +227,14 @@ class PersonFS(Gramplet):
 
   def get_fsfact(self, person, fact_tipo):
     """
-    Liveras la unuan fakton de la donita tipo.
+    " Liveras la unuan fakton de la donita tipo.
     """
     for fact in person.facts :
       if fact.type == fact_tipo :
         return fact
     return None
 
-  def compareFs(self, person_handle):
-    """
-    Kompari gramps kaj FamilySearch
-    """
-
-    person = self.dbstate.db.get_person_from_handle(person_handle)
-    fsid = 'xxxx-xxx'
-    for attr in person.get_attribute_list():
-      if attr.get_type() == '_FSFTID':
-        fsid = attr.get_value()
-    self.top.get_object("LinkoButono").set_label(fsid)
-    if fsid == '':
-      lien = 'https://familysearch.org/'
-    else :
-      lien = 'https://familysearch.org/tree/person/' + fsid
-    self.top.get_object("LinkoButono").set_uri(lien)
-    
-    if fsid == '':
-      return
-
-    if not self.fs.logged:
-      return
-
-    self.tree.add_indis([fsid])
-
-    fsPerso = self.tree.indi[fsid]
-
-    grName = person.primary_name
-    fsName = fsPerso.name
-    coloro = "orange"
-    if (grName.get_primary_surname().surname == fsName.surname) and (grName.first_name == fsName.given) :
-      coloro = "green"
-    self.modelKomp.add( ( coloro , _('Nomo:')
-		, grName.get_primary_surname().surname + ', ' + grName.first_name 
-		, fsName.surname +  ', ' + fsName.given
-		) )
-
+  def aldSeksoKomp(self, person, fsPerso ) :
     if person.get_gender() == Person.MALE :
       grSekso = _("male")
     elif person.get_gender() == Person.FEMALE :
@@ -286,12 +254,57 @@ class PersonFS(Gramplet):
 		, grSekso
 		, fsSekso
 		) )
+    return
 
-    self.addFactKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
-    self.addFactKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-    self.addFactKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
-    self.addFactKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
+  def aldNamoKomp(self, person, fsPerso ) :
+    grNamo = person.primary_name
+    fsNamo = fsPerso.name
+    coloro = "orange"
+    if (grNamo.get_primary_surname().surname == fsNamo.surname) and (grNamo.first_name == fsNamo.given) :
+      coloro = "green"
+    self.modelKomp.add( ( coloro , _('Name')
+		, grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
+		, fsNamo.surname +  ', ' + fsNamo.given
+		) )
+    return
 
+  def aldFaktoKomp(self, person, fsPerso, grEvent , fsFact ) :
+    grFakto = self.get_grevent(person, EventType(grEvent))
+    titolo = str(EventType(grEvent))
+    if grFakto != None :
+      grFaktoDato = grdato_al_formal(grFakto.date)
+      if grFakto.place and grFakto.place != None :
+        place = self.dbstate.db.get_place_from_handle(grFakto.place)
+        grFaktoLoko = place.name.value
+      else :
+        grFaktoLoko = ''
+    else :
+      grFaktoDato = ''
+      grFaktoLoko = ''
+
+    fsFakto = self.get_fsfact (fsPerso, fsFact )
+    fsFaktoDato = ''
+    fsFaktoLoko = ''
+    if fsFakto != None :
+      if fsFakto.date :
+        fsFaktoDato = fsFakto.date
+      if fsFakto.place :
+        fsFaktoLoko = fsFakto.place
+    coloro = "orange"
+    if (grFaktoDato == fsFaktoDato) :
+      coloro = "green"
+    if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
+      return
+    self.modelKomp.add( ( coloro , titolo
+		, grFaktoDato +' ; ' + grFaktoLoko
+		, fsFaktoDato +' ; ' + fsFaktoLoko
+		) )
+    return
+
+  def aldGepKomp(self, person, fsPerso ) :
+    """
+    " aldoni gepatran komparon
+    """
     family_handle = person.get_main_parents_family_handle()
     if family_handle:
       family = self.dbstate.db.get_family_from_handle(family_handle)
@@ -340,40 +353,43 @@ class PersonFS(Gramplet):
 		, mother_name
 		, fs_mother_name
 		) )
-
-
     return
 
-  def addFactKomp(self, person, fsPerso, grEvent , fsFact ) :
-    grNasko = self.get_grevent(person, EventType(grEvent))
-    titolo = str(EventType(grEvent))
-    if grNasko != None :
-      grNaskoDato = grdato_al_formal(grNasko.date)
-      if grNasko.place and grNasko.place != None :
-        place = self.dbstate.db.get_place_from_handle(grNasko.place)
-        grNaskoLoko = place.name.value
-      else :
-        grNaskoLoko = ''
-    else :
-      grNaskoDato = ''
-      grNaskoLoko = ''
+  def compareFs(self, person_handle):
+    """
+    " Kompari gramps kaj FamilySearch
+    """
 
-    fsNasko = self.get_fsfact (fsPerso, fsFact )
-    fsNaskoDato = ''
-    fsNaskoLoko = ''
-    if fsNasko != None :
-      if fsNasko.date :
-        fsNaskoDato = fsNasko.date
-      if fsNasko.place :
-        fsNaskoLoko = fsNasko.place
-    coloro = "orange"
-    if (grNaskoDato == fsNaskoDato) :
-      coloro = "green"
-    if grNaskoDato == '' and grNaskoLoko == '' and fsNaskoDato == '' and fsNaskoLoko == '' :
+    person = self.dbstate.db.get_person_from_handle(person_handle)
+    fsid = 'xxxx-xxx'
+    for attr in person.get_attribute_list():
+      if attr.get_type() == '_FSFTID':
+        fsid = attr.get_value()
+    self.top.get_object("LinkoButono").set_label(fsid)
+    if fsid == '':
+      lien = 'https://familysearch.org/'
+    else :
+      lien = 'https://familysearch.org/tree/person/' + fsid
+    self.top.get_object("LinkoButono").set_uri(lien)
+    # Se fsid ne estas specifita: nenio pli :
+    if fsid == '':
       return
-    self.modelKomp.add( ( coloro , titolo
-		, grNaskoDato +' ; ' + grNaskoLoko
-		, fsNaskoDato +' ; ' + fsNaskoLoko
-		) )
+
+    # Se se ĝi ne estas konektita al familysearch: nenio pli.
+    if not self.fs.logged:
+      return
+    # ŝarĝante individuan "FamilySearch" :
+    self.tree.add_indis([fsid])
+    fsPerso = self.tree.indi[fsid]
+
+    self.aldNamoKomp( person, fsPerso)
+    self.aldSeksoKomp( person, fsPerso)
+
+    self.aldFaktoKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
+    self.aldFaktoKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
+    self.aldFaktoKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
+    self.aldFaktoKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
+
+    self.aldGepKomp( person, fsPerso)
 
     return
