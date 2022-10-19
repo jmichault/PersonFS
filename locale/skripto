@@ -1,0 +1,9 @@
+xgettext --from-code=UTF-8 --no-wrap -k_ -kN_ -o locale/PersonFS.pot *.py *.glade
+sed -i "s/charset=CHARSET/charset=UTF-8/"  locale/PersonFS.pot
+if [ ! -f locale/fr/LC_MESSAGES/PersonFS.po ] ; then
+  msginit --no-wrap --input locale/PersonFS.pot --output locale/fr/LC_MESSAGES/PersonFS.po -lfr --no-translator
+fi
+
+msgmerge --no-wrap -N -U locale/fr/LC_MESSAGES/PersonFS.po locale/PersonFS.pot
+
+msgfmt -f locale/fr/LC_MESSAGES/PersonFS.po -o locale/fr/LC_MESSAGES/addon.mo

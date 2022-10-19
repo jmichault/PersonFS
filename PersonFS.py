@@ -63,7 +63,12 @@ import time
 
 
 
-_ = glocale.translation.gettext
+try:
+    _trans = glocale.get_addon_translator(__file__)
+except ValueError:
+    _trans = glocale.translation
+_ = _trans.gettext
+#_ = glocale.translation.gettext
 
 
 #-------------------------------------------------------------------------
@@ -109,7 +114,7 @@ def grdato_al_formal( dato) :
   res = res+val
   if gdato.modifier == Date.MOD_AFTER:
     res = res + '/'
-  # FARINDAĴO : range ?  estimate ? calculate ? heure ?
+  # FARINDAĴOJ : range ?  estimate ? calculate ? heure ?
   
   return res
 
@@ -140,8 +145,12 @@ class PersonFS(Gramplet):
     """
     " krei GUI interfaco.
     """
+    import locale, os
+    #locale.setlocale(locale.LC_ALL, '')
     self.top = Gtk.Builder()
+    self.top.set_translation_domain("addon")
     base = os.path.dirname(__file__)
+    locale.bindtextdomain("addon", base + "/locale")
     glade_file = base + os.sep + "PersonFS.glade"
     self.top.add_from_file(glade_file)
 
@@ -392,4 +401,8 @@ class PersonFS(Gramplet):
 
     self.aldGepKomp( person, fsPerso)
 
+    # FARINDAĴOJ : Edzoj (kun geedziĝo kaj infanoj), aliaj faktoj/eventoj, fontoj, notoj, …
+
     return
+
+  # FARINDAĴOJ : redundoj, esploro, importado, …

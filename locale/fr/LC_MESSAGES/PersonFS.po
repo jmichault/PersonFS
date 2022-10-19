@@ -1,0 +1,100 @@
+# French translations for gramps package.
+# Copyright (C) 2022 THE gramps'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the gramps package.
+# Automatically generated, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gramps 51\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-10-19 16:10+0200\n"
+"PO-Revision-Date: 2022-10-19 15:56+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 2.4.2\n"
+
+#: PersonFS.gpr.py:30
+msgid "PersonFS"
+msgstr ""
+
+#: PersonFS.gpr.py:31
+msgid "interfaco por FamilySearch"
+msgstr "interface pour FamilySearch"
+
+#: PersonFS.gpr.py:37
+msgid "FS"
+msgstr ""
+
+#: PersonFS.py:160
+msgid "Coloro"
+msgstr "Couleur"
+
+#: PersonFS.py:161
+msgid "Propreco"
+msgstr "Propriété"
+
+#: PersonFS.py:162
+msgid "Gramps Valoro"
+msgstr "Valeur"
+
+#: PersonFS.py:163
+msgid "FS Valoro"
+msgstr "valeur FS"
+
+#: PersonFS.py:248 PersonFS.py:254
+msgid "male"
+msgstr ""
+
+#: PersonFS.py:250 PersonFS.py:256
+msgid "female"
+msgstr ""
+
+#: PersonFS.py:252 PersonFS.py:258
+msgid "unknown"
+msgstr ""
+
+#: PersonFS.py:262
+msgid "Sekso:"
+msgstr "Sexe :"
+
+#: PersonFS.py:274
+msgid "Name"
+msgstr ""
+
+#: PersonFS.py:354
+msgid "Father"
+msgstr ""
+
+#: PersonFS.py:361
+msgid "Mother"
+msgstr ""
+
+#: PersonFS.glade:56
+msgid "PersonFS Preferoj"
+msgstr "Préférences pour PersonFS"
+
+#: PersonFS.glade:82
+msgid "Enigu la uzantnomon kaj pasvorton sube por uzi por ensaluti al FamilySearch.\n"
+msgstr "Entrez l'identifiant et le mot de passe pour se connecter à FamilySearch.\n"
+
+#: PersonFS.glade:97
+msgid "FamilySearch identeco :"
+msgstr "compte FamilySearch :"
+
+#: PersonFS.glade:120
+msgid "FamilySearch pasvorto :"
+msgstr "mot de passe FamilySearch"
+
+#: PersonFS.glade:166
+msgid "Gramps Individuo/FamilySearch Individuo"
+msgstr "individu Gramps/individu FamilySearch"
+
+#: PersonFS.glade:208
+msgid "xxxx-xxx"
+msgstr ""
+
