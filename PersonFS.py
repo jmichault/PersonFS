@@ -80,13 +80,13 @@ _ = _trans.gettext
 GRAMPLET_CONFIG_NAME = "PersonFS"
 CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_id", '')
-CONFIG.register("preferences.fs_pasvorto", '')
+#CONFIG.register("preferences.fs_pasvorto", '')
 CONFIG.load()
 
 
 def grdato_al_formal( dato) :
   """
-  " konverti gramps-daton al «formal» dato
+  " konvertas gramps-daton al «formal» dato
   "   «formal» dato : <https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md>
   """
   res=''
@@ -123,13 +123,19 @@ class PersonFS(Gramplet):
   " Interfaco kun familySearch
   """
   def init(self):
+    """
+    " kreas GUI kaj konektas al FamilySearch
+    """
+    self.fs = None
     self.fs_id = CONFIG.get("preferences.fs_id")
-    self.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto")
+    self.fs_pasvorto = ''
+    #self.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto")
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
     self.gui.get_container_widget().add_with_viewport(self.gui.WIDGET)
     self.gui.WIDGET.show_all()
+
     if self.fs_id == '' or self.fs_pasvorto == '':
       self.pref_clicked(None)
     else:
@@ -143,7 +149,7 @@ class PersonFS(Gramplet):
 
   def krei_gui(self):
     """
-    " krei GUI interfaco.
+    " kreas GUI interfacon.
     """
     import locale, os
     #locale.setlocale(locale.LC_ALL, '')
@@ -170,7 +176,6 @@ class PersonFS(Gramplet):
     return self.res
 
   def pref_clicked(self, dummy):
-    print ("clicked")
     top = self.top.get_object("PersonFSPrefDialogo")
     top.set_transient_for(self.uistate.window)
     parent_modal = self.uistate.window.get_modal()
@@ -179,7 +184,7 @@ class PersonFS(Gramplet):
     fsid = self.top.get_object("fsid_eniro")
     fsid.set_text(self.fs_id)
     fspv = self.top.get_object("fspv_eniro")
-    fspv.set_text(self.fs_pasvorto)
+    #fspv.set_text(self.fs_pasvorto)
     top.show()
     res = top.run()
     print ("res = " + str(res))
@@ -188,7 +193,7 @@ class PersonFS(Gramplet):
       self.fs_id = fsid.get_text()
       self.fs_pasvorto = fspv.get_text()
       CONFIG.set("preferences.fs_id", self.fs_id)
-      CONFIG.set("preferences.fs_pasvorto", self.fs_pasvorto)
+      #CONFIG.set("preferences.fs_pasvorto", self.fs_pasvorto)
       CONFIG.save()
       self.konekti_FS()
     
@@ -218,14 +223,14 @@ class PersonFS(Gramplet):
     active_handle = self.get_active('Person')
     self.modelKomp.clear()
     if active_handle:
-      self.compareFs(active_handle)
+      self.kompariFs(active_handle)
       self.set_has_data(self.get_has_data(active_handle))
     else:
       self.set_has_data(False)
 
   def get_grevent(self, person, event_type):
     """
-    " Liveras la unuan eventon de la donita tipo.
+    " Liveras la unuan gramps eventon de la donita tipo.
     """
     for event_ref in person.get_event_ref_list():
       if int(event_ref.get_role()) == EventRoleType.PRIMARY:
@@ -236,7 +241,7 @@ class PersonFS(Gramplet):
 
   def get_fsfact(self, person, fact_tipo):
     """
-    " Liveras la unuan fakton de la donita tipo.
+    " Liveras la unuan familysearch fakton de la donita tipo.
     """
     for fact in person.facts :
       if fact.type == fact_tipo :
@@ -245,17 +250,17 @@ class PersonFS(Gramplet):
 
   def aldSeksoKomp(self, person, fsPerso ) :
     if person.get_gender() == Person.MALE :
-      grSekso = _("male")
+      grSekso = _trans.gettext("male")
     elif person.get_gender() == Person.FEMALE :
-      grSekso = _("female")
+      grSekso = _trans.gettext("female")
     else :
-      grSekso = _("unknown")
+      grSekso = _trans.gettext("unknown")
     if fsPerso.gender == "M" :
-      fsSekso = _("male")
+      fsSekso = _trans.gettext("male")
     elif fsPerso.gender == "F" :
-      fsSekso = _("female")
+      fsSekso = _trans.gettext("female")
     else :
-      fsSekso = _("unknown")
+      fsSekso = _trans.gettext("unknown")
     coloro = "orange"
     if (grSekso == fsSekso) :
       coloro = "green"
@@ -271,7 +276,7 @@ class PersonFS(Gramplet):
     coloro = "orange"
     if (grNamo.get_primary_surname().surname == fsNamo.surname) and (grNamo.first_name == fsNamo.given) :
       coloro = "green"
-    self.modelKomp.add( ( coloro , _('Name')
+    self.modelKomp.add( ( coloro , _trans.gettext('Name')
 		, grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
 		, fsNamo.surname +  ', ' + fsNamo.given
 		) )
@@ -312,7 +317,7 @@ class PersonFS(Gramplet):
 
   def aldGepKomp(self, person, fsPerso ) :
     """
-    " aldoni gepatran komparon
+    " aldonas gepatran komparon
     """
     family_handle = person.get_main_parents_family_handle()
     if family_handle:
@@ -351,22 +356,50 @@ class PersonFS(Gramplet):
     coloro = "orange"
     if (father_name == fs_father_name) :
       coloro = "green"
-    self.modelKomp.add( ( coloro , _('Father')
+    self.modelKomp.add( ( coloro , _trans.gettext('Father')
 		, father_name
 		, fs_father_name
 		) )
     coloro = "orange"
     if (mother_name == fs_mother_name) :
       coloro = "green"
-    self.modelKomp.add( ( coloro , _('Mother')
+    self.modelKomp.add( ( coloro , _trans.gettext('Mother')
 		, mother_name
 		, fs_mother_name
 		) )
     return
 
-  def compareFs(self, person_handle):
+  def aldEdzKomp(self, person, fsPerso ) :
     """
-    " Kompari gramps kaj FamilySearch
+    " aldonas edzan komparon
+    """
+    
+    for family_handle in person.get_family_handle_list():
+      family = self.dbstate.db.get_family_from_handle(family_handle)
+      if family :
+        edzo_handle = family.mother_handle
+        if edzo_handle == self.get_active('Person') :
+          edzo_handle = family.father_handle
+        edzo = self.dbstate.db.get_person_from_handle(edzo_handle)
+        edzoNamo = edzo.primary_name
+        coloro = "green"
+        self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
+                  , edzoNamo.get_primary_surname().surname + ', ' + edzoNamo.first_name
+                  , ''
+             ) )
+        for child_ref in family.get_child_ref_list():
+          infano = self.dbstate.db.get_person_from_handle(child_ref.ref)
+          infanoNamo = infano.primary_name
+          self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
+                  , infanoNamo.get_primary_surname().surname + ', ' + infanoNamo.first_name
+                  , ''
+             ) )
+
+    return
+
+  def kompariFs(self, person_handle):
+    """
+    " Komparas gramps kaj FamilySearch
     """
 
     person = self.dbstate.db.get_person_from_handle(person_handle)
@@ -381,11 +414,11 @@ class PersonFS(Gramplet):
       lien = 'https://familysearch.org/tree/person/' + fsid
     self.top.get_object("LinkoButono").set_uri(lien)
     # Se fsid ne estas specifita: nenio pli :
-    if fsid == '':
+    if fsid == '' or fsid == 'xxxx-xxx' :
       return
 
     # Se se ĝi ne estas konektita al familysearch: nenio pli.
-    if not self.fs.logged:
+    if self.fs == None or not self.fs.logged:
       return
     # ŝarĝante individuan "FamilySearch" :
     self.tree.add_indis([fsid])
@@ -401,7 +434,8 @@ class PersonFS(Gramplet):
 
     self.aldGepKomp( person, fsPerso)
 
-    # FARINDAĴOJ : Edzoj (kun geedziĝo kaj infanoj), aliaj faktoj/eventoj, fontoj, notoj, …
+    # FARINDAĴOJ : Edzoj (kun geedziĝo kaj infanoj), okupo, titolo, religio, aliaj faktoj/eventoj, fontoj, notoj, …
+    # self.aldEdzKomp( person, fsPerso)
 
     return
 

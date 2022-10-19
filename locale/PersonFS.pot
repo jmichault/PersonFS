@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-19 16:10+0200\n"
+"POT-Creation-Date: 2022-10-20 00:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,48 +29,56 @@ msgstr ""
 msgid "FS"
 msgstr ""
 
-#: PersonFS.py:160
+#: PersonFS.py:165
 msgid "Coloro"
 msgstr ""
 
-#: PersonFS.py:161
+#: PersonFS.py:166
 msgid "Propreco"
 msgstr ""
 
-#: PersonFS.py:162
+#: PersonFS.py:167
 msgid "Gramps Valoro"
 msgstr ""
 
-#: PersonFS.py:163
+#: PersonFS.py:168
 msgid "FS Valoro"
 msgstr ""
 
-#: PersonFS.py:248 PersonFS.py:254
+#: PersonFS.py:252 PersonFS.py:258
 msgid "male"
 msgstr ""
 
-#: PersonFS.py:250 PersonFS.py:256
+#: PersonFS.py:254 PersonFS.py:260
 msgid "female"
 msgstr ""
 
-#: PersonFS.py:252 PersonFS.py:258
+#: PersonFS.py:256 PersonFS.py:262
 msgid "unknown"
 msgstr ""
 
-#: PersonFS.py:262
+#: PersonFS.py:266
 msgid "Sekso:"
 msgstr ""
 
-#: PersonFS.py:274
+#: PersonFS.py:278
 msgid "Name"
 msgstr ""
 
-#: PersonFS.py:354
+#: PersonFS.py:358
 msgid "Father"
 msgstr ""
 
-#: PersonFS.py:361
+#: PersonFS.py:365
 msgid "Mother"
+msgstr ""
+
+#: PersonFS.py:385
+msgid "Spouse"
+msgstr ""
+
+#: PersonFS.py:392
+msgid "Child"
 msgstr ""
 
 #: PersonFS.glade:56
@@ -78,21 +86,28 @@ msgid "PersonFS Preferoj"
 msgstr ""
 
 #: PersonFS.glade:82
-msgid "Enigu la uzantnomon kaj pasvorton sube por uzi por ensaluti al FamilySearch.\n"
+msgid ""
+"Alklakante la Apliki-Butonon, mi konsentas\n"
+"PersonFS ŝatus scii viajn bazajn FamilySearch-profilinformojn kaj alirdatenojn pri viaj prapatroj de la FamilySearch genealogia arbo.\n"
+"PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj kaj privatecaj politikoj.\n"
 msgstr ""
 
-#: PersonFS.glade:97
+#: PersonFS.glade:99
 msgid "FamilySearch identeco :"
 msgstr ""
 
-#: PersonFS.glade:120
+#: PersonFS.glade:122
 msgid "FamilySearch pasvorto :"
 msgstr ""
 
-#: PersonFS.glade:166
+#: PersonFS.glade:168
 msgid "Gramps Individuo/FamilySearch Individuo"
 msgstr ""
 
-#: PersonFS.glade:208
+#: PersonFS.glade:210
 msgid "xxxx-xxx"
+msgstr ""
+
+#: PersonFS.glade:248
+msgid "FamilySearch Identiga N° :"
 msgstr ""
