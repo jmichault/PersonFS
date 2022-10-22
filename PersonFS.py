@@ -55,7 +55,7 @@ from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 from getmyancestors.classes.session import Session
 from getmyancestors.classes.constants import FACT_TAGS
 from getmyancestors.classes.session import Session
-from getmyancestors.classes.tree import Tree, Name
+from getmyancestors.classes.tree import Tree, Name, Indi
 
 import sys
 import os
@@ -131,30 +131,35 @@ class PersonFS(Gramplet):
   """
   " Interfaco kun familySearch
   """
+  fs_id = ''
+  fs_pasvorto = ''
+  fs_Session = None
+  fs_Tree = None
+
   def init(self):
     """
     " kreas GUI kaj konektas al FamilySearch
     """
-    self.fs = None
-    self.fs_id = CONFIG.get("preferences.fs_id")
-    self.fs_pasvorto = ''
-    #self.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+    PersonFS.fs_id = CONFIG.get("preferences.fs_id")
+    #PersonFS.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
     self.gui.get_container_widget().add_with_viewport(self.gui.WIDGET)
     self.gui.WIDGET.show_all()
 
-    if self.fs_id == '' or self.fs_pasvorto == '':
+    if PersonFS.fs_id == '' or PersonFS.fs_pasvorto == '':
       self.pref_clicked(None)
     else:
       self.konekti_FS()
 
   def konekti_FS(self):
-    self.fs = Session(self.fs_id, self.fs_pasvorto, False, False, 2)
-    if not self.fs.logged:
+    if not PersonFS.fs_Session:
+      PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+    if not PersonFS.fs_Session.logged:
       return
-    self.tree = Tree(self.fs)
+    if not PersonFS.fs_Tree:
+      PersonFS.fs_Tree = Tree(PersonFS.fs_Session)
 
   def krei_gui(self):
     """
@@ -203,18 +208,18 @@ class PersonFS(Gramplet):
     if parent_modal:
       self.uistate.window.set_modal(False)
     fsid = self.top.get_object("fsid_eniro")
-    fsid.set_text(self.fs_id)
+    fsid.set_text(PersonFS.fs_id)
     fspv = self.top.get_object("fspv_eniro")
-    fspv.set_text(self.fs_pasvorto)
+    fspv.set_text(PersonFS.fs_pasvorto)
     top.show()
     res = top.run()
     print ("res = " + str(res))
     top.hide()
     if res == -3:
-      self.fs_id = fsid.get_text()
-      self.fs_pasvorto = fspv.get_text()
-      CONFIG.set("preferences.fs_id", self.fs_id)
-      #CONFIG.set("preferences.fs_pasvorto", self.fs_pasvorto) #
+      PersonFS.fs_id = fsid.get_text()
+      PersonFS.fs_pasvorto = fspv.get_text()
+      CONFIG.set("preferences.fs_id", PersonFS.fs_id)
+      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
       CONFIG.save()
       self.konekti_FS()
     
@@ -314,11 +319,11 @@ class PersonFS(Gramplet):
       posMinus = fsFakto.date.find('-')
       if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
         posSigno = posMinus
-      if len(fsFakto.date) > posSigno+5 :
+      if len(fsFakto.date) >= posSigno+5 :
         res = res + fsFakto.date[posSigno+1:posSigno+5]
       else :
         res = res+'....'
-      if len(fsFakto.date) > posSigno+6 and fsFakto.date[posSigno+6] == '/' :
+      if len(fsFakto.date) >= posSigno+6 and fsFakto.date[posSigno+6] == '/' :
         res = res + '/'
       res = res+'-'
     else :
@@ -333,11 +338,11 @@ class PersonFS(Gramplet):
       posMinus = fsFakto.date.find('-')
       if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
         posSigno = posMinus
-      if len(fsFakto.date) > posSigno+5 :
+      if len(fsFakto.date) >= posSigno+5 :
         res = res + fsFakto.date[posSigno+1:posSigno+5]
       else :
         res = res+'....'
-      if len(fsFakto.date) > posSigno+6 and fsFakto.date[posSigno+6] == '/' :
+      if len(fsFakto.date) >= posSigno+6 and fsFakto.date[posSigno+6] == '/' :
         res = res + '/'
     else :
       res = res + '....'
@@ -376,7 +381,7 @@ class PersonFS(Gramplet):
 
   def aldNamoKomp(self, person, fsPerso ) :
     grNamo = person.primary_name
-    fsNamo = fsPerso.name
+    fsNamo = fsPerso.name or Name()
     coloro = "orange"
     if (grNamo.get_primary_surname().surname == fsNamo.surname) and (grNamo.first_name == fsNamo.given) :
       coloro = "green"
@@ -443,13 +448,13 @@ class PersonFS(Gramplet):
       fs_parents = next(iter(fsPerso.parents))
       fsfather_id = fs_parents[0] or ''
       fsmother_id = fs_parents[1] or ''
-      self.tree.add_indis([fsfather_id,fsmother_id])
-      fsFather = self.tree.indi.get(fsfather_id)
+      PersonFS.fs_Tree.add_indis([fsfather_id,fsmother_id])
+      fsFather = PersonFS.fs_Tree.indi.get(fsfather_id)
       if fsFather and fsFather.name :
         fs_father_name = fsFather.name.surname + ', ' + fsFather.name.given
       else :
         fs_father_name = ''
-      fsMother = self.tree.indi.get(fsmother_id)
+      fsMother = PersonFS.fs_Tree.indi.get(fsmother_id)
       if fsMother and fsMother.name :
         fs_mother_name = fsMother.name.surname + ', ' + fsMother.name.given
       else :
@@ -513,7 +518,7 @@ class PersonFS(Gramplet):
         coloro = "orange"
         if fsEdzoId != '' and edzoFsid == fsEdzoId :
           coloro = "green"
-        fsEdzo = self.tree.indi.get(fsEdzoId)
+        fsEdzo = PersonFS.fs_Tree.indi.get(fsEdzoId)
         if fsEdzo :
           fsNamo = fsEdzo.name
         else :
@@ -536,7 +541,7 @@ class PersonFS(Gramplet):
           coloro = "orange"
           if fsInfanoId != '' and fsInfanoId == infanoFsid :
             coloro = "green"
-          fsInfano = self.tree.indi.get(fsInfanoId)
+          fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
           if fsInfano :
             fsNamo = fsInfano.name
           else :
@@ -551,7 +556,7 @@ class PersonFS(Gramplet):
                 or (fsTrio[0] == fsEdzoId and fsTrio[1] == fsid )) :
               fsInfanoId = fsTrio[2]
               coloro = "orange"
-              fsInfano = self.tree.indi.get(fsInfanoId)
+              fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
               if fsInfano :
                 fsNamo = fsInfano.name
               else :
@@ -569,7 +574,7 @@ class PersonFS(Gramplet):
         fsEdzoId = fsFamilio[1]
       else :
         fsEdzoId = fsFamilio[0]
-      fsEdzo = self.tree.indi.get(fsEdzoId)
+      fsEdzo = PersonFS.fs_Tree.indi.get(fsEdzoId)
       if fsEdzo :
         fsNamo = fsEdzo.name
       else :
@@ -583,7 +588,7 @@ class PersonFS(Gramplet):
         if (  (fsTrio[0] == fsid and fsTrio[1] == fsEdzoId )
                 or (fsTrio[0] == fsEdzoId and fsTrio[1] == fsid )) :
               fsInfanoId = fsTrio[2]
-              fsInfano = self.tree.indi.get(fsInfanoId)
+              fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
               if fsInfano :
                 fsNamo = fsInfano.name
               else :
@@ -597,7 +602,7 @@ class PersonFS(Gramplet):
         fsInfanoj.remove(fsTrio)
     for fsTrio in fsInfanoj :
       fsInfanoId = fsTrio[2]
-      fsInfano = self.tree.indi.get(fsInfanoId)
+      fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
       if fsInfano :
         fsNamo = fsInfano.name
       else :
@@ -628,14 +633,14 @@ class PersonFS(Gramplet):
       return
 
     # Se ĝi ne estas konektita al familysearch: nenio pli.
-    if self.fs == None or not self.fs.logged:
+    if PersonFS.fs_Session == None or not PersonFS.fs_Session.logged:
       return
     # ŝarĝante individuan "FamilySearch" :
-    self.tree.add_indis([fsid])
-    fsPerso = self.tree.indi[fsid]
+    PersonFS.fs_Tree.add_indis([fsid])
+    fsPerso = PersonFS.fs_Tree.indi.get(fsid) or Indi()
     if getfs == True :
-      self.tree.add_spouses([fsid])
-      self.tree.add_children([fsid])
+      PersonFS.fs_Tree.add_spouses([fsid])
+      PersonFS.fs_Tree.add_children([fsid])
 
 
     self.aldNamoKomp( person, fsPerso)
