@@ -80,8 +80,9 @@ _ = _trans.gettext
 GRAMPLET_CONFIG_NAME = "PersonFS"
 CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_id", '')
-#CONFIG.register("preferences.fs_pasvorto", '')
+#CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
+
 
 
 def grdato_al_formal( dato) :
@@ -137,7 +138,7 @@ class PersonFS(Gramplet):
     self.fs = None
     self.fs_id = CONFIG.get("preferences.fs_id")
     self.fs_pasvorto = ''
-    #self.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto")
+    #self.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
@@ -171,10 +172,12 @@ class PersonFS(Gramplet):
     self.res = self.top.get_object("PersonFSRes")
     self.propKomp = self.top.get_object("propKomp")
     titles = [  
-                (_('Coloro'), 1, 10,COLOR),
+                (_('Coloro'), 1, 20,COLOR),
 		( _('Propreco'), 2, 100),
-                (_('Gramps Valoro'), 3, 200),
-                (_('FS Valoro'), 4, 200),
+		( _('Dato'), 3, 120),
+                (_('Gramps Valoro'), 4, 200),
+                (_('FS Dato'), 5, 120),
+                (_('FS Valoro'), 6, 200),
              ]
     self.modelKomp = ListModel(self.propKomp, titles)
     self.top.connect_signals({
@@ -201,7 +204,7 @@ class PersonFS(Gramplet):
       self.fs_id = fsid.get_text()
       self.fs_pasvorto = fspv.get_text()
       CONFIG.set("preferences.fs_id", self.fs_id)
-      #CONFIG.set("preferences.fs_pasvorto", self.fs_pasvorto)
+      #CONFIG.set("preferences.fs_pasvorto", self.fs_pasvorto) #
       CONFIG.save()
       self.konekti_FS()
     
@@ -240,12 +243,89 @@ class PersonFS(Gramplet):
     """
     " Liveras la unuan gramps eventon de la donita tipo.
     """
+    if not person:
+      return None
     for event_ref in person.get_event_ref_list():
       if int(event_ref.get_role()) == EventRoleType.PRIMARY:
         event = self.dbstate.db.get_event_from_handle(event_ref.ref)
         if event.get_type() == event_type:
           return event
     return None
+
+  def grperso_datoj (self, person) :
+    if not person:
+      return ''
+    grBirth = self.get_grevent(person, EventType(EventType.BIRTH))
+    if grBirth :
+      if grBirth.date.modifier == Date.MOD_ABOUT :
+        res = '~'
+      elif grBirth.date.modifier == Date.MOD_BEFORE:
+        res = '/'
+      else :
+        res = ' '
+      val = "%04d" % ( grBirth.date.dateval[Date._POS_YR] )
+      if val == '0000' :
+        val = '....'
+      if grBirth.date.modifier == Date.MOD_AFTER:
+        res = res + val + '/-'
+      else :
+        res = res + val + '-'
+    else :
+      res = ' ....-'
+    grDeath = self.get_grevent(person, EventType(EventType.DEATH))
+    if grDeath :
+      if grDeath.date.modifier == Date.MOD_ABOUT :
+        res = res + '~'
+      elif grDeath.date.modifier == Date.MOD_BEFORE:
+        res = res + '/'
+      val = "%04d" % ( grDeath.date.dateval[Date._POS_YR] )
+      if val == '0000' :
+        val = '....'
+      if grDeath.date.modifier == Date.MOD_AFTER:
+        res = res + val + '/'
+      else :
+        res = res + val 
+    else :
+      res = res + '....'
+    return res
+
+  def fsperso_datoj (self, fsPerso) :
+    if not fsPerso:
+      return ''
+    fsFakto = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' )
+    if fsFakto and fsFakto.date :
+      if fsFakto.date[0] == 'A' :
+        res ='~'
+      elif fsFakto.date[0] == '/' :
+        res ='/'
+      else :
+        res = ' '
+      posSigno = fsFakto.date.find('+')
+      posMinus = fsFakto.date.find('-')
+      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
+        posSigno = posMinus
+      res = res + fsFakto.date[posSigno+1:posSigno+5]
+      if fsFakto.date[posSigno+6] == '/' :
+        res = res + '/'
+      res = res+'-'
+    else :
+      res = ' ....-'
+    fsFakto = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' )
+    if fsFakto and fsFakto.date :
+      if fsFakto.date[0] == 'A' :
+        res = res + '~'
+      elif fsFakto.date[0] == '/' :
+        res = res + '/'
+      posSigno = fsFakto.date.find('+')
+      posMinus = fsFakto.date.find('-')
+      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
+        posSigno = posMinus
+      res = res + fsFakto.date[posSigno+1:posSigno+5]
+      if fsFakto.date[posSigno+6] == '/' :
+        res = res + '/'
+    else :
+      res = res + '....'
+    return res
 
   def get_fsfact(self, person, fact_tipo):
     """
@@ -273,8 +353,8 @@ class PersonFS(Gramplet):
     if (grSekso == fsSekso) :
       coloro = "green"
     self.modelKomp.add( ( coloro , _('Sekso:')
-		, grSekso
-		, fsSekso
+		, '', grSekso
+		, '', fsSekso
 		) )
     return
 
@@ -285,8 +365,8 @@ class PersonFS(Gramplet):
     if (grNamo.get_primary_surname().surname == fsNamo.surname) and (grNamo.first_name == fsNamo.given) :
       coloro = "green"
     self.modelKomp.add( ( coloro , _trans.gettext('Name')
-		, grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
-		, fsNamo.surname +  ', ' + fsNamo.given
+		, '', grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
+		, '', fsNamo.surname +  ', ' + fsNamo.given
 		) )
     return
 
@@ -318,8 +398,8 @@ class PersonFS(Gramplet):
     if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
       return
     self.modelKomp.add( ( coloro , titolo
-		, grFaktoDato +' ; ' + grFaktoLoko
-		, fsFaktoDato +' ; ' + fsFaktoLoko
+		, grFaktoDato , grFaktoLoko
+		, fsFaktoDato , fsFaktoLoko
 		) )
     return
 
@@ -363,15 +443,15 @@ class PersonFS(Gramplet):
     if (father_name == fs_father_name) :
       coloro = "green"
     self.modelKomp.add( ( coloro , _trans.gettext('Father')
-		, father_name + ' [' + fatherFsid  + ']'
-		, fs_father_name + ' [' + fsfather_id + ']'
+		, self.grperso_datoj(father) , ' ' + father_name + ' [' + fatherFsid  + ']'
+		, self.fsperso_datoj(fsFather) , fs_father_name + ' [' + fsfather_id + ']'
 		) )
     coloro = "orange"
     if (mother_name == fs_mother_name) :
       coloro = "green"
     self.modelKomp.add( ( coloro , _trans.gettext('Mother')
-		, mother_name + ' [' + motherFsid + ']'
-		, fs_mother_name + ' [' + fsfather_id + ']'
+		, self.grperso_datoj(mother) , ' ' + mother_name + ' [' + motherFsid + ']'
+		, self.fsperso_datoj(fsMother) , fs_mother_name + ' [' + fsfather_id + ']'
 		) )
     return
 
@@ -417,8 +497,8 @@ class PersonFS(Gramplet):
         #else :
         #  fsNamo = Name()
         self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
-                  , edzoNamo.get_primary_surname().surname + ', ' + edzoNamo.first_name + ' [' + edzoFsid + ']'
-		  , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
+                  , self.grperso_datoj(edzo) , edzoNamo.get_primary_surname().surname + ', ' + edzoNamo.first_name + ' [' + edzoFsid + ']'
+		  , self.fsperso_datoj(self.tree.indi[fsEdzoId]) , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
              ) )
         for child_ref in family.get_child_ref_list():
           infano = self.dbstate.db.get_person_from_handle(child_ref.ref)
@@ -432,16 +512,18 @@ class PersonFS(Gramplet):
               fsInfanoj.remove(fsTrio)
               break
           coloro = "orange"
-          if fsInfanoId == infanoFsid :
+          if fsInfanoId != '' and fsInfanoId == infanoFsid :
             coloro = "green"
           if fsInfanoId != '' :
             self.tree.add_indis([fsInfanoId])
-            fsNamo = self.tree.indi[fsInfanoId].name
+            fsInfano = self.tree.indi[fsInfanoId]
+            fsNamo = fsInfano.name
           else :
+            fsInfano = None
             fsNamo = Name()
           self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
-                  , infanoNamo.get_primary_surname().surname + ', ' + infanoNamo.first_name + ' [' + infanoFsid + ']'
-                  , fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , self.grperso_datoj(infano) , infanoNamo.get_primary_surname().surname + ', ' + infanoNamo.first_name + ' [' + infanoFsid + ']'
+                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
              ) )
         toRemove=set()
         for fsTrio in fsInfanoj :
@@ -450,10 +532,11 @@ class PersonFS(Gramplet):
               fsInfanoId = fsTrio[2]
               coloro = "orange"
               self.tree.add_indis([fsInfanoId])
+              fsInfano = self.tree.indi[fsInfanoId]
               fsNamo = self.tree.indi[fsInfanoId].name
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
-                  , ''
-                  , fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , '', ''
+                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
                  ) )
               toRemove.add(fsTrio)
         for fsTrio in toRemove :
@@ -470,8 +553,8 @@ class PersonFS(Gramplet):
       else :
         fsNamo = Name()
       self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
-                  , ''
-                  , '' + ' [' + fsEdzoId + ']'
+                  , '', ''
+		  , self.fsperso_datoj(self.tree.indi[fsEdzoId]) , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
              ) )
       toRemove=set()
       for fsTrio in fsInfanoj :
@@ -480,12 +563,14 @@ class PersonFS(Gramplet):
               fsInfanoId = fsTrio[2]
               if fsInfanoId != '' :
                 self.tree.add_indis([fsInfanoId])
-                fsNamo = self.tree.indi[fsInfanoId].name
+                fsInfano = self.tree.indi[fsInfanoId]
+                fsNamo = fsInfano.name
               else :
+                fsInfano = None
                 fsNamo = Name()
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
-                  , ''
-                  , fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , '', ''
+                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
                 ) )
               toRemove.add(fsTrio)
       for fsTrio in toRemove :
@@ -494,12 +579,14 @@ class PersonFS(Gramplet):
       fsInfanoId = fsTrio[2]
       if fsInfanoId != '' :
         self.tree.add_indis([fsInfanoId])
-        fsNamo = self.tree.indi[fsInfanoId].name
+        fsInfano = self.tree.indi[fsInfanoId]
+        fsNamo = fsInfano.name
       else :
+        fsInfano = None
         fsNamo = Name()
       self.modelKomp.add( ( coloro ,_trans.gettext('Child')
-                  , ''
-                  , fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , '', ''
+                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
              ) )
     return
 
