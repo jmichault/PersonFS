@@ -143,8 +143,10 @@ class Fact:
                     self.type = unquote(self.type[6:])
                 elif self.type not in FACT_TAGS:
                     self.type = None
-            if "date" in data:
+            if "date" in data and "formal" in data["date"]:
                 self.date = data["date"]["formal"]
+            elif "date" in data and "original" in data["date"]:
+                self.date = data["date"]["original"]
             if "place" in data:
                 place = data["place"]
                 self.place = place["original"]

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-20 00:03+0200\n"
+"POT-Creation-Date: 2022-10-22 15:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,55 +29,63 @@ msgstr ""
 msgid "FS"
 msgstr ""
 
-#: PersonFS.py:165
+#: PersonFS.py:174
 msgid "Coloro"
 msgstr ""
 
-#: PersonFS.py:166
+#: PersonFS.py:175
 msgid "Propreco"
 msgstr ""
 
-#: PersonFS.py:167
+#: PersonFS.py:176
+msgid "Dato"
+msgstr ""
+
+#: PersonFS.py:177
 msgid "Gramps Valoro"
 msgstr ""
 
-#: PersonFS.py:168
+#: PersonFS.py:178
+msgid "FS Dato"
+msgstr ""
+
+#: PersonFS.py:179
 msgid "FS Valoro"
 msgstr ""
 
-#: PersonFS.py:252 PersonFS.py:258
+#: PersonFS.py:351 PersonFS.py:357
 msgid "male"
 msgstr ""
 
-#: PersonFS.py:254 PersonFS.py:260
+#: PersonFS.py:353 PersonFS.py:359
 msgid "female"
 msgstr ""
 
-#: PersonFS.py:256 PersonFS.py:262
+#: PersonFS.py:355 PersonFS.py:361
 msgid "unknown"
 msgstr ""
 
-#: PersonFS.py:266
+#: PersonFS.py:365
 msgid "Sekso:"
 msgstr ""
 
-#: PersonFS.py:278
+#: PersonFS.py:377
 msgid "Name"
 msgstr ""
 
-#: PersonFS.py:358
+#: PersonFS.py:455
 msgid "Father"
 msgstr ""
 
-#: PersonFS.py:365
+#: PersonFS.py:462
 msgid "Mother"
 msgstr ""
 
-#: PersonFS.py:385
+#: PersonFS.py:504 PersonFS.py:560
 msgid "Spouse"
 msgstr ""
 
-#: PersonFS.py:392
+#: PersonFS.py:527 PersonFS.py:542 PersonFS.py:574 PersonFS.py:588
 msgid "Child"
 msgstr ""
 
@@ -110,4 +118,12 @@ msgstr ""
 
 #: PersonFS.glade:248
 msgid "FamilySearch Identiga N° :"
+msgstr ""
+
+#: PersonFS.glade:307
+msgid "Ŝarĝi edzoj kaj infanoj"
+msgstr ""
+
+#: PersonFS.glade:311
+msgid "Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj"
 msgstr ""

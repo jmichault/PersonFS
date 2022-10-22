@@ -303,7 +303,18 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkButton" id="ButEdzoj">
+                <property name="label" translatable="yes">Ŝarĝi edzojn kaj infanojn</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj</property>
+                <signal name="clicked" handler="on_ButEdzoj_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">2</property>
+              </packing>
             </child>
             <child>
               <placeholder/>
