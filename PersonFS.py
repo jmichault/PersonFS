@@ -51,6 +51,8 @@ from gramps.gui.listmodel import ListModel, NOSORT, COLOR
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
+from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS
+
 # lokaloj 
 from getmyancestors.classes.session import Session
 from getmyancestors.classes.constants import FACT_TAGS
@@ -390,6 +392,7 @@ class PersonFS(Gramplet):
 		, '', fsNamo.surname +  ', ' + fsNamo.given
 		) )
     fsNamoj = fsPerso.nicknames.union(fsPerso.birthnames)
+    #fsNamoj = fsPerso.nicknames.union(fsPerso.birthnames).union(fsPerso.aka)
     for grNamo in person.alternate_names :
       fsNamo = Name()
       coloro = "yellow"
@@ -424,6 +427,7 @@ class PersonFS(Gramplet):
     else :
       grFaktoDato = ''
       grFaktoLoko = ''
+    # FARINDAĴO : norma loknomo
 
     fsFakto = self.get_fsfact (fsPerso, fsFact )
     fsFaktoDato = ''
@@ -441,6 +445,73 @@ class PersonFS(Gramplet):
     self.modelKomp.add( ( coloro , titolo
 		, grFaktoDato , grFaktoLoko
 		, fsFaktoDato , fsFaktoLoko
+		) )
+    return
+
+  def aldAliajFaktojKomp(self, person, fsPerso ) :
+    grFaktoj = person.event_ref_list
+    fsFaktoj = fsPerso.facts.copy()
+    for grFakto in grFaktoj :
+      if int(grFakto.get_role()) != EventRoleType.PRIMARY:
+        continue
+      event = self.dbstate.db.get_event_from_handle(grFakto.ref)
+      if event.type == EventType.BIRTH or event.type == EventType.DEATH or event.type == EventType.BAPTISM or event.type == EventType.BURIAL :
+        continue
+      titolo = str(EventType(event.type))
+      grFaktoPriskribo = event.description or ''
+      grFaktoDato = grdato_al_formal(event.date)
+      if event.place and event.place != None :
+        place = self.dbstate.db.get_place_from_handle(event.place)
+        grFaktoLoko = place.name.value
+      else :
+        grFaktoLoko = ''
+      # FARINDAĴO : norma loknomo
+      if grFaktoLoko == '' :
+        grValoro = grFaktoPriskribo
+      else :
+        grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+      coloro="orange"
+      fsFaktoDato = ''
+      fsFaktoLoko = ''
+      fsFaktoPriskribo = ''
+      for fsFakto in fsFaktoj :
+        tag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+        if not tag :
+          continue
+        grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+        if tag != grTag :
+          continue
+        fsFaktoDato = fsFakto.date or ''
+        if (fsFaktoDato != grFaktoDato) :
+          fsFaktoDato = ''
+          continue
+        fsFaktoLoko = fsFakto.place or ''
+        fsFaktoPriskribo = fsFakto.value or ''
+        coloro = "green"
+        fsFaktoj.remove(fsFakto)
+        break
+      if fsFaktoLoko == '' :
+        fsValoro = fsFaktoPriskribo
+      else :
+        fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+      self.modelKomp.add( ( coloro , titolo
+		, grFaktoDato , grValoro
+		, fsFaktoDato , fsValoro
+		) )
+      coloro = "yellow"
+      for fsFakto in fsFaktoj :
+        if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
+          continue
+        fsFaktoDato = fsFakto.date or ''
+        fsFaktoLoko = fsFakto.place or ''
+        fsFaktoPriskribo = fsFakto.value or ''
+        if fsFaktoLoko == '' :
+          fsValoro = fsFaktoPriskribo
+        else :
+          fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+        self.modelKomp.add( ( coloro , titolo
+		, '' , ''
+		, fsFaktoDato , fsValoro
 		) )
     return
 
@@ -674,8 +745,9 @@ class PersonFS(Gramplet):
     self.aldGepKomp( person, fsPerso)
     self.aldEdzKomp( person, fsPerso, fsid)
 
-    # FARINDAĴOJ : okupo, titolo, religio, aliaj faktoj/eventoj, fontoj, notoj, …
+    # FARINDAĴOJ : okupo, titolo, religio, aliaj faktoj/eventoj, fontoj, notoj, memoroj, attributoj …
+    self.aldAliajFaktojKomp( person, fsPerso)
 
     return
 
-  # FARINDAĴOJ : redundoj, esploro, importado, …
+  # FARINDAĴOJ : kopii, serĉi, redundoj, esploro, importado, …
