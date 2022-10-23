@@ -389,6 +389,26 @@ class PersonFS(Gramplet):
 		, '', grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
 		, '', fsNamo.surname +  ', ' + fsNamo.given
 		) )
+    fsNamoj = fsPerso.nicknames.union(fsPerso.birthnames)
+    for grNamo in person.alternate_names :
+      fsNamo = Name()
+      coloro = "yellow"
+      for x in fsNamoj :
+        if (grNamo.get_primary_surname().surname == x.surname) and (grNamo.first_name == x.given) :
+          fsNamo = x
+          coloro = "green"
+          fsNamoj.remove(x)
+          break
+      self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
+		, '', grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
+		, '', fsNamo.surname +  ', ' + fsNamo.given
+		) )
+    coloro = "yellow"
+    for fsNamo in fsNamoj :
+      self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
+		, '', ''
+		, '', fsNamo.surname +  ', ' + fsNamo.given
+		) )
     return
 
   def aldFaktoKomp(self, person, fsPerso, grEvent , fsFact ) :
