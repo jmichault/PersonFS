@@ -152,7 +152,7 @@ class Fact:
                 self.place = place["original"]
                 if "description" in place and place["description"][1:] in tree.places:
                     self.map = tree.places[place["description"][1:]]
-            if "changeMessage" in data["attribution"]:
+            if "attribution" in data and "changeMessage" in data["attribution"]:
                 self.note = Note(data["attribution"]["changeMessage"], tree)
             if self.type == "http://gedcomx.org/Death" and not (
                 self.date or self.place
@@ -706,6 +706,9 @@ class Tree:
                                 self.indi[person2].spouses.add(
                                     (person1, person2, relfid)
                                 )
+                            self.add_fam(person1,person2)
+                            family = self.fam[(person1, person2)]
+                            family.add_marriage(relfid)
             new_fids = new_fids[MAX_PERSONS:]
 
     def add_fam(self, father, mother):

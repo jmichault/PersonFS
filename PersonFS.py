@@ -51,7 +51,7 @@ from gramps.gui.listmodel import ListModel, NOSORT, COLOR
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
-from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS
+from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
 
 # lokaloj 
 from getmyancestors.classes.session import Session
@@ -475,11 +475,11 @@ class PersonFS(Gramplet):
       fsFaktoLoko = ''
       fsFaktoPriskribo = ''
       for fsFakto in fsFaktoj :
-        tag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-        if not tag :
+        gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+        if not gedTag :
           continue
         grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
-        if tag != grTag :
+        if gedTag != grTag :
           continue
         fsFaktoDato = fsFakto.date or ''
         if (fsFaktoDato != grFaktoDato) :
@@ -498,18 +498,24 @@ class PersonFS(Gramplet):
 		, grFaktoDato , grValoro
 		, fsFaktoDato , fsValoro
 		) )
-      coloro = "yellow"
-      for fsFakto in fsFaktoj :
-        if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
-          continue
-        fsFaktoDato = fsFakto.date or ''
-        fsFaktoLoko = fsFakto.place or ''
-        fsFaktoPriskribo = fsFakto.value or ''
-        if fsFaktoLoko == '' :
-          fsValoro = fsFaktoPriskribo
-        else :
-          fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
-        self.modelKomp.add( ( coloro , titolo
+    coloro = "yellow"
+    for fsFakto in fsFaktoj :
+      if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
+        continue
+      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+      evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 
+      if evtType :
+        titolo = str(EventType(evtType))
+      else :
+        titolo = gedTag
+      fsFaktoDato = fsFakto.date or ''
+      fsFaktoLoko = fsFakto.place or ''
+      fsFaktoPriskribo = fsFakto.value or ''
+      if fsFaktoLoko == '' :
+        fsValoro = fsFaktoPriskribo
+      else :
+        fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+      self.modelKomp.add( ( coloro , titolo
 		, '' , ''
 		, fsFaktoDato , fsValoro
 		) )
@@ -596,14 +602,14 @@ class PersonFS(Gramplet):
         edzoNamo = edzo.primary_name
         edzoFsid = getfsid(edzo)
         fsEdzoId = ''
-        for fsFamilio in fsEdzoj :
-          if fsFamilio[0] == edzoFsid :
-            fsEdzoId = fsFamilio[0]
-            fsEdzoj.remove(fsFamilio)
+        for fsEdzTrio in fsEdzoj :
+          if fsEdzTrio[0] == edzoFsid :
+            fsEdzoId = fsEdzTrio[0]
+            fsEdzoj.remove(fsEdzTrio)
             break
-          elif fsFamilio[1] == edzoFsid :
-            fsEdzoId = fsFamilio[1]
-            fsEdzoj.remove(fsFamilio)
+          elif fsEdzTrio[1] == edzoFsid :
+            fsEdzoId = fsEdzTrio[1]
+            fsEdzoj.remove(fsEdzTrio)
             break
         
         coloro = "orange"
@@ -618,6 +624,68 @@ class PersonFS(Gramplet):
                   , self.grperso_datoj(edzo) , edzoNamo.get_primary_surname().surname + ', ' + edzoNamo.first_name + ' [' + edzoFsid + ']'
 		  , self.fsperso_datoj(fsEdzo) , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
              ) )
+        # FARINDAĴOJ : familiaj eventoj (edziĝo, …)
+        fsFamilio = self.fs_Tree.fam[(fsEdzTrio[0], fsEdzTrio[1])]
+        fsFaktoj = fsFamilio.facts.copy()
+        for eventref in family.get_event_ref_list() :
+          event = self.dbstate.db.get_event_from_handle(eventref.ref)
+          titolo = str(EventType(event.type))
+          grFaktoPriskribo = event.description or ''
+          grFaktoDato = grdato_al_formal(event.date)
+          if event.place and event.place != None :
+            place = self.dbstate.db.get_place_from_handle(event.place)
+            grFaktoLoko = place.name.value
+          else :
+            grFaktoLoko = ''
+          # FARINDAĴO : norma loknomo
+          if grFaktoLoko == '' :
+            grValoro = grFaktoPriskribo
+          else :
+            grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+          coloro="orange"
+          fsFaktoDato = ''
+          fsFaktoLoko = ''
+          fsFaktoPriskribo = ''
+          for fsFakto in fsFaktoj :
+            gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+            grTag = FAMILYCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+            if gedTag != grTag :
+              continue
+            fsFaktoDato = fsFakto.date or ''
+            if (fsFaktoDato == grFaktoDato) :
+              coloro = "green"
+            fsFaktoLoko = fsFakto.place or ''
+            fsFaktoPriskribo = fsFakto.value or ''
+            fsFaktoj.remove(fsFakto)
+            break
+          if fsFaktoLoko == '' :
+            fsValoro = fsFaktoPriskribo
+          else :
+            fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+          self.modelKomp.add( ( coloro , ' '+titolo
+    		, grFaktoDato , grValoro
+    		, fsFaktoDato , fsValoro
+    		) )
+        coloro = "yellow"
+        for fsFakto in fsFaktoj :
+          gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+          evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 
+          if evtType :
+            titolo = str(EventType(evtType))
+          else :
+            titolo = gedTag
+          fsFaktoDato = fsFakto.date or ''
+          fsFaktoLoko = fsFakto.place or ''
+          fsFaktoPriskribo = fsFakto.value or ''
+          if fsFaktoLoko == '' :
+            fsValoro = fsFaktoPriskribo
+          else :
+            fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+          self.modelKomp.add( ( coloro , ' '+titolo
+		, '' , ''
+		, fsFaktoDato , fsValoro
+		) )
+          
         for child_ref in family.get_child_ref_list():
           infano = self.dbstate.db.get_person_from_handle(child_ref.ref)
           infanoNamo = infano.primary_name
@@ -660,11 +728,11 @@ class PersonFS(Gramplet):
         for fsTrio in toRemove :
           fsInfanoj.remove(fsTrio)
     coloro = "orange"
-    for fsFamilio in fsEdzoj :
-      if fsFamilio[0] == fsid :
-        fsEdzoId = fsFamilio[1]
+    for fsEdzTrio in fsEdzoj :
+      if fsEdzTrio[0] == fsid :
+        fsEdzoId = fsEdzTrio[1]
       else :
-        fsEdzoId = fsFamilio[0]
+        fsEdzoId = fsEdzTrio[0]
       fsEdzo = PersonFS.fs_Tree.indi.get(fsEdzoId)
       if fsEdzo :
         fsNamo = fsEdzo.name
@@ -745,8 +813,9 @@ class PersonFS(Gramplet):
     self.aldGepKomp( person, fsPerso)
     self.aldEdzKomp( person, fsPerso, fsid)
 
-    # FARINDAĴOJ : okupo, titolo, religio, aliaj faktoj/eventoj, fontoj, notoj, memoroj, attributoj …
     self.aldAliajFaktojKomp( person, fsPerso)
+
+    # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …
 
     return
 
