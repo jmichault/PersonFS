@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-22 15:40+0200\n"
-"PO-Revision-Date: 2022-10-19 15:56+0200\n"
+"POT-Creation-Date: 2022-10-29 20:54+0200\n"
+"PO-Revision-Date: 2022-10-29 20:54+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -30,63 +30,95 @@ msgstr "interface pour FamilySearch"
 msgid "FS"
 msgstr ""
 
-#: PersonFS.py:174
+#: PersonFS.py:185
 msgid "Coloro"
 msgstr "Couleur"
 
-#: PersonFS.py:175
+#: PersonFS.py:186
 msgid "Propreco"
 msgstr "Propriété"
 
-#: PersonFS.py:176
+#: PersonFS.py:187
 msgid "Dato"
 msgstr "Date"
 
-#: PersonFS.py:177
+#: PersonFS.py:188
 msgid "Gramps Valoro"
 msgstr "Valeur"
 
-#: PersonFS.py:178
+#: PersonFS.py:189
 msgid "FS Dato"
 msgstr "Date FS"
 
-#: PersonFS.py:179
+#: PersonFS.py:190
 msgid "FS Valoro"
 msgstr "valeur FS"
 
-#: PersonFS.py:351 PersonFS.py:357
+#: PersonFS.py:212
+msgid "Aldoni FamilySearch ID"
+msgstr "Ajouter l'ID FamilySearch"
+
+#: PersonFS.py:249
+msgid "score"
+msgstr ""
+
+#: PersonFS.py:250
+msgid "FS Id"
+msgstr "ID FS"
+
+#: PersonFS.py:251
+msgid "Nomo, antaŭnomo"
+msgstr "Nom, prénom"
+
+#: PersonFS.py:252
+msgid "Birth"
+msgstr ""
+
+#: PersonFS.py:253
+msgid "Death"
+msgstr ""
+
+#: PersonFS.py:254
+msgid "Parents"
+msgstr ""
+
+#: PersonFS.py:255
+msgid "Spouses"
+msgstr ""
+
+#: PersonFS.py:571 PersonFS.py:577
 msgid "male"
 msgstr ""
 
-#: PersonFS.py:353 PersonFS.py:359
+#: PersonFS.py:573 PersonFS.py:579
 msgid "female"
 msgstr ""
 
-#: PersonFS.py:355 PersonFS.py:361
+#: PersonFS.py:575 PersonFS.py:581
 msgid "unknown"
 msgstr ""
 
-#: PersonFS.py:365
+#: PersonFS.py:585
 msgid "Sekso:"
 msgstr "Sexe :"
 
-#: PersonFS.py:377
+#: PersonFS.py:597 PersonFS.py:612 PersonFS.py:618
 msgid "Name"
 msgstr ""
 
-#: PersonFS.py:455
+#: PersonFS.py:778
 msgid "Father"
 msgstr ""
 
-#: PersonFS.py:462
+#: PersonFS.py:785
 msgid "Mother"
 msgstr ""
 
-#: PersonFS.py:504 PersonFS.py:560
+#: PersonFS.py:830 PersonFS.py:948
 msgid "Spouse"
 msgstr ""
 
-#: PersonFS.py:527 PersonFS.py:542 PersonFS.py:574 PersonFS.py:588
+#: PersonFS.py:915 PersonFS.py:930 PersonFS.py:962 PersonFS.py:976
 msgid "Child"
 msgstr ""
 
@@ -112,22 +144,54 @@ msgstr "compte FamilySearch :"
 msgid "FamilySearch pasvorto :"
 msgstr "mot de passe FamilySearch"
 
-#: PersonFS.glade:168
-msgid "Gramps Individuo/FamilySearch Individuo"
-msgstr "individu Gramps/individu FamilySearch"
-
-#: PersonFS.glade:210
+#: PersonFS.glade:165 PersonFS.glade:465
 msgid "xxxx-xxx"
 msgstr ""
 
-#: PersonFS.glade:248
+#: PersonFS.glade:182
+msgid "Ligi"
+msgstr "Lier"
+
+#: PersonFS.glade:218
+msgid "Nomo :"
+msgstr "Nom :"
+
+#: PersonFS.glade:239
+msgid "Antaŭnomo :"
+msgstr "Prénom :"
+
+#: PersonFS.glade:260
+msgid "Sekso :"
+msgstr "Sexe :"
+
+#: PersonFS.glade:281
+msgid "Birdo :"
+msgstr "Naissance :"
+
+#: PersonFS.glade:302
+msgid "Loko :"
+msgstr "Lieu :"
+
+#: PersonFS.glade:370
+msgid "Lanĉi"
+msgstr "Exécuter"
+
+#: PersonFS.glade:423
+msgid "Gramps Individuo/FamilySearch Individuo"
+msgstr "individu Gramps/individu FamilySearch"
+
+#: PersonFS.glade:492
 msgid "FamilySearch Identiga N° :"
 msgstr "N° d'identification FamilySearch"
 
-#: PersonFS.glade:307
+#: PersonFS.glade:531
 msgid "Ŝarĝi edzojn kaj infanojn"
 msgstr "Charger conjoints et enfants"
 
-#: PersonFS.glade:311
+#: PersonFS.glade:535
 msgid "Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj"
 msgstr "Charger les détails de tous les conjoints et enfants"
+
+#: PersonFS.glade:566
+msgid "Serĉi"
+msgstr "Chercher"

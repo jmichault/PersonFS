@@ -35,12 +35,13 @@ from gi.repository import Gtk
 # Gramps modules
 #
 #------------------------------------------------------------------------
+from gramps.gen.db import DbTxn
 from gramps.gen.config import config
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
@@ -57,7 +58,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from getmyancestors.classes.session import Session
 from getmyancestors.classes.constants import FACT_TAGS
 from getmyancestors.classes.session import Session
-from getmyancestors.classes.tree import Tree, Name, Indi
+from getmyancestors.classes.tree import Tree, Name, Indi, Fact
 
 import sys
 import os
@@ -82,7 +83,7 @@ _ = _trans.gettext
 GRAMPLET_CONFIG_NAME = "PersonFS"
 CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_id", '')
-#CONFIG.register("preferences.fs_pasvorto", '') #
+CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
 
 
@@ -137,13 +138,14 @@ class PersonFS(Gramplet):
   fs_pasvorto = ''
   fs_Session = None
   fs_Tree = None
+  Sercxi = None
 
   def init(self):
     """
     " kreas GUI kaj konektas al FamilySearch
     """
     PersonFS.fs_id = CONFIG.get("preferences.fs_id")
-    #PersonFS.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+    PersonFS.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
@@ -157,11 +159,13 @@ class PersonFS(Gramplet):
 
   def konekti_FS(self):
     if not PersonFS.fs_Session:
-      PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+      PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+      #PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
     if not PersonFS.fs_Session.logged:
       return
     if not PersonFS.fs_Tree:
       PersonFS.fs_Tree = Tree(PersonFS.fs_Session)
+      PersonFS.fs_Tree.getsources = False
 
   def krei_gui(self):
     """
@@ -175,7 +179,7 @@ class PersonFS(Gramplet):
     glade_file = base + os.sep + "PersonFS.glade"
     self.top.add_from_file(glade_file)
 
-    self.res = self.top.get_object("PersonFSRes")
+    self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
     titles = [  
                 (_('Coloro'), 1, 20,COLOR),
@@ -189,9 +193,212 @@ class PersonFS(Gramplet):
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
+            "on_ButSercxi_clicked"      : self.ButSercxi_clicked,
+            "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
+            "on_ButLigi_clicked"      : self.ButLigi_clicked,
 	})
 
     return self.res
+
+
+  def ButLigi_clicked(self, dummy):
+    model, iter_ = self.top.get_object("PersonFSResRes").get_selection().get_selected()
+    if iter_ :
+      fsid = model.get_value(iter_, 1)
+      print(fsid)
+      active_handle = self.get_active('Person')
+      person = self.dbstate.db.get_person_from_handle(active_handle)
+      attr = None
+      with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as trans:
+        for attr in person.get_attribute_list():
+          if attr.get_type() == '_FSFTID':
+            attr.set_value(fsid)
+            # ou lancement du lien vers la fusion dans familysearch ?
+            break
+        if not attr :
+          attr = Attribute()
+          attr.set_type('_FSFTID')
+          attr.set_value(fsid)
+          person.add_attribute(attr)
+        self.dbstate.db.commit_person(person,trans)
+      self.Sercxi.hide()
+    return
+
+  def SerSelCxangxo(self, dummy):
+    model, iter_ = self.top.get_object("PersonFSResRes").get_selection().get_selected()
+    if iter_ :
+      fsid = model.get_value(iter_, 1)
+      print(fsid)
+      self.top.get_object("LinkoButonoSercxi").set_label(fsid)
+      lien = 'https://familysearch.org/tree/person/' + fsid
+      self.top.get_object("LinkoButonoSercxi").set_uri(lien)
+    else :
+      self.top.get_object("LinkoButonoSercxi").set_label('xxxx-xxx')
+      self.top.get_object("LinkoButonoSercxi").set_uri('https://familysearch.org/')
+    return
+
+  def ButSercxi_clicked(self, dummy):
+    if not self.Sercxi :
+      self.Sercxi = self.top.get_object("PersonFSRes")
+      self.Sercxi.set_transient_for(self.uistate.window)
+      parent_modal = self.uistate.window.get_modal()
+      if parent_modal:
+        self.uistate.window.set_modal(False)
+      TreeRes = self.top.get_object("PersonFSResRes")
+      titles = [  
+                (_('score'), 1, 80),
+                (_('FS Id'), 2, 90),
+                (_('Nomo, antaŭnomo'), 3, 200),
+                (_('Birth'), 4, 250),
+                (_('Death'), 5, 250),
+                (_('Parents'), 6, 250),
+                (_('Spouses'), 7, 250),
+             ]
+      self.modelRes = ListModel(TreeRes, titles,self.SerSelCxangxo)
+    active_handle = self.get_active('Person')
+    person = self.dbstate.db.get_person_from_handle(active_handle)
+    grNomo = person.primary_name
+    self.top.get_object("fs_nomo_eniro").set_text(person.primary_name.get_primary_surname().surname)
+    self.top.get_object("fs_anomo_eniro").set_text(person.primary_name.first_name)
+    if person.get_gender() == Person.MALE :
+      self.top.get_object("fs_sekso_eniro").set_text('Male')
+    elif person.get_gender() == Person.FEMALE :
+      self.top.get_object("fs_sekso_eniro").set_text('Female')
+    grBirth = self.get_grevent(person, EventType(EventType.BIRTH))
+    self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
+    if grBirth.place and grBirth.place != None :
+      place = self.dbstate.db.get_place_from_handle(grBirth.place)
+      self.top.get_object("fs_loko_eniro").set_text( place.name.value)
+    else :
+      self.top.get_object("fs_loko_eniro").set_text( '')
+
+    self.ButLancxi_clicked(None)
+    self.Sercxi.show()
+    res = self.Sercxi.run()
+    print ("res = " + str(res))
+    self.Sercxi.hide()
+
+    return
+
+  def ButLancxi_clicked(self, dummy):
+    self.modelRes.clear()
+    mendo = "/platform/tree/search?"
+    grNomo = self.top.get_object("fs_nomo_eniro").get_text()
+    if grNomo :
+      mendo = mendo + "q.surname=\"%s\"&" % grNomo
+    grANomo = self.top.get_object("fs_anomo_eniro").get_text()
+    if grANomo :
+      mendo = mendo + "q.givenName=\"%s\"&" % grANomo
+    sekso = self.top.get_object("fs_sekso_eniro").get_text()
+    if sekso :
+      mendo = mendo + "q.sex=%s&" % sekso
+    birdo = self.top.get_object("fs_birdo_eniro").get_text()
+    if birdo :
+      mendo = mendo + "q.birthLikeDate=%s&" % birdo
+    loko = self.top.get_object("fs_loko_eniro").get_text()
+    if loko :
+      mendo = mendo + "q.anyPlace=\"%s\"&" % loko
+    mendo = mendo + "offset=0&count=10"
+    datoj = self.fs_Tree.fs.get_url(
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+                )
+    if not datoj :
+      return
+    tot = datoj["results"]
+    print ("nb résultats = "+str(tot))
+    for entry in datoj["entries"] :
+      print (entry.get("id")+ ";  score = "+str(entry.get("score")))
+      fsId = entry.get("id")
+      data=entry["content"]["gedcomx"]
+      if "places" in data:
+        for place in data["places"]:
+          if place["id"] not in self.fs_Tree.places:
+            print(" ajout place : "+place["id"])
+            self.fs_Tree.places[place["id"]] = (
+                                str(place["latitude"]),
+                                str(place["longitude"]),
+                            )
+      father = None
+      mother = None
+      if "persons" in data:
+        for person in data["persons"]:
+          #from objbrowser import browse ;browse(locals())
+          self.fs_Tree.indi[person["id"]] = Indi(person["id"], self.fs_Tree)
+          self.fs_Tree.indi[person["id"]].add_data(person)
+          print("   person:"+person["id"])
+          if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
+            print("   asc")
+            if person["gender"]["type"] == "http://gedcomx.org/Female" :
+              print("     mother")
+              mother=self.fs_Tree.indi[person["id"]]
+            elif person["gender"]["type"] == "http://gedcomx.org/Male" :
+              print("     father")
+              father=self.fs_Tree.indi[person["id"]]
+      if "relationships" in data:
+        for rel in data["relationships"]:
+          if rel["type"] == "http://gedcomx.org/Couple":
+            person1 = rel["person1"]["resourceId"]
+            person2 = rel["person2"]["resourceId"]
+            #relfid = rel["id"]
+            #if person1 in self.fs_Tree.indi:
+            #    self.fs_Tree.indi[person1].spouses.add(
+            #        (person1, person2, relfid)
+            #    )
+            #if person2 in self.fs_Tree.indi:
+            #    self.fs_Tree.indi[person2].spouses.add(
+            #        (person1, person2, relfid)
+            #    )
+            self.fs_Tree.add_fam(person1,person2)
+            family = self.fs_Tree.fam[(person1, person2)]
+            #family.add_marriage(relfid)
+          elif rel["type"] == "http://gedcomx.org/ParentChild":
+            person1Id = rel["person1"]["resourceId"]
+            person2Id = rel["person2"]["resourceId"]
+            print("   ParentChild;p1="+person1Id+";p2="+person2Id)
+            if person2Id == fsId :
+              person1=self.fs_Tree.indi[person1Id]
+              if not father and person1.gender == "M" :
+                father = person1
+              elif not mother and person1.gender == "F" :
+                mother = person1
+              
+      fsPerso = PersonFS.fs_Tree.indi.get(fsId) or Indi()
+      fsNomo = fsPerso.name or Name()
+      fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or Fact()
+      fsBirthLoko = fsBirth.place 
+      if fsBirthLoko :
+        fsBirth = fsBirth.date + ' \n@ ' +fsBirthLoko
+      else :
+        fsBirth = fsBirth.date or ''
+      fsDeath = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' ) or Fact()
+      fsDeathLoko = fsDeath.place 
+      if fsDeathLoko :
+        fsDeath = fsDeath.date + ' \n@ ' +fsDeathLoko
+      else :
+        fsDeath = fsDeath.date or ''
+      #from objbrowser import browse ;browse(locals())
+      if father and father.name :
+        fsPatroNomo = father.name
+      else:
+        fsPatroNomo = Name()
+      if mother and mother.name :
+        fsPatrinoNomo = mother.name
+      else:
+        fsPatrinoNomo = Name()
+      self.modelRes.add( ( 
+		  str(entry.get("score"))
+		, fsId
+		, fsNomo.surname +  ', ' + fsNomo.given
+		, fsBirth
+		, fsDeath
+                , fsPatroNomo.surname +  ', ' + fsPatroNomo.given
+                   + '\n'+fsPatrinoNomo.surname +  ', ' + fsPatrinoNomo.given
+		) )
+    self.Sercxi.show()
+
+      
+    
+    return
 
   def ButEdzoj_clicked(self, dummy):
     active_handle = self.get_active('Person')
@@ -221,7 +428,7 @@ class PersonFS(Gramplet):
       PersonFS.fs_id = fsid.get_text()
       PersonFS.fs_pasvorto = fspv.get_text()
       CONFIG.set("preferences.fs_id", PersonFS.fs_id)
-      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+      CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
       CONFIG.save()
       self.konekti_FS()
     
@@ -381,36 +588,36 @@ class PersonFS(Gramplet):
 		) )
     return
 
-  def aldNamoKomp(self, person, fsPerso ) :
-    grNamo = person.primary_name
-    fsNamo = fsPerso.name or Name()
+  def aldNomoKomp(self, person, fsPerso ) :
+    grNomo = person.primary_name
+    fsNomo = fsPerso.name or Name()
     coloro = "orange"
-    if (grNamo.get_primary_surname().surname == fsNamo.surname) and (grNamo.first_name == fsNamo.given) :
+    if (grNomo.get_primary_surname().surname == fsNomo.surname) and (grNomo.first_name == fsNomo.given) :
       coloro = "green"
     self.modelKomp.add( ( coloro , _trans.gettext('Name')
-		, '', grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
-		, '', fsNamo.surname +  ', ' + fsNamo.given
+		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
-    fsNamoj = fsPerso.nicknames.union(fsPerso.birthnames)
-    #fsNamoj = fsPerso.nicknames.union(fsPerso.birthnames).union(fsPerso.aka)
-    for grNamo in person.alternate_names :
-      fsNamo = Name()
+    fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames)
+    #fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames).union(fsPerso.aka)
+    for grNomo in person.alternate_names :
+      fsNomo = Name()
       coloro = "yellow"
-      for x in fsNamoj :
-        if (grNamo.get_primary_surname().surname == x.surname) and (grNamo.first_name == x.given) :
-          fsNamo = x
+      for x in fsNomoj :
+        if (grNomo.get_primary_surname().surname == x.surname) and (grNomo.first_name == x.given) :
+          fsNomo = x
           coloro = "green"
-          fsNamoj.remove(x)
+          fsNomoj.remove(x)
           break
       self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
-		, '', grNamo.get_primary_surname().surname + ', ' + grNamo.first_name 
-		, '', fsNamo.surname +  ', ' + fsNamo.given
+		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
     coloro = "yellow"
-    for fsNamo in fsNamoj :
+    for fsNomo in fsNomoj :
       self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
 		, '', ''
-		, '', fsNamo.surname +  ', ' + fsNamo.given
+		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
     return
 
@@ -599,7 +806,7 @@ class PersonFS(Gramplet):
           edzo = self.dbstate.db.get_person_from_handle(edzo_handle)
         else :
           edzo = Person()
-        edzoNamo = edzo.primary_name
+        edzoNomo = edzo.primary_name
         edzoFsid = getfsid(edzo)
         fsEdzoId = ''
         for fsEdzTrio in fsEdzoj :
@@ -617,12 +824,12 @@ class PersonFS(Gramplet):
           coloro = "green"
         fsEdzo = PersonFS.fs_Tree.indi.get(fsEdzoId)
         if fsEdzo :
-          fsNamo = fsEdzo.name
+          fsNomo = fsEdzo.name
         else :
-          fsNamo = Name()
+          fsNomo = Name()
         self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
-                  , self.grperso_datoj(edzo) , edzoNamo.get_primary_surname().surname + ', ' + edzoNamo.first_name + ' [' + edzoFsid + ']'
-		  , self.fsperso_datoj(fsEdzo) , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
+                  , self.grperso_datoj(edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
              ) )
         # FARINDAĴOJ : familiaj eventoj (edziĝo, …)
         fsFamilio = self.fs_Tree.fam[(fsEdzTrio[0], fsEdzTrio[1])]
@@ -688,7 +895,7 @@ class PersonFS(Gramplet):
           
         for child_ref in family.get_child_ref_list():
           infano = self.dbstate.db.get_person_from_handle(child_ref.ref)
-          infanoNamo = infano.primary_name
+          infanoNomo = infano.primary_name
           infanoFsid = getfsid(infano)
           fsInfanoId = ''
           for fsTrio in fsInfanoj :
@@ -702,12 +909,12 @@ class PersonFS(Gramplet):
             coloro = "green"
           fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
           if fsInfano :
-            fsNamo = fsInfano.name
+            fsNomo = fsInfano.name
           else :
-            fsNamo = Name()
+            fsNomo = Name()
           self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
-                  , self.grperso_datoj(infano) , infanoNamo.get_primary_surname().surname + ', ' + infanoNamo.first_name + ' [' + infanoFsid + ']'
-                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , self.grperso_datoj(infano) , infanoNomo.get_primary_surname().surname + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
+                  , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
              ) )
         toRemove=set()
         for fsTrio in fsInfanoj :
@@ -717,12 +924,12 @@ class PersonFS(Gramplet):
               coloro = "orange"
               fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
               if fsInfano :
-                fsNamo = fsInfano.name
+                fsNomo = fsInfano.name
               else :
-                fsNamo = Name()
+                fsNomo = Name()
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
                   , '', ''
-                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
                  ) )
               toRemove.add(fsTrio)
         for fsTrio in toRemove :
@@ -735,12 +942,12 @@ class PersonFS(Gramplet):
         fsEdzoId = fsEdzTrio[0]
       fsEdzo = PersonFS.fs_Tree.indi.get(fsEdzoId)
       if fsEdzo :
-        fsNamo = fsEdzo.name
+        fsNomo = fsEdzo.name
       else :
-        fsNamo = Name()
+        fsNomo = Name()
       self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
                   , '', ''
-		  , self.fsperso_datoj(fsEdzo) , fsNamo.surname +  ', ' + fsNamo.given  + ' [' + fsEdzoId  + ']'
+		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
              ) )
       toRemove=set()
       for fsTrio in fsInfanoj :
@@ -749,12 +956,12 @@ class PersonFS(Gramplet):
               fsInfanoId = fsTrio[2]
               fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
               if fsInfano :
-                fsNamo = fsInfano.name
+                fsNomo = fsInfano.name
               else :
-                fsNamo = Name()
+                fsNomo = Name()
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
                   , '', ''
-                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
                 ) )
               toRemove.add(fsTrio)
       for fsTrio in toRemove :
@@ -763,12 +970,12 @@ class PersonFS(Gramplet):
       fsInfanoId = fsTrio[2]
       fsInfano = PersonFS.fs_Tree.indi.get(fsInfanoId)
       if fsInfano :
-        fsNamo = fsInfano.name
+        fsNomo = fsInfano.name
       else :
-        fsNamo = Name()
+        fsNomo = Name()
       self.modelKomp.add( ( coloro ,_trans.gettext('Child')
                   , '', ''
-                  , self.fsperso_datoj(fsInfano), fsNamo.surname +  ', ' + fsNamo.given + ' [' + fsInfanoId + ']'
+                  , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
              ) )
     return
 
@@ -802,7 +1009,7 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_children([fsid])
 
 
-    self.aldNamoKomp( person, fsPerso)
+    self.aldNomoKomp( person, fsPerso)
     self.aldSeksoKomp( person, fsPerso)
 
     self.aldFaktoKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")

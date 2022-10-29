@@ -109,6 +109,7 @@ class Session:
             headers = {"Accept": "application/x-gedcomx-v1+json"}
         while True:
             try:
+                print("Downloading: " + url)
                 self.write_log("Downloading: " + url)
                 r = requests.get(
                     "https://familysearch.org" + url,
@@ -126,12 +127,17 @@ class Session:
             self.write_log("Status code: %s" % r.status_code)
             if r.status_code == 204:
                 return None
-            if r.status_code in {404, 405, 410, 500}:
-                self.write_log("WARNING: " + url)
-                return None
             if r.status_code == 401:
                 self.login()
                 continue
+            if r.status_code in {400, 404, 405, 406, 410, 500}:
+                self.write_log("WARNING: " + url)
+                self.write_log(r.json())
+                return None
+            #else:
+            #    self.write_log("WARNING: " + url)
+            #    self.write_log(r.json())
+            #    return None
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:

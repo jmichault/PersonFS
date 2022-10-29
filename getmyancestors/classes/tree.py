@@ -233,7 +233,7 @@ class Name:
                         self.prefix = z["value"]
                     if z["type"] == "http://gedcomx.org/Suffix":
                         self.suffix = z["value"]
-            if "changeMessage" in data["attribution"]:
+            if "attribution" in data and "changeMessage" in data["attribution"]:
                 self.note = Note(data["attribution"]["changeMessage"], tree)
 
     def print(self, file=sys.stdout, typ=None):
@@ -351,7 +351,7 @@ class Indi:
                         )
                     else:
                         self.facts.add(Fact(x, self.tree))
-            if "sources" in data:
+            if self.tree.getsources and "sources" in data:
                 sources = self.tree.fs.get_url(
                     "/platform/tree/persons/%s/sources" % self.fid
                 )
@@ -544,7 +544,7 @@ class Fam:
                 if "facts" in data["relationships"][0]:
                     for x in data["relationships"][0]["facts"]:
                         self.facts.add(Fact(x, self.tree))
-                if "sources" in data["relationships"][0]:
+                if self.tree.getsources and "sources" in data["relationships"][0]:
                     quotes = dict()
                     for x in data["relationships"][0]["sources"]:
                         quotes[x["descriptionId"]] = (
