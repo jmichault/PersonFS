@@ -697,7 +697,7 @@ class Tree:
                         if rel["type"] == "http://gedcomx.org/Couple":
                             person1 = rel["person1"]["resourceId"]
                             person2 = rel["person2"]["resourceId"]
-                            relfid = rel["id"]
+                            relfid = rel["id"] or 'xxxx'
                             if person1 in self.indi:
                                 self.indi[person1].spouses.add(
                                     (person1, person2, relfid)

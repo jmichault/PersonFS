@@ -138,6 +138,7 @@ class PersonFS(Gramplet):
   fs_pasvorto = ''
   fs_Session = None
   fs_Tree = None
+  fs_TreeSercxo = None
   Sercxi = None
 
   def init(self):
@@ -281,6 +282,9 @@ class PersonFS(Gramplet):
     return
 
   def ButLancxi_clicked(self, dummy):
+    if not PersonFS.fs_TreeSercxo:
+      PersonFS.fs_TreeSercxo = Tree(PersonFS.fs_Session)
+      PersonFS.fs_TreeSercxo.getsources = False
     self.modelRes.clear()
     mendo = "/platform/tree/search?"
     grNomo = self.top.get_object("fs_nomo_eniro").get_text()
@@ -299,7 +303,7 @@ class PersonFS(Gramplet):
     if loko :
       mendo = mendo + "q.anyPlace=\"%s\"&" % loko
     mendo = mendo + "offset=0&count=10"
-    datoj = self.fs_Tree.fs.get_url(
+    datoj = self.fs_TreeSercxo.fs.get_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
     if not datoj :
@@ -312,9 +316,9 @@ class PersonFS(Gramplet):
       data=entry["content"]["gedcomx"]
       if "places" in data:
         for place in data["places"]:
-          if place["id"] not in self.fs_Tree.places:
+          if place["id"] not in self.fs_TreeSercxo.places:
             print(" ajout place : "+place["id"])
-            self.fs_Tree.places[place["id"]] = (
+            self.fs_TreeSercxo.places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
                             )
@@ -323,46 +327,47 @@ class PersonFS(Gramplet):
       if "persons" in data:
         for person in data["persons"]:
           #from objbrowser import browse ;browse(locals())
-          self.fs_Tree.indi[person["id"]] = Indi(person["id"], self.fs_Tree)
-          self.fs_Tree.indi[person["id"]].add_data(person)
+          self.fs_TreeSercxo.indi[person["id"]] = Indi(person["id"], self.fs_TreeSercxo)
+          self.fs_TreeSercxo.indi[person["id"]].add_data(person)
           print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
             print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
               print("     mother")
-              mother=self.fs_Tree.indi[person["id"]]
+              mother=self.fs_TreeSercxo.indi[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
               print("     father")
-              father=self.fs_Tree.indi[person["id"]]
+              father=self.fs_TreeSercxo.indi[person["id"]]
+      fsPerso = PersonFS.fs_TreeSercxo.indi.get(fsId) or Indi()
       if "relationships" in data:
         for rel in data["relationships"]:
           if rel["type"] == "http://gedcomx.org/Couple":
-            person1 = rel["person1"]["resourceId"]
-            person2 = rel["person2"]["resourceId"]
-            #relfid = rel["id"]
-            #if person1 in self.fs_Tree.indi:
-            #    self.fs_Tree.indi[person1].spouses.add(
-            #        (person1, person2, relfid)
-            #    )
-            #if person2 in self.fs_Tree.indi:
-            #    self.fs_Tree.indi[person2].spouses.add(
-            #        (person1, person2, relfid)
-            #    )
-            self.fs_Tree.add_fam(person1,person2)
-            family = self.fs_Tree.fam[(person1, person2)]
-            #family.add_marriage(relfid)
+            person1Id = rel["person1"]["resourceId"]
+            person2Id = rel["person2"]["resourceId"]
+            relfid = rel.get("id")
+            if person1Id in PersonFS.fs_TreeSercxo.indi:
+              PersonFS.fs_TreeSercxo.indi[person1Id].spouses.add(
+                 (person1Id, person2Id, relfid)
+                )
+            if person2Id in PersonFS.fs_TreeSercxo.indi:
+              PersonFS.fs_TreeSercxo.indi[person2Id].spouses.add(
+                 (person1Id, person2Id, relfid)
+                )
+            self.fs_TreeSercxo.add_fam(person1Id, person2Id)
+            family = self.fs_TreeSercxo.fam[(person1Id, person2Id)]
+            if relfid:
+              family.add_marriage(relfid)
           elif rel["type"] == "http://gedcomx.org/ParentChild":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
             print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
-              person1=self.fs_Tree.indi[person1Id]
+              person1=self.fs_TreeSercxo.indi[person1Id]
               if not father and person1.gender == "M" :
                 father = person1
               elif not mother and person1.gender == "F" :
                 mother = person1
               
-      fsPerso = PersonFS.fs_Tree.indi.get(fsId) or Indi()
       fsNomo = fsPerso.name or Name()
       fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or Fact()
       fsBirthLoko = fsBirth.place 
@@ -385,6 +390,17 @@ class PersonFS(Gramplet):
         fsPatrinoNomo = mother.name
       else:
         fsPatrinoNomo = Name()
+      edzoj = ''
+      for fsEdzTrio in fsPerso.spouses :
+        if fsEdzTrio[0] == fsId:
+          edzoId = fsEdzTrio[1]
+        elif fsEdzTrio[1] == fsId:
+          edzoId = fsEdzTrio[0]
+        else: continue
+        fsEdzo = PersonFS.fs_TreeSercxo.indi.get(edzoId) or Indi()
+        fsEdzoNomo = fsEdzo.name or Name()
+        if edzoj != '': edzoj = edzoj + "\n"
+        edzoj = edzoj + fsEdzoNomo.surname +  ', ' + fsEdzoNomo.given
       self.modelRes.add( ( 
 		  str(entry.get("score"))
 		, fsId
@@ -393,6 +409,7 @@ class PersonFS(Gramplet):
 		, fsDeath
                 , fsPatroNomo.surname +  ', ' + fsPatroNomo.given
                    + '\n'+fsPatrinoNomo.surname +  ', ' + fsPatrinoNomo.given
+		, edzoj
 		) )
     self.Sercxi.show()
 
