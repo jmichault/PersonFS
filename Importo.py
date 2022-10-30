@@ -1,3 +1,28 @@
+#
+# interfaco por familysearch
+#
+# Kopirajto © 2022 Jean Michault
+# Licenco «GPL-3.0-or-later»
+#
+# Ĉi tiu programo estas libera programaro; vi povas redistribui ĝin kaj/aŭ modifi
+# ĝi laŭ la kondiĉoj de la Ĝenerala Publika Permesilo de GNU kiel eldonita de
+# la Free Software Foundation; ĉu versio 3 de la Licenco, aŭ
+# (laŭ via elekto) ajna posta versio.
+#
+# Ĉi tiu programo estas distribuata kun la espero, ke ĝi estos utila,
+# sed SEN AJN GARANTIO; sen eĉ la implicita garantio de
+# KOMERCEBLECO aŭ TAĜECO POR APARTA CELO. Vidu la
+# GNU Ĝenerala Publika Permesilo por pliaj detaloj.
+#
+# Vi devus esti ricevinta kopion de la Ĝenerala Publika Permesilo de GNU
+# kune kun ĉi tiu programo; se ne, skribu al 
+# Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+"""
+" «FamilySearch» importo.
+"""
+
 
 from gramps.gen.db import DbTxn
 from gramps.gen.config import config
@@ -16,22 +41,9 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
-#_ = glocale.translation.gettext
 
 # tutmondaj variabloj
 vorteco = 0
-
-CONFIG_NAME = "FSImporto"
-CONFIG = config.register_manager(CONFIG_NAME)
-CONFIG.register("pref.vorteco", vorteco)
-CONFIG.load()
-
-def save_config():
-    CONFIG.set("pref.vorteco", vorteco)
-    CONFIG.save()
-
-save_config()
-
 
 class FSImportoOpcionoj(MenuToolOptions):
   """
@@ -53,12 +65,16 @@ class FSImportoOpcionoj(MenuToolOptions):
     self.__FS_ID = StringOption(_("FamilySearch ID"), 'XXXX-XXX')
     self.__FS_ID.set_help(_("identiga numero por esti prenita de FamilySearch retejo"))
     menu.add_option(category_name, "FS_ID", self.__FS_ID)
-    if vorteco >= 3:
-      print(_("Antaŭe VORT"))
-    gui_vort = CONFIG.get('pref.vorteco')
-    if vorteco >= 3:
-      print(_("VORT:"), gui_vort)
-    self.__gui_vort = NumberOption(_("Vorteco"), gui_vort, 0, 3)
+    self.__gui_asc = NumberOption(_("Nombro ascentontaj"), 0, 0, 99)
+    self.__gui_asc.set_help(_("Nombro de generacioj por supreniri"))
+    menu.add_option(category_name, "gui_asc", self.__gui_asc)
+    self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
+    self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
+    menu.add_option(category_name, "gui_desc", self.__gui_desc)
+    self.__gui_edz = BooleanOption(_("Aldonu geedzoj"), False)
+    self.__gui_edz.set_help(_("Aldonu informojn pri geedzoj kaj paro"))
+    menu.add_option(category_name, "gui_edz", self.__gui_edz)
+    self.__gui_vort = NumberOption(_("Vorteco"), 0, 0, 3)
     self.__gui_vort.set_help(_("Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"))
     menu.add_option(category_name, "gui_vort", self.__gui_vort)
 
@@ -70,6 +86,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
   " 
   """
   fs_TreeImp = None
+  fs_gr = None
   def __init__(self, dbstate, user, options_class, name, callback):
     """
     " 
@@ -95,9 +112,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     " 
     """
     print(_("Plugin run"))
-    db = self.dbstate.db
     self.__get_menu_options()
     print("import ID "+self.FS_ID)
+    self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     for person_handle in self.dbstate.db.get_person_handles() :
       person = self.dbstate.db.get_person_from_handle(person_handle)
@@ -108,18 +125,54 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 			, _('«FamilySearch» ID uzata per %s. Importo interrompita') % {person.gramps_id}
 			, self.window)
           return
-      
-
-    # Legi la personon en «FamilySearch».
+        if attr.get_type() == '_FSFTID':
+          self.fs_gr[attr.get_value()] = person_handle
+          break
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
+    else:
+      self.fs_TreeImp.__init__()
+    # Legi la personojn en «FamilySearch».
     self.fs_TreeImp.add_indis([self.FS_ID])
-    fsPerso = self.fs_TreeImp.indi.get(self.FS_ID)
+    # asc
+    todo = set(self.fs_TreeImp.indi.keys())
+    done = set()
+    for i in range(self.asc):
+      if not todo:
+        break
+      done |= todo
+      print( _("Downloading %s. of generations of ancestors...") % (i + 1))
+      todo = self.fs_TreeImp.add_parents(todo) - done
+    # desc
+    todo = set(self.fs_TreeImp.indi.keys())
+    done = set()
+    for i in range(self.desc):
+      if not todo:
+        break
+      done |= todo
+      print( _("Downloading %s. of generations of descendants...") % (i + 1))
+      todo = self.fs_TreeImp.add_children(todo) - done
+    # edzoj
+    if self.edz :
+      print(_("Downloading spouses and marriage information..."))
+      todo = set(self.fs_TreeImp.indi.keys())
+      self.fs_TreeImp.add_spouses(todo)
+
+    # importi personoj
+    for id in self.fs_TreeImp.indi.keys() :
+      self.aldPersono(id)
+    # importi edzoj/familioj
+
+    print("import fini.")
+
+
+  def aldPersono(self,fsid):
+    if self.fs_gr.get(fsid) :
+      return
+    fsPerso = self.fs_TreeImp.indi.get(fsid)
     if not fsPerso :
       print("ID introuvable.")
       return
-    else :
-      print("ID chargé.")
     grPerson = Person()
     nomo = Name()
     nomo.set_type(NameType(NameType.BIRTH))
@@ -133,18 +186,18 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       grPerson.set_gender(Person.FEMALE)
     attr = Attribute()
     attr.set_type('_FSFTID')
-    attr.set_value(self.FS_ID)
+    attr.set_value(fsid)
     grPerson.add_attribute(attr)
 
-    with DbTxn("FamilySearch import", db) as trans:
-      db.add_person(grPerson,trans)
-      self.dbstate.db.commit_person(person,trans)
-    
-    
-    print("import fini.")
+    with DbTxn("FamilySearch import", self.dbstate.db) as trans:
+      self.dbstate.db.add_person(grPerson,trans)
+      self.dbstate.db.commit_person(grPerson,trans)
 
   def __get_menu_options(self):
     print(_("Plugin __get_menu_options"))
     menu = self.options.menu
     self.FS_ID = self.options.menu.get_option_by_name('FS_ID').get_value()
+    self.asc = self.options.menu.get_option_by_name('gui_asc').get_value()
+    self.desc = self.options.menu.get_option_by_name('gui_desc').get_value()
+    self.edz = self.options.menu.get_option_by_name('gui_edz').get_value()
 
