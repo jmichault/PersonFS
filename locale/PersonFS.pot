@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-29 20:54+0200\n"
+"POT-Creation-Date: 2022-10-30 17:29+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,71 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: Importo.py:45
+msgid "Kromprogramoj"
+msgstr ""
+
+#: Importo.py:52 Importo.py:91
+msgid "FamilySearch Importo Opcionoj"
+msgstr ""
+
+#: Importo.py:53
+msgid "FamilySearch ID"
+msgstr ""
+
+#: Importo.py:54
+msgid "identiga numero por esti prenita de FamilySearch retejo"
+msgstr ""
+
+#: Importo.py:57
+msgid "Antaŭe VORT"
+msgstr ""
+
+#: Importo.py:60
+msgid "VORT:"
+msgstr ""
+
+#: Importo.py:61
+msgid "Vorteco"
+msgstr ""
+
+#: Importo.py:62
+msgid "Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"
+msgstr ""
+
+#: Importo.py:66
+msgid "Menuo Aldonita"
+msgstr ""
+
+#: Importo.py:83
+msgid "Plugin get_title"
+msgstr ""
+
+#: Importo.py:84
+msgid "FamilySearch Import Tool"
+msgstr ""
+
+#: Importo.py:90
+msgid "Plugin initial_frame"
+msgstr ""
+
+#: Importo.py:97
+msgid "Plugin run"
+msgstr ""
+
+#: Importo.py:107
+msgid "«FamilySearch» ekzistanta ID"
+msgstr ""
+
+#: Importo.py:108
+#, python-format
+msgid "«FamilySearch» ID uzata per %s. Importo interrompita"
+msgstr ""
+
+#: Importo.py:147
+msgid "Plugin __get_menu_options"
+msgstr ""
 
 #: PersonFS.gpr.py:30
 msgid "PersonFS"
@@ -29,95 +94,103 @@ msgstr ""
 msgid "FS"
 msgstr ""
 
-#: PersonFS.py:185
-msgid "Coloro"
+#: PersonFS.gpr.py:47
+msgid "Importo de FamilySearch datoj"
+msgstr ""
+
+#: PersonFS.gpr.py:48
+msgid "FamilySearch."
 msgstr ""
 
 #: PersonFS.py:186
-msgid "Propreco"
+msgid "Coloro"
 msgstr ""
 
 #: PersonFS.py:187
-msgid "Dato"
+msgid "Propreco"
 msgstr ""
 
 #: PersonFS.py:188
-msgid "Gramps Valoro"
+msgid "Dato"
 msgstr ""
 
 #: PersonFS.py:189
-msgid "FS Dato"
+msgid "Gramps Valoro"
 msgstr ""
 
 #: PersonFS.py:190
+msgid "FS Dato"
+msgstr ""
+
+#: PersonFS.py:191
 msgid "FS Valoro"
 msgstr ""
 
-#: PersonFS.py:212
+#: PersonFS.py:213
 msgid "Aldoni FamilySearch ID"
 msgstr ""
 
-#: PersonFS.py:249
+#: PersonFS.py:250
 msgid "score"
 msgstr ""
 
-#: PersonFS.py:250
+#: PersonFS.py:251
 msgid "FS Id"
 msgstr ""
 
-#: PersonFS.py:251
+#: PersonFS.py:252
 msgid "Nomo, antaŭnomo"
 msgstr ""
 
-#: PersonFS.py:252
+#: PersonFS.py:253
 msgid "Birth"
 msgstr ""
 
-#: PersonFS.py:253
+#: PersonFS.py:254
 msgid "Death"
 msgstr ""
 
-#: PersonFS.py:254
+#: PersonFS.py:255
 msgid "Parents"
 msgstr ""
 
-#: PersonFS.py:255
+#: PersonFS.py:256
 msgid "Spouses"
 msgstr ""
 
-#: PersonFS.py:571 PersonFS.py:577
+#: PersonFS.py:588 PersonFS.py:594
 msgid "male"
 msgstr ""
 
-#: PersonFS.py:573 PersonFS.py:579
+#: PersonFS.py:590 PersonFS.py:596
 msgid "female"
 msgstr ""
 
-#: PersonFS.py:575 PersonFS.py:581
+#: PersonFS.py:592 PersonFS.py:598
 msgid "unknown"
 msgstr ""
 
-#: PersonFS.py:585
+#: PersonFS.py:602
 msgid "Sekso:"
 msgstr ""
 
-#: PersonFS.py:597 PersonFS.py:612 PersonFS.py:618
+#: PersonFS.py:614 PersonFS.py:629 PersonFS.py:635
 msgid "Name"
 msgstr ""
 
-#: PersonFS.py:778
+#: PersonFS.py:795
 msgid "Father"
 msgstr ""
 
-#: PersonFS.py:785
+#: PersonFS.py:802
 msgid "Mother"
 msgstr ""
 
-#: PersonFS.py:830 PersonFS.py:948
+#: PersonFS.py:847 PersonFS.py:965
 msgid "Spouse"
 msgstr ""
 
-#: PersonFS.py:915 PersonFS.py:930 PersonFS.py:962 PersonFS.py:976
+#: PersonFS.py:932 PersonFS.py:947 PersonFS.py:979 PersonFS.py:993
 msgid "Child"
 msgstr ""
 

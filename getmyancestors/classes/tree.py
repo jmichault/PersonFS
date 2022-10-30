@@ -642,6 +642,7 @@ class Tree:
         self.sources = dict()
         self.places = dict()
         self.display_name = self.lang = None
+        self.getsources = True
         if fs:
             self.display_name = fs.display_name
             self.lang = babelfish.Language.fromalpha2(fs.lang).name

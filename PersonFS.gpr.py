@@ -41,3 +41,17 @@ register(GRAMPLET,
          gramps_target_version= '5.1',
          navtypes=["Person"],
          )
+
+register(TOOL,
+    id    = 'Importo de FamilySearch',
+    name  = _("Importo de FamilySearch datoj"),
+    description =  _("FamilySearch."),
+    version = '0.1.0',
+    gramps_target_version = '5.1',
+    status = STABLE,
+    fname = 'Importo.py',
+    category = TOOL_DBPROC,
+    toolclass = 'FSImporto',
+    optionclass = 'FSImportoOpcionoj',
+    tool_modes = [TOOL_MODE_GUI],
+)

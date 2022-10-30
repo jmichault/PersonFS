@@ -58,7 +58,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from getmyancestors.classes.session import Session
 from getmyancestors.classes.constants import FACT_TAGS
 from getmyancestors.classes.session import Session
-from getmyancestors.classes.tree import Tree, Name, Indi, Fact
+from getmyancestors.classes.tree import Tree, Name as fsName, Indi, Fact
 
 import sys
 import os
@@ -266,8 +266,11 @@ class PersonFS(Gramplet):
     elif person.get_gender() == Person.FEMALE :
       self.top.get_object("fs_sekso_eniro").set_text('Female')
     grBirth = self.get_grevent(person, EventType(EventType.BIRTH))
-    self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
-    if grBirth.place and grBirth.place != None :
+    if grBirth :
+      self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
+    else:
+      self.top.get_object("fs_birdo_eniro").set_text( '')
+    if grBirth and grBirth.place and grBirth.place != None :
       place = self.dbstate.db.get_place_from_handle(grBirth.place)
       self.top.get_object("fs_loko_eniro").set_text( place.name.value)
     else :
@@ -368,7 +371,7 @@ class PersonFS(Gramplet):
               elif not mother and person1.gender == "F" :
                 mother = person1
               
-      fsNomo = fsPerso.name or Name()
+      fsNomo = fsPerso.name or fsName()
       fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or Fact()
       fsBirthLoko = fsBirth.place 
       if fsBirthLoko :
@@ -385,11 +388,11 @@ class PersonFS(Gramplet):
       if father and father.name :
         fsPatroNomo = father.name
       else:
-        fsPatroNomo = Name()
+        fsPatroNomo = fsName()
       if mother and mother.name :
         fsPatrinoNomo = mother.name
       else:
-        fsPatrinoNomo = Name()
+        fsPatrinoNomo = fsName()
       edzoj = ''
       for fsEdzTrio in fsPerso.spouses :
         if fsEdzTrio[0] == fsId:
@@ -398,7 +401,7 @@ class PersonFS(Gramplet):
           edzoId = fsEdzTrio[0]
         else: continue
         fsEdzo = PersonFS.fs_TreeSercxo.indi.get(edzoId) or Indi()
-        fsEdzoNomo = fsEdzo.name or Name()
+        fsEdzoNomo = fsEdzo.name or fsName()
         if edzoj != '': edzoj = edzoj + "\n"
         edzoj = edzoj + fsEdzoNomo.surname +  ', ' + fsEdzoNomo.given
       self.modelRes.add( ( 
@@ -607,7 +610,7 @@ class PersonFS(Gramplet):
 
   def aldNomoKomp(self, person, fsPerso ) :
     grNomo = person.primary_name
-    fsNomo = fsPerso.name or Name()
+    fsNomo = fsPerso.name or fsName()
     coloro = "orange"
     if (grNomo.get_primary_surname().surname == fsNomo.surname) and (grNomo.first_name == fsNomo.given) :
       coloro = "green"
@@ -618,7 +621,7 @@ class PersonFS(Gramplet):
     fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames)
     #fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames).union(fsPerso.aka)
     for grNomo in person.alternate_names :
-      fsNomo = Name()
+      fsNomo = fsName()
       coloro = "yellow"
       for x in fsNomoj :
         if (grNomo.get_primary_surname().surname == x.surname) and (grNomo.first_name == x.given) :
@@ -843,7 +846,7 @@ class PersonFS(Gramplet):
         if fsEdzo :
           fsNomo = fsEdzo.name
         else :
-          fsNomo = Name()
+          fsNomo = fsName()
         self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
                   , self.grperso_datoj(edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
 		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
@@ -928,7 +931,7 @@ class PersonFS(Gramplet):
           if fsInfano :
             fsNomo = fsInfano.name
           else :
-            fsNomo = Name()
+            fsNomo = fsName()
           self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
                   , self.grperso_datoj(infano) , infanoNomo.get_primary_surname().surname + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
                   , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
@@ -943,7 +946,7 @@ class PersonFS(Gramplet):
               if fsInfano :
                 fsNomo = fsInfano.name
               else :
-                fsNomo = Name()
+                fsNomo = fsName()
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
                   , '', ''
                   , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
@@ -961,7 +964,7 @@ class PersonFS(Gramplet):
       if fsEdzo :
         fsNomo = fsEdzo.name
       else :
-        fsNomo = Name()
+        fsNomo = fsName()
       self.modelKomp.add( ( coloro , _trans.gettext('Spouse')
                   , '', ''
 		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
@@ -975,7 +978,7 @@ class PersonFS(Gramplet):
               if fsInfano :
                 fsNomo = fsInfano.name
               else :
-                fsNomo = Name()
+                fsNomo = fsName()
               self.modelKomp.add( ( coloro ,'    '+ _trans.gettext('Child')
                   , '', ''
                   , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
@@ -989,7 +992,7 @@ class PersonFS(Gramplet):
       if fsInfano :
         fsNomo = fsInfano.name
       else :
-        fsNomo = Name()
+        fsNomo = fsName()
       self.modelKomp.add( ( coloro ,_trans.gettext('Child')
                   , '', ''
                   , self.fsperso_datoj(fsInfano), fsNomo.surname +  ', ' + fsNomo.given + ' [' + fsInfanoId + ']'
