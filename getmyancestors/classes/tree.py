@@ -150,6 +150,7 @@ class Fact:
             if "place" in data:
                 place = data["place"]
                 self.place = place["original"]
+                self.placeid = place["description"][1:]
                 if "description" in place and place["description"][1:] in tree.places:
                     self.map = tree.places[place["description"][1:]]
             if "attribution" in data and "changeMessage" in data["attribution"]:
@@ -676,6 +677,7 @@ class Tree:
                             self.places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
+                                place["names"],
                             )
                 loop.run_until_complete(add_datas(loop, data))
                 if "childAndParentsRelationships" in data:

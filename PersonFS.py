@@ -40,6 +40,7 @@ from gramps.gen.config import config
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
+from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
 from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.lib.date import gregorian
@@ -140,6 +141,7 @@ class PersonFS(Gramplet):
   fs_Tree = None
   fs_TreeSercxo = None
   Sercxi = None
+  lingvo = None
 
   def init(self):
     """
@@ -147,6 +149,16 @@ class PersonFS(Gramplet):
     """
     PersonFS.fs_id = CONFIG.get("preferences.fs_id")
     PersonFS.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+    try:
+      PersonFS.lingvo = config.get('preferences.place-lang')
+    except AttributeError:
+      fmt = config.get('preferences.place-format')
+      pf = _pd.get_formats()[fmt]
+      PersonFS.lingvo = pf.language
+    if len(PersonFS.lingvo) != 2:
+      PersonFS.lingvo = 'fr'
+    # FARINDAĴO : uzi PersonFS.lingvo
+
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)

@@ -106,7 +106,9 @@ class Session:
         """retrieve JSON structure from a FamilySearch URL"""
         self.counter += 1
         if headers is None:
-            headers = {"Accept": "application/x-gedcomx-v1+json"}
+            headers = {"Accept": "application/x-gedcomx-v1+json", "Accept-Language": "fr"}
+        if "Accept-Language" not in headers :
+            headers ["Accept-Language"] ="fr"
         while True:
             try:
                 print("Downloading: " + url)
