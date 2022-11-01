@@ -37,6 +37,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from PersonFS import PersonFS
 from getmyancestors.classes.tree import Tree, Name as fsName, Indi, Fact
 from getmyancestors.classes.constants import FACT_TAGS
+from getmyancestors.classes.session import Session
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -118,19 +119,23 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     print("import ID "+self.FS_ID)
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
+    # kaj plenigas fs_gr vortaro.
     for person_handle in self.dbstate.db.get_person_handles() :
       person = self.dbstate.db.get_person_from_handle(person_handle)
       for attr in person.get_attribute_list():
         if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
-          d = QuestionDialog2(_('«FamilySearch» ekzistanta ID')
-                 ,_('«FamilySearch» ID uzata per %s.\n   Se vi daŭrigos, kreiĝos nur neekzistantaj personoj.\n\n      Ĉu vi volas daŭrigi?') % {person.gramps_id}
-                 ,_('daŭrigi')
-                 ,_('Cancel') )
-          if not d.run():
-            return
+          print(_('«FamilySearch» ekzistanta ID'))
+          #d = QuestionDialog2(_('«FamilySearch» ekzistanta ID')
+          #       ,_('«FamilySearch» ID uzata per %s.\n   Se vi daŭrigos, kreiĝos nur neekzistantaj personoj.\n\n      Ĉu vi volas daŭrigi?') % {person.gramps_id}
+          #       ,_('daŭrigi')
+          #       ,_('Cancel') )
+          #if not d.run():
+          #  return
         if attr.get_type() == '_FSFTID':
           self.fs_gr[attr.get_value()] = person_handle
           break
+    if not PersonFS.fs_Session:
+      PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
     else:
@@ -176,7 +181,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       for fsFam in self.fs_TreeImp.fam.values() :
         self.aldFamilio(fsFam)
   
-      # FARINDAĴOJ : notoj, fontoj
+      # FARINDAĴOJ : notoj
+
+      # FARINDAĴOJ : aliaj nomoj
+
+      # FARINDAĴOJ : fontoj
+
+      # FARINDAĴOJ : bildoj
+
+      # FARINDAĴOJ : memoroj
 
     print("import fini.")
 
@@ -267,8 +280,6 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.dbstate.db.commit_place(grMunicipo, self.txn)
       return
 
-    # FARINDAĴOJ
-    print("neatendita enhavo en nomloko!")
     lokloko = ", ".join(partoj)
     grLoko = self.kreiLoko(lokloko, grMunicipo)
     pl[2][0]["handle"] = grLoko.handle
@@ -318,7 +329,22 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       if grPatrino:
         grPatrino.add_family_handle(familio.get_handle())
         self.dbstate.db.commit_person(grPatrino, self.txn)
-    # FARINDAĴO : edziĝo
+    # familiaj faktoj
+    for fsFakto in fsFam.facts:
+      event = self.aldFakto(fsFakto)
+      found = False
+      for er in familio.get_event_ref_list():
+        if er.ref == event.handle:
+          found = True
+          break
+      if not found:
+        eventref = EventRef()
+        eventref.set_role(EventRoleType.FAMILY)
+        eventref.set_reference_handle(event.get_handle())
+        self.dbstate.db.commit_event(event, self.txn)
+        familio.add_event_ref(eventref)
+    self.dbstate.db.commit_family(familio,self.txn)
+
     for c in fsFam.chil_fid:
       infanoHandle = self.fs_gr.get(c)
       found = False
@@ -334,6 +360,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         infano = self.dbstate.db.get_person_from_handle(infanoHandle)
         infano.add_parent_family_handle(familio.get_handle())
         self.dbstate.db.commit_person(infano, self.txn)
+    # FARINDAĴO : notoj
+    # FARINDAĴO : fontoj
     return
 
   def aldPersono(self,fsid):
@@ -363,47 +391,64 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.dbstate.db.commit_person(grPerson,self.txn)
     self.fs_gr[fsid] = grPerson.handle
 
-    # FARINDAĴO : faktoj
+    # faktoj
     for fsFakto in fsPerso.facts:
-      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-      if not gedTag :
-        continue
-      evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
-      fsFaktoLoko = fsFakto.place or ''
-      print("fsFaktoLoko="+fsFaktoLoko)
-      print(self.fs_TreeImp.places)
-      #pl = self.fs_TreeImp.places.get(fsFakto.placeid)
-      #print(pl)
-      #if pl :
-      if fsFakto.map:
-        grLokoHandle = fsFakto.map[2][0]["handle"]
-      else: grLokoHandle = None
-      print(grLokoHandle)
-      fsFaktoPriskribo = fsFakto.value or ''
-      fsFaktoDato = fsFakto.date or ''
-      if fsFakto.date:
-        grDate = Date()
-        if fsFakto.date[0] == 'A' :
-          grDate.set_modifier(Date.MOD_ABOUT)
-        elif fsFakto.date[0] == '/' :
-          grDate.set_modifier(Date.MOD_BEFORE)
-        posSigno = fsFakto.date.find('+')
-        posMinus = fsFakto.date.find('-')
-        if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
-          posSigno = posMinus
-        if len(fsFakto.date) >= posSigno+5 :
-          jaro = fsFakto.date[posSigno+0:posSigno+5]
-        else: jaro='0'
-        if len(fsFakto.date) >= posSigno+8 :
-          monato = fsFakto.date[posSigno+6:posSigno+8]
-        else: monato='0'
-        if len(fsFakto.date) >= posSigno+11 :
-          tago = fsFakto.date[posSigno+9:posSigno+11]
-        else: tago='0'
-        # FARINDAĴO : kompleksaj datoj
-        grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
-      else : grDate = None
+      event = self.aldFakto(fsFakto)
+      found = False
+      for er in grPerson.get_event_ref_list():
+        if er.ref == event.handle:
+          found = True
+          break
+      if not found:
+        eventref = EventRef()
+        eventref.set_role(EventRoleType.PRIMARY)
+        eventref.set_reference_handle(event.get_handle())
+        self.dbstate.db.commit_event(event, self.txn)
+        grPerson.add_event_ref(eventref)
+    self.dbstate.db.commit_person(grPerson,self.txn)
 
+  def aldFakto(self,fsFakto):
+    gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+    evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
+    fsFaktoLoko = fsFakto.place or ''
+    print("fsFaktoLoko="+fsFaktoLoko)
+    print(self.fs_TreeImp.places)
+    if fsFakto.map:
+      grLokoHandle = fsFakto.map[2][0]["handle"]
+    else: grLokoHandle = None
+    print(grLokoHandle)
+    fsFaktoPriskribo = fsFakto.value or ''
+    fsFaktoDato = fsFakto.date or ''
+    if fsFakto.date:
+      grDate = Date()
+      if fsFakto.date[0] == 'A' :
+        grDate.set_modifier(Date.MOD_ABOUT)
+      elif fsFakto.date[0] == '/' :
+        grDate.set_modifier(Date.MOD_BEFORE)
+      posSigno = fsFakto.date.find('+')
+      posMinus = fsFakto.date.find('-')
+      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
+        posSigno = posMinus
+      if len(fsFakto.date) >= posSigno+5 :
+        jaro = fsFakto.date[posSigno+0:posSigno+5]
+      else: jaro='0'
+      if len(fsFakto.date) >= posSigno+8 :
+        monato = fsFakto.date[posSigno+6:posSigno+8]
+      else: monato='0'
+      if len(fsFakto.date) >= posSigno+11 :
+        tago = fsFakto.date[posSigno+9:posSigno+11]
+      else: tago='0'
+      # FARINDAĴO : kompleksaj datoj
+      grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
+    else : grDate = None
+
+    event = None
+    for handle in self.dbstate.db.get_event_handles():
+      e = self.dbstate.db.get_event_from_handle(handle)
+      if e.type == evtType and e.get_place_handle() == grLokoHandle and e.get_date_object() == grDate and e.description == fsFaktoPriskribo:
+        event = e
+        break
+    if not event:
       event = Event()
       event.set_type( evtType )
       if grLokoHandle:
@@ -411,15 +456,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       if grDate :
         event.set_date_object( grDate )
       event.set_description(fsFaktoPriskribo)
-      #tag = db.get_tag_from_name( xxx )
-      #event.add_tag(tag.handle)
       self.dbstate.db.add_event(event, self.txn)
-      eventref = EventRef()
-      eventref.set_role(EventRoleType.PRIMARY)
-      eventref.set_reference_handle(event.get_handle())
-      self.dbstate.db.commit_event(event, self.txn)
-      grPerson.add_event_ref(eventref)
-    self.dbstate.db.commit_person(grPerson,self.txn)
+
+    return event
 
   def __get_menu_options(self):
     print(_("Plugin __get_menu_options"))

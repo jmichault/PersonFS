@@ -135,28 +135,27 @@ class PersonFS(Gramplet):
   """
   " Interfaco kun familySearch
   """
-  fs_id = ''
-  fs_pasvorto = ''
+  fs_id = CONFIG.get("preferences.fs_id")
+  #fs_pasvorto = ''
+  fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
   fs_Session = None
   fs_Tree = None
   fs_TreeSercxo = None
   Sercxi = None
   lingvo = None
+  try:
+      lingvo = config.get('preferences.place-lang')
+  except AttributeError:
+      fmt = config.get('preferences.place-format')
+      pf = _pd.get_formats()[fmt]
+      lingvo = pf.language
+  if len(lingvo) != 2:
+      lingvo = 'fr'
 
   def init(self):
     """
     " kreas GUI kaj konektas al FamilySearch
     """
-    PersonFS.fs_id = CONFIG.get("preferences.fs_id")
-    PersonFS.fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
-    try:
-      PersonFS.lingvo = config.get('preferences.place-lang')
-    except AttributeError:
-      fmt = config.get('preferences.place-format')
-      pf = _pd.get_formats()[fmt]
-      PersonFS.lingvo = pf.language
-    if len(PersonFS.lingvo) != 2:
-      PersonFS.lingvo = 'fr'
     # FARINDAĴO : uzi PersonFS.lingvo
 
 
