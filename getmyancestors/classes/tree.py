@@ -150,8 +150,8 @@ class Fact:
             if "place" in data:
                 place = data["place"]
                 self.place = place["original"]
-                self.placeid = place["description"][1:]
                 if "description" in place and place["description"][1:] in tree.places:
+                    #self.placeid = place["description"][1:]
                     self.map = tree.places[place["description"][1:]]
             if "attribution" in data and "changeMessage" in data["attribution"]:
                 self.note = Note(data["attribution"]["changeMessage"], tree)

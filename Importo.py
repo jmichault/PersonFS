@@ -134,7 +134,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
     else:
-      self.fs_TreeImp.__init__()
+      self.fs_TreeImp.__init__(PersonFS.fs_Session)
     # Legi la personojn en «FamilySearch».
     if self.FS_ID:
       self.fs_TreeImp.add_indis([self.FS_ID])
@@ -238,28 +238,28 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     lando = partoj.pop(len(partoj)-1)
     grLando = self.kreiLoko(lando, None)
     if grLando:
-      pl[2][0]["handle"] = grLando
+      pl[2][0]["handle"] = grLando.handle
     if len(partoj) <1:
       return
 
     regiono = partoj.pop(len(partoj)-1)
     grRegiono = self.kreiLoko(regiono, grLando)
     if grRegiono:
-      pl[2][0]["handle"] = grRegiono
+      pl[2][0]["handle"] = grRegiono.handle
     if len(partoj) <1:
       return
 
     fako = partoj.pop(len(partoj)-1)
     grFako = self.kreiLoko(fako, grRegiono)
     if grFako:
-      pl[2][0]["handle"] = grFako
+      pl[2][0]["handle"] = grFako.handle
     if len(partoj) <1:
       return
 
     municipo = partoj.pop(len(partoj)-1)
     grMunicipo = self.kreiLoko(municipo, grFako)
     if grMunicipo:
-      pl[2][0]["handle"] = grMunicipo
+      pl[2][0]["handle"] = grMunicipo.handle
     if len(partoj) <1:
       pn = PlaceName()
       pn.set_value(nomo)
@@ -271,7 +271,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     print("neatendita enhavo en nomloko!")
     lokloko = ", ".join(partoj)
     grLoko = self.kreiLoko(lokloko, grMunicipo)
-    pl[2][0]["handle"] = grLoko
+    pl[2][0]["handle"] = grLoko.handle
     pn = PlaceName()
     pn.set_value(nomo)
     grLoko.add_alternative_name(pn)
@@ -372,40 +372,44 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       fsFaktoLoko = fsFakto.place or ''
       print("fsFaktoLoko="+fsFaktoLoko)
       print(self.fs_TreeImp.places)
-      pl = self.fs_TreeImp.places.get(fsFakto.placeid)
-      print(pl)
-      if pl :
-        grLokoHandle = pl[2][0]["handle"]
+      #pl = self.fs_TreeImp.places.get(fsFakto.placeid)
+      #print(pl)
+      #if pl :
+      if fsFakto.map:
+        grLokoHandle = fsFakto.map[2][0]["handle"]
       else: grLokoHandle = None
       print(grLokoHandle)
       fsFaktoPriskribo = fsFakto.value or ''
       fsFaktoDato = fsFakto.date or ''
-      grDate = Date()
-      if fsFakto.date[0] == 'A' :
-        grDate.set_modifier(Date.MOD_ABOUT)
-      elif fsFakto.date[0] == '/' :
-        grDate.set_modifier(Date.MOD_BEFORE)
-
-      posSigno = fsFakto.date.find('+')
-      posMinus = fsFakto.date.find('-')
-      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
-        posSigno = posMinus
-      if len(fsFakto.date) >= posSigno+5 :
-        jaro = fsFakto.date[posSigno+0:posSigno+5]
-      else: jaro='0'
-      if len(fsFakto.date) >= posSigno+8 :
-        monato = fsFakto.date[posSigno+6:posSigno+8]
-      else: monato='0'
-      if len(fsFakto.date) >= posSigno+11 :
-        tago = fsFakto.date[posSigno+9:posSigno+11]
-      else: tago='0'
-      # FARINDAĴO : kompleksaj datoj
-      grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
+      if fsFakto.date:
+        grDate = Date()
+        if fsFakto.date[0] == 'A' :
+          grDate.set_modifier(Date.MOD_ABOUT)
+        elif fsFakto.date[0] == '/' :
+          grDate.set_modifier(Date.MOD_BEFORE)
+        posSigno = fsFakto.date.find('+')
+        posMinus = fsFakto.date.find('-')
+        if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
+          posSigno = posMinus
+        if len(fsFakto.date) >= posSigno+5 :
+          jaro = fsFakto.date[posSigno+0:posSigno+5]
+        else: jaro='0'
+        if len(fsFakto.date) >= posSigno+8 :
+          monato = fsFakto.date[posSigno+6:posSigno+8]
+        else: monato='0'
+        if len(fsFakto.date) >= posSigno+11 :
+          tago = fsFakto.date[posSigno+9:posSigno+11]
+        else: tago='0'
+        # FARINDAĴO : kompleksaj datoj
+        grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
+      else : grDate = None
 
       event = Event()
       event.set_type( evtType )
-      event.set_place_handle( grLokoHandle )
-      event.set_date_object( grDate )
+      if grLokoHandle:
+        event.set_place_handle( grLokoHandle )
+      if grDate :
+        event.set_date_object( grDate )
       event.set_description(fsFaktoPriskribo)
       #tag = db.get_tag_from_name( xxx )
       #event.add_tag(tag.handle)
