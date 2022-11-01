@@ -323,7 +323,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       infanoHandle = self.fs_gr.get(c)
       found = False
       for cr in familio.get_child_ref_list() :
-        if cr == infanoHandle:
+        if cr.get_reference_handle() == infanoHandle:
           found = True
           break
       if not found :
