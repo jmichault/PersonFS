@@ -44,6 +44,8 @@ def cont(string):
 
 class Note:
     """GEDCOM Note class
+    :param id: FS ID
+    :param subject: the Note subject
     :param text: the Note content
     :param tree: a Tree object
     :param num: the GEDCOM identifier
@@ -51,12 +53,14 @@ class Note:
 
     counter = 0
 
-    def __init__(self, text="", tree=None, num=None):
+    def __init__(self, id,subject, text, tree=None, num=None):
         if num:
             self.num = num
         else:
             Note.counter += 1
             self.num = Note.counter
+        self.id = id.strip()
+        self.subject = subject.strip()
         self.text = text.strip()
 
         if tree:
@@ -103,8 +107,11 @@ class Source:
                 self.title = data["titles"][0]["value"]
             if "notes" in data:
                 for n in data["notes"]:
-                    if n["text"]:
-                        self.notes.add(Note(n["text"], self.tree))
+                  self.notes.add(Note(
+                     n["id"] if "id" in n else "FS note"
+                    ,n["subject"] if "subject" in n else ""
+                    ,n["text"] if "text" in n else ""
+                    , self.tree))
 
     def print(self, file=sys.stdout):
         """print Source in GEDCOM format"""
@@ -154,7 +161,11 @@ class Fact:
                     #self.placeid = place["description"][1:]
                     self.map = tree.places[place["description"][1:]]
             if "attribution" in data and "changeMessage" in data["attribution"]:
-                self.note = Note(data["attribution"]["changeMessage"], tree)
+                self.note = Note(
+                      "FS attribution"
+                    , _("attribution")
+                    , data["attribution"]["changeMessage"]
+                    , tree)
             if self.type == "http://gedcomx.org/Death" and not (
                 self.date or self.place
             ):
@@ -235,7 +246,11 @@ class Name:
                     if z["type"] == "http://gedcomx.org/Suffix":
                         self.suffix = z["value"]
             if "attribution" in data and "changeMessage" in data["attribution"]:
-                self.note = Note(data["attribution"]["changeMessage"], tree)
+                self.note = Note(
+                      "FS attribution"
+                    , tree.fs._("attribution")
+                    , data["attribution"]["changeMessage"]
+                    , tree)
 
     def print(self, file=sys.stdout, typ=None):
         """print Name in GEDCOM format
@@ -343,13 +358,11 @@ class Indi:
             if "facts" in data:
                 for x in data["facts"]:
                     if x["type"] == "http://familysearch.org/v1/LifeSketch":
-                        self.notes.add(
-                            Note(
-                                "=== %s ===\n%s"
-                                % (self.tree.fs._("Life Sketch"), x.get("value", "")),
-                                self.tree,
-                            )
-                        )
+                      self.notes.add(Note(
+                         x["id"] if "id" in x else "FS note"
+                        ,x["subject"] if "subject" in x else self.tree.fs._("Life Sketch")
+                        ,x["value"] if "value" in x else ""
+                        , self.tree))
                     else:
                         self.facts.add(Fact(x, self.tree))
             if self.tree.getsources and "sources" in data:
@@ -376,12 +389,15 @@ class Indi:
                 if memorie and "sourceDescriptions" in memorie:
                     for x in memorie["sourceDescriptions"]:
                         if x["mediaType"] == "text/plain":
-                            text = "\n".join(
+                            subject = "\n".join(
                                 val.get("value", "")
                                 for val in x.get("titles", [])
-                                + x.get("descriptions", [])
-                            )
-                            self.notes.add(Note(text, self.tree))
+                              )
+                            text = "\n".join(
+                                val.get("value", "")
+                                for val in x.get("descriptions", [])
+                              )
+                            self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self.tree))
                         else:
                             self.memories.add(Memorie(x))
 
@@ -398,9 +414,11 @@ class Indi:
         notes = self.tree.fs.get_url("/platform/tree/persons/%s/notes" % self.fid)
         if notes:
             for n in notes["persons"][0]["notes"]:
-                text_note = "=== %s ===\n" % n["subject"] if "subject" in n else ""
-                text_note += n["text"] + "\n" if "text" in n else ""
-                self.notes.add(Note(text_note, self.tree))
+                self.notes.add(Note(
+                    n["id"] if "id" in n else ""
+                    ,n["subject"] if "subject" in n else ""
+                    ,n["text"] if "text" in n else ""
+                    , self.tree))
 
     def get_ordinances(self):
         """retrieve LDS ordinances
@@ -444,15 +462,12 @@ class Indi:
                 for contributors in entries["contributors"]:
                     temp.add(contributors["name"])
         if temp:
-            text = "=== %s ===\n%s" % (
-                self.tree.fs._("Contributors"),
-                "\n".join(sorted(temp)),
-            )
+            text = "\n".join(sorted(temp))
             for n in self.tree.notes:
                 if n.text == text:
                     self.notes.add(n)
                     return
-            self.notes.add(Note(text, self.tree))
+            self.notes.add(Note('FS contributors',self.tree.fs._("Contributors"),text, self.tree))
 
     def print(self, file=sys.stdout):
         """print individual in GEDCOM format"""
@@ -579,9 +594,11 @@ class Fam:
             )
             if notes:
                 for n in notes["relationships"][0]["notes"]:
-                    text_note = "=== %s ===\n" % n["subject"] if "subject" in n else ""
-                    text_note += n["text"] + "\n" if "text" in n else ""
-                    self.notes.add(Note(text_note, self.tree))
+                    self.notes.add(Note(
+                         n["id"] if "id" in n else ""
+                        ,n["subject"] if "subject" in n else ""
+                        ,n["text"] if "text" in n else ""
+                        , self.tree))
 
     def get_contributors(self):
         """retrieve contributors"""
@@ -596,15 +613,12 @@ class Fam:
                     for contributors in entries["contributors"]:
                         temp.add(contributors["name"])
             if temp:
-                text = "=== %s ===\n%s" % (
-                    self.tree.fs._("Contributors"),
-                    "\n".join(sorted(temp)),
-                )
+                text = "\n".join(sorted(temp))
                 for n in self.tree.notes:
                     if n.text == text:
                         self.notes.add(n)
                         return
-                self.notes.add(Note(text, self.tree))
+                self.notes.add(Note('FS contributors',self.tree.fs._("Contributors"),text, self.tree))
 
     def print(self, file=sys.stdout):
         """print family information in GEDCOM format"""
