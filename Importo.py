@@ -49,6 +49,8 @@ _ = _trans.gettext
 # tutmondaj variabloj
 vorteco = 0
 
+#from objbrowser import browse ;browse(locals())
+
 class FSImportoOpcionoj(MenuToolOptions):
   """
   " 
@@ -101,21 +103,18 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     " 
     """
-    print(_("Plugin get_title"))
     return _("FamilySearch Import Tool")  # tool window title
 
   def initial_frame(self):
     """
     " 
     """
-    print(_("Plugin initial_frame"))
     return _("FamilySearch Importo Opcionoj")  # tab title
 
   def run(self):
     """
     " 
     """
-    print(_("Plugin run"))
     self.__get_menu_options()
     print("import ID "+self.FS_ID)
     self.fs_gr = dict()
@@ -358,76 +357,91 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.commit_person(infano, self.txn)
     # notoj
     for fsNoto in fsFam.notes :
-      noto = self.aldNoto(fsNoto)
+      noto = self.aldNoto(fsNoto,familio.note_list)
       familio.add_note(noto.handle)
     # fontoj
     for fsFonto,quote in fsFam.sources :
-      c = self.aldFonto(fsFonto)
-      familio.add_citation(c.handle)
+      c = self.aldFonto(fsFonto,familio,familio.citation_list)
+      #familio.add_citation(c.handle)
     # FARINDAĴOJ : FS ID
     self.dbstate.db.commit_family(familio,self.txn)
     return
 
-  def aldFonto(self, fsFonto):
+  def aldFonto(self, fsFonto, obj, EkzCit):
+    # sercxi ekzistantan
+    trovita = False
+    for s in self.dbstate.db.iter_sources():
+      if s.abbrev == "FamilySearch " + fsFonto.fid :
+        trovita = True
+        break
+    if not trovita :
+      s = Source()
+      if fsFonto.title:
+        s.set_title(fsFonto.title)
+      if fsFonto.citation:
+        s.set_author(fsFonto.citation)
+      if fsFonto.url:
+        s.set_publication_info(fsFonto.url)
+      # FS ID
+      s.abbrev = "FamilySearch " + fsFonto.fid
+      self.dbstate.db.add_source(s,self.txn)
+      self.dbstate.db.commit_source(s,self.txn)
     # FARINDAĴO : sercxi ekzistantan
-    s = Source()
-    if fsFonto.title:
-      s.set_title(fsFonto.title)
-    if fsFonto.citation:
-      s.set_author(fsFonto.citation)
-    if fsFonto.url:
-      s.set_publication_info(fsFonto.url)
-    # FARINDAĴO : FS ID
-    self.dbstate.db.add_source(s,self.txn)
-    self.dbstate.db.commit_source(s,self.txn)
-    # FARINDAĴO : sercxi ekzistantan
+    #for ch in EkzCit :
+    for ch in obj.citation_list :
+      c = self.dbstate.db.get_citation_from_handle(ch)
+      if c.get_reference_handle() == s.handle :
+        return c
     citation = Citation()
     citation.set_reference_handle(s.get_handle())
     self.dbstate.db.add_citation(citation,self.txn)
     self.dbstate.db.commit_citation(citation,self.txn)
+    obj.add_citation(citation.handle)
     
     return citation
 
   def aldPersono(self,fsid):
-    if self.fs_gr.get(fsid) :
-      return
+    grPersonoHandle = self.fs_gr.get(fsid)
     fsPerso = self.fs_TreeImp.indi.get(fsid)
     if not fsPerso :
       print(_("ID ne trovita."))
       return
-    grPerson = Person()
-    nomo = Name()
-    nomo.set_type(NameType(NameType.BIRTH))
-    nomo.set_first_name(fsPerso.name.given)
-    s = nomo.get_primary_surname()
-    s.set_surname(fsPerso.name.surname)
-    # noto al nomo
-    if fsPerso.name.note:
-      noto = self.aldNoto(fsPerso.name.note)
-      nomo.add_note(noto.handle)
-    grPerson.set_primary_name(nomo)
-    # aliaj nomoj
-    for fsNomo in fsPerso.married :
-      self.aldNomo( fsNomo, NameType.MARRIED, grPerson)
-    for fsNomo in fsPerso.aka :
-      self.aldNomo( fsNomo, NameType.AKA, grPerson)
-    for fsNomo in fsPerso.birthnames :
-      self.aldNomo( fsNomo, NameType.BIRTH, grPerson)
-    for fsNomo in fsPerso.nicknames :
-      # FARINDAĴO : administri moknomojn ĝuste
-      self.aldNomo( fsNomo, NameType.CUSTOM, grPerson)
-    if fsPerso.gender == "M" :
-      grPerson.set_gender(Person.MALE)
-    elif fsPerso.gender == "F" :
-      grPerson.set_gender(Person.FEMALE)
-    attr = Attribute()
-    attr.set_type('_FSFTID')
-    attr.set_value(fsid)
-    grPerson.add_attribute(attr)
+    if not grPersonoHandle:
+      grPerson = Person()
+      nomo = Name()
+      nomo.set_type(NameType(NameType.BIRTH))
+      nomo.set_first_name(fsPerso.name.given)
+      s = nomo.get_primary_surname()
+      s.set_surname(fsPerso.name.surname)
+      # noto al nomo
+      if fsPerso.name.note:
+        noto = self.aldNoto(fsPerso.name.note,nomo.note_list)
+        nomo.add_note(noto.handle)
+      grPerson.set_primary_name(nomo)
+      # aliaj nomoj
+      for fsNomo in fsPerso.married :
+        self.aldNomo( fsNomo, NameType.MARRIED, grPerson)
+      for fsNomo in fsPerso.aka :
+        self.aldNomo( fsNomo, NameType.AKA, grPerson)
+      for fsNomo in fsPerso.birthnames :
+        self.aldNomo( fsNomo, NameType.BIRTH, grPerson)
+      for fsNomo in fsPerso.nicknames :
+        # FARINDAĴO : administri moknomojn ĝuste
+        self.aldNomo( fsNomo, NameType.CUSTOM, grPerson)
+      if fsPerso.gender == "M" :
+        grPerson.set_gender(Person.MALE)
+      elif fsPerso.gender == "F" :
+        grPerson.set_gender(Person.FEMALE)
+      attr = Attribute()
+      attr.set_type('_FSFTID')
+      attr.set_value(fsid)
+      grPerson.add_attribute(attr)
 
-    self.dbstate.db.add_person(grPerson,self.txn)
-    self.dbstate.db.commit_person(grPerson,self.txn)
-    self.fs_gr[fsid] = grPerson.handle
+      self.dbstate.db.add_person(grPerson,self.txn)
+      self.dbstate.db.commit_person(grPerson,self.txn)
+      self.fs_gr[fsid] = grPerson.handle
+    else :
+      grPerson = self.dbstate.db.get_person_from_handle(grPersonoHandle)
 
     # faktoj
     for fsFakto in fsPerso.facts:
@@ -444,15 +458,13 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.commit_event(event, self.txn)
         grPerson.add_event_ref(eventref)
     # notoj
-    #from objbrowser import browse ;browse(locals())
     for fsNoto in fsPerso.notes :
-      print (fsNoto)
-      noto = self.aldNoto(fsNoto)
+      noto = self.aldNoto(fsNoto,grPerson.note_list)
       grPerson.add_note(noto.handle)
     # FARINDAĴOJ : fontoj
     for fsFonto,quote in fsPerso.sources :
-      c = self.aldFonto(fsFonto)
-      grPerson.add_citation(c.handle)
+      c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
+      #grPerson.add_citation(c.handle)
     # FARINDAĴOJ : memoroj
     for fsMemoro in fsPerso.memories :
       continue
@@ -466,12 +478,19 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       s = nomo.get_primary_surname()
       s.set_surname(fsNomo.surname)
       if fsNomo.note:
-        noto = self.aldNoto(fsNomo.note)
+        noto = self.aldNoto(fsNomo.note,nomo.note_list)
         nomo.add_note(noto.handle)
       grPerson.add_alternate_name(nomo)
 
-  def aldNoto(self,fsNoto):
-    # FARINDAĴO : sercxi ekzistantan
+  def aldNoto(self,fsNoto,EkzNotoj):
+    # sercxi ekzistantan
+    for nh in EkzNotoj:
+      n = self.dbstate.db.get_note_from_handle(nh)
+      for t in n.text.get_tags():
+        if t.name == "fs_id" :
+          titolo = n.get()[t.ranges[0][0]:t.ranges[0][1]]
+          if titolo == fsNoto.subject:
+            return n
     note = Note()
     tags = [  StyledTextTag("fs_id", fsNoto.id,[(0, len(fsNoto.subject))])
             , StyledTextTag(StyledTextTagType.BOLD, True,[(0, len(fsNoto.subject))])
@@ -518,10 +537,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
     else : grDate = None
 
+    # serĉi ekzistanta
     for handle in self.dbstate.db.get_event_handles():
       e = self.dbstate.db.get_event_from_handle(handle)
-      if e.get_date_object() == grDate:
-        if (     e.type == evtType and e.get_date_object() == grDate
+      if ( e.type == evtType) :
+        #from objbrowser import browse ;browse(locals())
+        if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
              and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
            ) :
@@ -535,13 +556,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     event.set_description(fsFaktoPriskribo)
     # noto
     if fsFakto.note:
-      noto = self.aldNoto(fsFakto.note)
+      noto = self.aldNoto(fsFakto.note,event.note_list)
       event.add_note(noto.handle)
     self.dbstate.db.add_event(event, self.txn)
     return event
 
   def __get_menu_options(self):
-    print(_("Plugin __get_menu_options"))
     menu = self.options.menu
     self.FS_ID = self.options.menu.get_option_by_name('FS_ID').get_value()
     self.asc = self.options.menu.get_option_by_name('gui_asc').get_value()
