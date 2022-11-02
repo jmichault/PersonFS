@@ -8,15 +8,15 @@ from urllib.parse import unquote
 import babelfish
 
 # local imports
-import getmyancestors
-from getmyancestors.classes.constants import (
+#import getmyancestors
+from fslib.constants import (
     MAX_PERSONS,
     FACT_EVEN,
     FACT_TAGS,
     ORDINANCES_STATUS,
 )
 
-# getmyancestors classes and functions
+# fslib classes and functions
 def cont(string):
     """parse a GEDCOM line adding CONT and CONT tags if necessary"""
     level = int(string[:1]) + 1
@@ -388,18 +388,19 @@ class Indi:
                 memorie = self.tree.fs.get_url(url)
                 if memorie and "sourceDescriptions" in memorie:
                     for x in memorie["sourceDescriptions"]:
-                        if x["mediaType"] == "text/plain":
-                            subject = "\n".join(
-                                val.get("value", "")
-                                for val in x.get("titles", [])
-                              )
-                            text = "\n".join(
-                                val.get("value", "")
-                                for val in x.get("descriptions", [])
-                              )
-                            self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self.tree))
-                        else:
-                            self.memories.add(Memorie(x))
+                        # FARINDAĴO : "text/plain" + memory
+                        #if x["mediaType"] == "text/plain":
+                        #    subject = "\n".join(
+                        #        val.get("value", "")
+                        #        for val in x.get("titles", [])
+                        #      )
+                        #    text = "\n".join(
+                        #        val.get("value", "")
+                        #        for val in x.get("descriptions", [])
+                        #      )
+                        #    self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self.tree))
+                        #else:
+                        self.memories.add(Memorie(x))
 
     def add_fams(self, fams):
         """add family fid (for spouse or parent)"""

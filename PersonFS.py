@@ -56,10 +56,9 @@ from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
 
 # lokaloj 
-from getmyancestors.classes.session import Session
-from getmyancestors.classes.constants import FACT_TAGS
-from getmyancestors.classes.session import Session
-from getmyancestors.classes.tree import Tree, Name as fsName, Indi, Fact
+from fslib.session import Session
+from fslib.constants import FACT_TAGS
+from fslib.tree import Tree, Name as fsName, Indi, Fact
 
 import sys
 import os

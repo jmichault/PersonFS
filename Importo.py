@@ -27,7 +27,7 @@
 from gramps.gen.db import DbTxn
 from gramps.gen.config import config
 from gramps.gen.const import GRAMPS_LOCALE as glocale
-from gramps.gen.lib import Attribute, ChildRef, Citation, Date, Event, EventRef, EventType, EventRoleType, Family, Name, NameType, Note
+from gramps.gen.lib import Attribute, ChildRef, Citation, Date, Event, EventRef, EventType, EventRoleType, Family, Media, Name, NameType, Note
 from gramps.gen.lib import Person, Place, PlaceName, PlaceRef, PlaceType, Source, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.plug.menu import StringOption, PersonOption, BooleanOption, NumberOption, FilterOption, MediaOption
 from gramps.gui.dialog import WarningDialog, QuestionDialog2
@@ -36,9 +36,9 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 
 
 from PersonFS import PersonFS
-from getmyancestors.classes.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
-from getmyancestors.classes.constants import FACT_TAGS
-from getmyancestors.classes.session import Session
+from fslib.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
+from fslib.constants import FACT_TAGS
+from fslib.session import Session
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -386,8 +386,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       s.abbrev = "FamilySearch " + fsFonto.fid
       self.dbstate.db.add_source(s,self.txn)
       self.dbstate.db.commit_source(s,self.txn)
-    # FARINDAĴO : sercxi ekzistantan
-    #for ch in EkzCit :
+    # sercxi ekzistantan
     for ch in obj.citation_list :
       c = self.dbstate.db.get_citation_from_handle(ch)
       if c.get_reference_handle() == s.handle :
@@ -461,14 +460,25 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     for fsNoto in fsPerso.notes :
       noto = self.aldNoto(fsNoto,grPerson.note_list)
       grPerson.add_note(noto.handle)
-    # FARINDAĴOJ : fontoj
+    # fontoj
     for fsFonto,quote in fsPerso.sources :
       c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
-      #grPerson.add_citation(c.handle)
     # FARINDAĴOJ : memoroj
     for fsMemoro in fsPerso.memories :
+      #print("memorie :")
+      #print(fsMemoro)
+      #m = Media()
+      #m.path = fsMemoro.url
+      #m.desc = fsMemoro.description
+      #self.dbstate.db.add_media(m, self.txn)
+      #self.dbstate.db.commit_media(m, self.txn)
+      #citation = Citation()
+      #citation.set_reference_handle(m.get_handle())
+      #self.dbstate.db.add_citation(citation,self.txn)
+      #self.dbstate.db.commit_citation(citation,self.txn)
+      #grPerson.add_citation(citation.handle)
       continue
-    # FARINDAĴOJ : bildoj
+      
     self.dbstate.db.commit_person(grPerson,self.txn)
 
   def aldNomo(self, fsNomo, type, grPerson):

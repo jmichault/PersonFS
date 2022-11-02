@@ -5,7 +5,7 @@ import time
 import requests
 
 # local imports
-from getmyancestors.classes.translation import translations
+from fslib.translation import translations
 
 
 class Session:
@@ -111,8 +111,8 @@ class Session:
             headers ["Accept-Language"] ="fr"
         while True:
             try:
-                print("Downloading: " + url)
-                self.write_log("Downloading: " + url)
+                print("Downloading:" + url)
+                self.write_log("Downloading:" + url)
                 r = requests.get(
                     "https://familysearch.org" + url,
                     cookies={"fssessionid": self.fssessionid},
