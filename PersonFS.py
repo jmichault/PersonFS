@@ -83,7 +83,7 @@ _ = _trans.gettext
 GRAMPLET_CONFIG_NAME = "PersonFS"
 CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_id", '')
-CONFIG.register("preferences.fs_pasvorto", '') #
+#CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
 
 
@@ -135,8 +135,8 @@ class PersonFS(Gramplet):
   " Interfaco kun familySearch
   """
   fs_id = CONFIG.get("preferences.fs_id")
-  #fs_pasvorto = ''
-  fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+  fs_pasvorto = ''
+  #fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
   fs_Session = None
   fs_Tree = None
   fs_TreeSercxo = None
@@ -385,13 +385,13 @@ class PersonFS(Gramplet):
       fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or Fact()
       fsBirthLoko = fsBirth.place 
       if fsBirthLoko :
-        fsBirth = fsBirth.date + ' \n@ ' +fsBirthLoko
+        fsBirth = fsBirth.date or '' + ' \n@ ' +fsBirthLoko
       else :
         fsBirth = fsBirth.date or ''
       fsDeath = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' ) or Fact()
       fsDeathLoko = fsDeath.place 
       if fsDeathLoko :
-        fsDeath = fsDeath.date + ' \n@ ' +fsDeathLoko
+        fsDeath = fsDeath.date or '' + ' \n@ ' +fsDeathLoko
       else :
         fsDeath = fsDeath.date or ''
       #from objbrowser import browse ;browse(locals())
@@ -458,7 +458,7 @@ class PersonFS(Gramplet):
       PersonFS.fs_id = fsid.get_text()
       PersonFS.fs_pasvorto = fspv.get_text()
       CONFIG.set("preferences.fs_id", PersonFS.fs_id)
-      CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
       CONFIG.save()
       self.konekti_FS()
     

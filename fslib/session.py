@@ -45,17 +45,17 @@ class Session:
                   return False
                 nbtry = nbtry + 1
                 url = "https://www.familysearch.org/auth/familysearch/login"
-                self.write_log("Downloading: " + url)
+                self.write_log("Downloading : " + url)
                 r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
                 url = r.headers["Location"]
-                self.write_log("Downloading: " + url)
+                self.write_log("Downloading : " + url)
                 r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21 :].index('"')
                 params = r.text[idx + 21 : idx + 21 + span]
 
                 url = "https://ident.familysearch.org/cis-web/oauth2/v3/authorization"
-                self.write_log("Downloading: " + url)
+                self.write_log("Downloading : " + url)
                 r = requests.post(
                     url,
                     data={
@@ -76,7 +76,7 @@ class Session:
                     continue
 
                 url = r.headers["Location"]
-                self.write_log("Downloading: " + url)
+                self.write_log("Downloading : " + url)
                 r = requests.get(url, allow_redirects=False)
                 self.fssessionid = r.cookies["fssessionid"]
             except requests.exceptions.ReadTimeout:
@@ -111,8 +111,7 @@ class Session:
             headers ["Accept-Language"] ="fr"
         while True:
             try:
-                print("Downloading:" + url)
-                self.write_log("Downloading:" + url)
+                self.write_log("Downloading :" + url)
                 r = requests.get(
                     "https://familysearch.org" + url,
                     cookies={"fssessionid": self.fssessionid},
@@ -162,6 +161,8 @@ class Session:
                     return None
                 time.sleep(self.timeout)
                 continue
+            if headers["Accept"][0:5] == "image":
+              return r
             try:
                 return r.json()
             except Exception as e:

@@ -117,6 +117,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     self.__get_menu_options()
     print("import ID "+self.FS_ID)
+    # FARINDAĴO : Progresa stango
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
@@ -135,7 +136,10 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           self.fs_gr[attr.get_value()] = person_handle
           break
     if not PersonFS.fs_Session:
-      PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+      if vorteco >= 3:
+        PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+      else :
+        PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
     else:
@@ -550,7 +554,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # serĉi ekzistanta
     for handle in self.dbstate.db.get_event_handles():
       e = self.dbstate.db.get_event_from_handle(handle)
-      if ( e.type == evtType) :
+      if ( e.type.string == evtType) :
         #from objbrowser import browse ;browse(locals())
         if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
