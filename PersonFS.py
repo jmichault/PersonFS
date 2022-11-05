@@ -151,12 +151,55 @@ class PersonFS(Gramplet):
   if len(lingvo) != 2:
       lingvo = 'fr'
 
+  def _db_create_schema(self):
+    # krei datumbazan tabelon
+    if not self.dbstate.db.dbapi.table_exists("personfs_stato"):
+      with DbTxn(_("FamilySearch krei"), self.dbstate.db) as txn:
+        self.dbstate.db.dbapi.execute('CREATE TABLE personfs_stato '
+                           '('
+                           'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
+                           'fsid CHAR(8), '
+                           'estas_radiko CHAR(1), '
+                           'stat_dato VARCHAR(30), '
+                           'konf_dato VARCHAR(30), '
+                           'gramps_datomod VARCHAR(30), '
+                           'fs_datomod VARCHAR(30),'
+                           'konf_esenco CHAR(1),,'
+                           'konf CHAR(1), '
+                           ')')
+
+  def _db_commit(self,person_handle):
+    with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
+      if self.db_handle :
+        sql = "UPDATE personfs_stato set fsid=?, estas_radiko=? , stat_dato=?, konf_dato=?, gramps_datomod=?, fs_datomod=?, konf_esenco=?, konf=? where p_handle=? "
+        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_handle, self.db_konf_esenco, self.konf ] )
+      else :
+        self.db_handle = person_handle
+        sql = "INSERT INTO personfs_stato(p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf) VALUES (?,?,?,?,?,?,?,?,?)"
+        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko, self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco, self.konf ] )
+
+  def _db_get(self,person_handle):
+    self.dbstate.db.dbapi.execute("select p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf from personfs_stato where p_handle=?",[person_handle])
+    datumoj = self.dbstate.db.dbapi.fetchone()
+    if datumoj:
+      self.db_handle = datumoj[0]
+      self.db_fsid = datumoj[1]
+      self.db_estas_radiko = datumoj[2]
+      self.db_stat_dato = datumoj[3]
+      self.db_konf_dato = datumoj[4]
+      self.db_gramps_datomod = datumoj[5]
+      self.db_fs_datomod = datumoj[6]
+      self.db_konf_esenco = datumoj[7]
+      self.db_konf = datumoj[8]
+
   def init(self):
     """
     " kreas GUI kaj konektas al FamilySearch
     """
     # FARINDAĴO : uzi PersonFS.lingvo
 
+    # krei datumbazan tabelon
+    self._db_create_schema()
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
@@ -167,6 +210,8 @@ class PersonFS(Gramplet):
       self.pref_clicked(None)
     else:
       self.konekti_FS()
+    self.db_handle= self.db_fsid= self.db_estas_radiko= self.db_stat_dato= self.db_konf_dato= self.db_gramps_datomod= self.db_fs_datomod = None
+    self.db_konf_esenco = self.db_konf = None
 
   def konekti_FS(self):
     if not PersonFS.fs_Session:
@@ -220,7 +265,7 @@ class PersonFS(Gramplet):
       active_handle = self.get_active('Person')
       person = self.dbstate.db.get_person_from_handle(active_handle)
       attr = None
-      with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as trans:
+      with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
         for attr in person.get_attribute_list():
           if attr.get_type() == '_FSFTID':
             attr.set_value(fsid)
@@ -231,7 +276,7 @@ class PersonFS(Gramplet):
           attr.set_type('_FSFTID')
           attr.set_value(fsid)
           person.add_attribute(attr)
-        self.dbstate.db.commit_person(person,trans)
+        self.dbstate.db.commit_person(person,txn)
       self.Sercxi.hide()
     return
 
@@ -316,14 +361,14 @@ class PersonFS(Gramplet):
     if loko :
       mendo = mendo + "q.anyPlace=\"%s\"&" % loko
     mendo = mendo + "offset=0&count=10"
-    datoj = self.fs_TreeSercxo.fs.get_url(
+    datumoj = self.fs_TreeSercxo.fs.get_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
-    if not datoj :
+    if not datumoj :
       return
-    tot = datoj["results"]
+    tot = datumoj["results"]
     print ("nb résultats = "+str(tot))
-    for entry in datoj["entries"] :
+    for entry in datumoj["entries"] :
       print (entry.get("id")+ ";  score = "+str(entry.get("score")))
       fsId = entry.get("id")
       data=entry["content"]["gedcomx"]
@@ -610,24 +655,29 @@ class PersonFS(Gramplet):
     else :
       fsSekso = _trans.gettext("unknown")
     coloro = "orange"
+    fsPerso.konf_sekso = False
     if (grSekso == fsSekso) :
       coloro = "green"
+      fsPerso.konf_sekso = True
     self.modelKomp.add( ( coloro , _('Sekso:')
 		, '', grSekso
 		, '', fsSekso
 		) )
     return
 
-  def aldNomoKomp(self, person, fsPerso ) :
+  def aldNomojKomp(self, person, fsPerso ) :
     grNomo = person.primary_name
     fsNomo = fsPerso.name or fsName()
     coloro = "orange"
+    fsPerso.konf_nomo = False
     if (grNomo.get_primary_surname().surname == fsNomo.surname) and (grNomo.first_name == fsNomo.given) :
       coloro = "green"
+      fsPerso.konf_nomo = True
     self.modelKomp.add( ( coloro , _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
+    res = fsPerso.konf_nomo
     fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames)
     #fsNomoj = fsPerso.nicknames.union(fsPerso.birthnames).union(fsPerso.aka)
     for grNomo in person.alternate_names :
@@ -639,17 +689,19 @@ class PersonFS(Gramplet):
           coloro = "green"
           fsNomoj.remove(x)
           break
+      if coloro != "green" : res = False
       self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
     coloro = "yellow"
     for fsNomo in fsNomoj :
+      res = False
       self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
 		, '', ''
 		, '', fsNomo.surname +  ', ' + fsNomo.given
 		) )
-    return
+    return res
 
   def aldFaktoKomp(self, person, fsPerso, grEvent , fsFact ) :
     grFakto = self.get_grevent(person, EventType(grEvent))
@@ -683,7 +735,7 @@ class PersonFS(Gramplet):
 		, grFaktoDato , grFaktoLoko
 		, fsFaktoDato , fsFaktoLoko
 		) )
-    return
+    return (coloro == "green")
 
   def aldAliajFaktojKomp(self, person, fsPerso ) :
     grFaktoj = person.event_ref_list
@@ -1031,6 +1083,9 @@ class PersonFS(Gramplet):
     # Se ĝi ne estas konektita al familysearch: nenio pli.
     if PersonFS.fs_Session == None or not PersonFS.fs_Session.logged:
       return
+    #
+    self._db_get(person_handle)
+    self.db_fsid = fsid
     # ŝarĝante individuan "FamilySearch" :
     PersonFS.fs_Tree.add_indis([fsid])
     fsPerso = PersonFS.fs_Tree.indi.get(fsid) or Indi()
@@ -1039,21 +1094,29 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_children([fsid])
 
 
-    self.aldNomoKomp( person, fsPerso)
+    fsPerso.konf = self.aldNomojKomp( person, fsPerso)
     self.aldSeksoKomp( person, fsPerso)
 
-    self.aldFaktoKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
-    self.aldFaktoKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-    self.aldFaktoKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
-    self.aldFaktoKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
+    fsPerso.konf_birdo =  self.aldFaktoKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth") 
+    fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism") and fsPerso.konf)
+    fsPerso.konf_morto = self.aldFaktoKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
+    fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial") and fsPerso.konf)
+    fsPerso.konf_esenco = (fsPerso.konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
+    fsPerso.konf = (fsPerso.konf and fsPerso.konf_esenco)
 
-    self.aldGepKomp( person, fsPerso)
-    self.aldEdzKomp( person, fsPerso, fsid)
+    fsPerso.konf = (self.aldGepKomp( person, fsPerso) and fsPerso.konf)
 
-    self.aldAliajFaktojKomp( person, fsPerso)
+    fsPerso.konf = (self.aldEdzKomp( person, fsPerso, fsid) and fsPerso.konf)
+
+    fsPerso.konf = (self.aldAliajFaktojKomp( person, fsPerso) and fsPerso.konf)
+
+    # FARINDAĴOJ : db_datoj : db_…
+
+    # FARINDAĴOJ : «tags»
 
     # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …
 
+    self._db_commit(person_handle)
     return
 
   # FARINDAĴOJ : kopii, serĉi, redundoj, esploro, importado, …
