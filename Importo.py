@@ -23,6 +23,7 @@
 " «FamilySearch» importo.
 """
 
+from gi.repository import Gtk
 
 from gramps.gen.db import DbTxn
 from gramps.gen.config import config
@@ -35,10 +36,10 @@ from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT, TOKENS
 
 
-from PersonFS import PersonFS
-from fslib.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
-from fslib.constants import FACT_TAGS
+from PersonFS import PersonFS, CONFIG
 from fslib.session import Session
+from fslib.constants import FACT_TAGS
+from fslib.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -136,10 +137,47 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           self.fs_gr[attr.get_value()] = person_handle
           break
     if not PersonFS.fs_Session:
-      if vorteco >= 3:
-        PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
-      else :
-        PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+      if PersonFS.fs_id == '' or PersonFS.fs_pasvorto == '':
+        import locale, os
+        self.top = Gtk.Builder()
+        self.top.set_translation_domain("addon")
+        base = os.path.dirname(__file__)
+        locale.bindtextdomain("addon", base + "/locale")
+        glade_file = base + os.sep + "PersonFS.glade"
+        self.top.add_from_file(glade_file)
+        top = self.top.get_object("PersonFSPrefDialogo")
+        top.set_transient_for(self.uistate.window)
+        parent_modal = self.uistate.window.get_modal()
+        if parent_modal:
+          self.uistate.window.set_modal(False)
+        fsid = self.top.get_object("fsid_eniro")
+        fsid.set_text(PersonFS.fs_id)
+        fspv = self.top.get_object("fspv_eniro")
+        fspv.set_text(PersonFS.fs_pasvorto)
+        top.show()
+        res = top.run()
+        print ("res = " + str(res))
+        top.hide()
+        if res == -3:
+          PersonFS.fs_id = fsid.get_text()
+          PersonFS.fs_pasvorto = fspv.get_text()
+          CONFIG.set("preferences.fs_id", PersonFS.fs_id)
+          #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+          CONFIG.save()
+          if vorteco >= 3:
+            PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+          else :
+            PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+        else :
+          print("Vi devas enigi la ID kaj pasvorton")
+      else:
+        if vorteco >= 3:
+          PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+        else :
+          PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+    print("import")
+    print(PersonFS.fs_id)
+    print(PersonFS.fs_Session)
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
     else:
