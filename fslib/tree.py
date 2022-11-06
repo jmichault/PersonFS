@@ -169,11 +169,16 @@ class Name:
 
     def __init__(self, data=None, tree=None):
         self.given = ""
+        self.preferred = False
         self.surname = ""
         self.prefix = None
         self.suffix = None
         self.note = None
         if data:
+            if "type" in data:
+              self.type = data["type"]
+            if "preferred" in data and data["preferred"]:
+              self.preferred = True
             if "parts" in data["nameForms"][0]:
                 for z in data["nameForms"][0]["parts"]:
                     if z["type"] == "http://gedcomx.org/Given":
@@ -190,6 +195,13 @@ class Name:
                     , tree.fs._("attribution")
                     , data["attribution"]["changeMessage"]
                     , tree)
+    def json(self):
+      json ="<name "
+      if type in self:
+        json +=  "type=\""+self.type+"\""
+      json += ">"
+      json += "</name>"
+      return json
 
 class Ordinance:
     """GEDCOM Ordinance class
@@ -220,13 +232,14 @@ class Indi:
         else:
             Indi.counter += 1
             self.num = Indi.counter
-        self.fid = fid
         self.tree = tree
+        self.fid = fid
         self.famc_fid = set()
         self.fams_fid = set()
         self.famc_num = set()
         self.fams_num = set()
         self.name = None
+        self.names = set()
         self.gender = None
         self.living = None
         self.parents = set()
@@ -243,11 +256,42 @@ class Indi:
         self.sources = set()
         self.memories = set()
 
+    def json(self):
+      json = "{ \"persons\" : [ {"
+      if self.living and (self.living =="true" or self.living == True) :
+        json += "\"living\" : true,"
+      elif self.living and (self.living =="false" or self.living == False) :
+        json += "\"living\" : false,"
+      if self.gender:
+        json += "\"gender\" : { \"type\" : "
+        if self.gender == "M":
+          json += "\"http://gedcomx.org/Male\" },"
+        elif self.gender == "F":
+          json += "\"http://gedcomx.org/Female\" },"
+        elif self.gender == "X":
+          json += "\"http://gedcomx.org/Intersex\" },"
+        else:
+          json += "\"http://gedcomx.org/Unknown\" },"
+      if len(self.names) >0:
+        json += "\"names\" : ["
+        for name in self.names :
+          json += name.json()
+        json += " ],"
+      if len(self.facts) >0:
+        json += "\"facts\" : ["
+        for fact in self.facts :
+          json += fact.json()
+        json += " ],"
+      json += "} ] }"
+      return json
+      
+
     def add_data(self, data):
         """add FS individual data"""
         if data:
             self.living = data["living"]
             for x in data["names"]:
+                self.names.add(Name(x, self.tree))
                 if x["preferred"]:
                     self.name = Name(x, self.tree)
                 else:

@@ -251,11 +251,24 @@ class PersonFS(Gramplet):
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
             "on_ButSercxi_clicked"      : self.ButSercxi_clicked,
             "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
+            "on_ButAldoni_clicked"      : self.ButAldoni_clicked,
             "on_ButLigi_clicked"      : self.ButLigi_clicked,
 	})
 
     return self.res
 
+  def ButAldoni_clicked(self, dummy):
+    active_handle = self.get_active('Person')
+    person = self.dbstate.db.get_person_from_handle(active_handle)
+    fsPerso = Indi(None,self.fs_Tree)
+    if person.get_gender() == Person.MALE :
+      fsPerso.gender = "M"
+    elif person.get_gender() == Person.FEMALE :
+      fsPerso.gender = "F"
+    else:
+      fsPerso.gender = "U"
+    print (fsPerso.json())
+    return
 
   def ButLigi_clicked(self, dummy):
     model, iter_ = self.top.get_object("PersonFSResRes").get_selection().get_selected()
