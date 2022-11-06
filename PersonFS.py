@@ -160,23 +160,23 @@ class PersonFS(Gramplet):
                            'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
                            'fsid CHAR(8), '
                            'estas_radiko CHAR(1), '
-                           'stat_dato VARCHAR(30), '
-                           'konf_dato VARCHAR(30), '
-                           'gramps_datomod VARCHAR(30), '
-                           'fs_datomod VARCHAR(30),'
-                           'konf_esenco CHAR(1),,'
-                           'konf CHAR(1), '
+                           'stat_dato integer, '
+                           'konf_dato integer, '
+                           'gramps_datomod integer, '
+                           'fs_datomod integer,'
+                           'konf_esenco CHAR(1),'
+                           'konf CHAR(1) '
                            ')')
 
   def _db_commit(self,person_handle):
     with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
       if self.db_handle :
         sql = "UPDATE personfs_stato set fsid=?, estas_radiko=? , stat_dato=?, konf_dato=?, gramps_datomod=?, fs_datomod=?, konf_esenco=?, konf=? where p_handle=? "
-        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_handle, self.db_konf_esenco, self.konf ] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_handle, self.db_konf_esenco, self.db_konf ] )
       else :
         self.db_handle = person_handle
         sql = "INSERT INTO personfs_stato(p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf) VALUES (?,?,?,?,?,?,?,?,?)"
-        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko, self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco, self.konf ] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko, self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco, self.db_konf ] )
 
   def _db_get(self,person_handle):
     self.dbstate.db.dbapi.execute("select p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf from personfs_stato where p_handle=?",[person_handle])
@@ -1101,7 +1101,6 @@ class PersonFS(Gramplet):
     fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism") and fsPerso.konf)
     fsPerso.konf_morto = self.aldFaktoKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
     fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial") and fsPerso.konf)
-    fsPerso.konf_esenco = (fsPerso.konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
     fsPerso.konf = (fsPerso.konf and fsPerso.konf_esenco)
 
     fsPerso.konf = (self.aldGepKomp( person, fsPerso) and fsPerso.konf)
@@ -1109,6 +1108,10 @@ class PersonFS(Gramplet):
     fsPerso.konf = (self.aldEdzKomp( person, fsPerso, fsid) and fsPerso.konf)
 
     fsPerso.konf = (self.aldAliajFaktojKomp( person, fsPerso) and fsPerso.konf)
+
+    self.db_konf_esenco = (fsPerso.konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
+    self.db_konf = fsPerso.konf
+    self.db_gramps_datomod = person.change
 
     # FARINDAĴOJ : db_datoj : db_…
 
