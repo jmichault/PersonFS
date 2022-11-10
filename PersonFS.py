@@ -23,6 +23,8 @@
 fs Gramplet.
 """
 
+import json
+
 #-------------------------------------------------------------------------
 #
 # GTK modules
@@ -58,7 +60,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 # lokaloj 
 from fslib.session import Session
 from fslib.constants import FACT_TAGS
-from fslib.tree import Tree, Name as fsName, Indi, Fact
+from fslib.tree import Tree, Name as fsName, Indi, Fact, jsonigi
 
 import sys
 import os
@@ -83,7 +85,7 @@ _ = _trans.gettext
 GRAMPLET_CONFIG_NAME = "PersonFS"
 CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_id", '')
-#CONFIG.register("preferences.fs_pasvorto", '') #
+CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
 
 
@@ -136,7 +138,7 @@ class PersonFS(Gramplet):
   """
   fs_id = CONFIG.get("preferences.fs_id")
   fs_pasvorto = ''
-  #fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+  fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
   fs_Session = None
   fs_Tree = None
   fs_TreeSercxo = None
@@ -262,12 +264,45 @@ class PersonFS(Gramplet):
     person = self.dbstate.db.get_person_from_handle(active_handle)
     fsPerso = Indi(None,self.fs_Tree)
     if person.get_gender() == Person.MALE :
-      fsPerso.gender = "M"
+      fsPerso.gender = "http://gedcomx.org/Male"
     elif person.get_gender() == Person.FEMALE :
-      fsPerso.gender = "F"
+      fsPerso.gender = "http://gedcomx.org/Female"
     else:
-      fsPerso.gender = "U"
-    print (fsPerso.json())
+      fsPerso.gender = "http://gedcomx.org/Unknown"
+    grNomo = person.primary_name
+    nomo = fsName()
+    nomo.given = grNomo.first_name
+    nomo.surname = grNomo.get_primary_surname().surname
+    fsPerso.names.add(nomo)
+    grFaktoj = person.event_ref_list
+    for grFakto in grFaktoj :
+      if int(grFakto.get_role()) != EventRoleType.PRIMARY:
+        continue
+      event = self.dbstate.db.get_event_from_handle(grFakto.ref)
+      titolo = str(EventType(event.type))
+      grFaktoPriskribo = event.description or ''
+      grFaktoDato = grdato_al_formal(event.date)
+      if event.place and event.place != None :
+        place = self.dbstate.db.get_place_from_handle(event.place)
+        grFaktoLoko = place.name.value
+      else :
+        grFaktoLoko = ''
+      # FARINDAĴO : norma loknomo
+      if grFaktoLoko == '' :
+        grValoro = grFaktoPriskribo
+      else :
+        grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+      grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+      fsFakto = Fact()
+      fsFakto.date = grFaktoDato
+      fsFakto.type = grTag
+      fsFakto.place = grFaktoLoko
+      fsFakto.value = grFaktoPriskribo
+      fsPerso.facts.add(fsFakto)
+    #peto = {'persons' : [fsPerso.jsonigi()]}
+    peto = {'persons' : [jsonigi(fsPerso)]}
+    print (json.dumps(peto))
+    
     return
 
   def ButLigi_clicked(self, dummy):
@@ -434,9 +469,9 @@ class PersonFS(Gramplet):
             print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
               person1=self.fs_TreeSercxo.indi[person1Id]
-              if not father and person1.gender == "M" :
+              if not father and person1.gender == "http://gedcomx.org/Male" :
                 father = person1
-              elif not mother and person1.gender == "F" :
+              elif not mother and person1.gender == "http://gedcomx.org/Female" :
                 mother = person1
               
       fsNomo = fsPerso.name or fsName()
@@ -661,9 +696,9 @@ class PersonFS(Gramplet):
       grSekso = _trans.gettext("female")
     else :
       grSekso = _trans.gettext("unknown")
-    if fsPerso.gender == "M" :
+    if fsPerso.gender == "http://gedcomx.org/Male" :
       fsSekso = _trans.gettext("male")
-    elif fsPerso.gender == "F" :
+    elif fsPerso.gender == "http://gedcomx.org/Female" :
       fsSekso = _trans.gettext("female")
     else :
       fsSekso = _trans.gettext("unknown")

@@ -1,3 +1,22 @@
+#
+# Kopirajto © 2022 Jean Michault
+# Licenco «GPL-3.0-or-later»
+#
+# Ĉi tiu programo estas libera programaro; vi povas redistribui ĝin kaj/aŭ modifi
+# ĝi laŭ la kondiĉoj de la Ĝenerala Publika Permesilo de GNU kiel eldonita de
+# la Free Software Foundation; ĉu versio 3 de la Licenco, aŭ
+# (laŭ via elekto) ajna posta versio.
+#
+# Ĉi tiu programo estas distribuata kun la espero, ke ĝi estos utila,
+# sed SEN AJN GARANTIO; sen eĉ la implicita garantio de
+# KOMERCEBLECO aŭ TAĜECO POR APARTA CELO. Vidu la
+# GNU Ĝenerala Publika Permesilo por pliaj detaloj.
+#
+# Vi devus esti ricevinta kopion de la Ĝenerala Publika Permesilo de GNU
+# kune kun ĉi tiu programo; se ne, skribu al 
+# Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
 import sys
 import re
 import time
@@ -15,6 +34,28 @@ from fslib.constants import (
     FACT_TAGS,
     ORDINANCES_STATUS,
 )
+
+def jsonigi(obj):
+    if hasattr(obj, "jsonigi"):
+        return obj.jsonigi()
+    ser = dict()
+    for a in dir(obj):
+      if not a.startswith('_') and not callable(getattr(obj, a)) :
+        tag = a
+        attr = getattr(obj,a)
+        cn = attr.__class__.__name__
+        if (    cn == 'bool'
+             or cn == 'str'
+             or cn == 'int'
+           ) :
+          ser[tag] = attr
+        elif cn == 'set' and  len(attr) >0:
+            ser[tag] = [ jsonigi(o) for o in attr ]
+        else :
+          if cn != 'NoneType' :
+            print(" classe pas sérialisée : "+cn)
+    return ser
+
 
 # fslib classes and functions
 def cont(string):
@@ -51,14 +92,14 @@ class Note:
     :param num: the GEDCOM identifier
     """
 
-    counter = 0
+    _counter = 0
 
     def __init__(self, id,subject, text, tree=None, num=None):
         if num:
             self.num = num
         else:
-            Note.counter += 1
-            self.num = Note.counter
+            Note._counter += 1
+            self.num = Note._counter
         self.id = id.strip()
         self.subject = subject.strip()
         self.text = text.strip()
@@ -73,16 +114,16 @@ class Source:
     :param num: the GEDCOM identifier
     """
 
-    counter = 0
+    _counter = 0
 
     def __init__(self, data=None, tree=None, num=None):
         if num:
             self.num = num
         else:
-            Source.counter += 1
-            self.num = Source.counter
+            Source._counter += 1
+            self.num = Source._counter
 
-        self.tree = tree
+        self._tree = tree
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
         if data:
@@ -102,7 +143,7 @@ class Source:
                      n["id"] if "id" in n else "FS note"
                     ,n["subject"] if "subject" in n else ""
                     ,n["text"] if "text" in n else ""
-                    , self.tree))
+                    , self._tree))
 
 class Fact:
     """GEDCOM Fact class
@@ -143,6 +184,12 @@ class Fact:
                 self.date or self.place
             ):
                 self.value = "Y"
+    def jsonigi(self):
+      res = dict()
+      if self.type : res['type']= self.type
+      if self.date : res['date']= {'formal': self.date}
+      if self.date : res['place']= {'original': self.place}
+      return res
 
 class Memorie:
   """GEDCOM Memorie class
@@ -174,6 +221,7 @@ class Name:
         self.prefix = None
         self.suffix = None
         self.note = None
+        self.type = None
         if data:
             if "type" in data:
               self.type = data["type"]
@@ -195,14 +243,19 @@ class Name:
                     , tree.fs._("attribution")
                     , data["attribution"]["changeMessage"]
                     , tree)
-    def json(self):
-      json ="<name "
-      if type in self:
-        json +=  "type=\""+self.type+"\""
-      json += ">"
-      json += "</name>"
-      return json
-
+    def jsonigi(self):
+      res = dict()
+      if self.type : res['type']= self.type
+      res['nameForms'] = [ {
+                'fullText' : (self.given or '')+' '+(self.surname or ''),
+                'parts' :  [ {
+                    'type': 'http://gedcomx.org/Given',
+                    'value' : (self.given or '') },
+                    { 'type': 'http://gedcomx.org/Surname',
+                      'value' : (self.surname or '') }]
+            }]
+      return res
+      
 class Ordinance:
     """GEDCOM Ordinance class
     :param data: FS Ordinance data
@@ -224,15 +277,15 @@ class Indi:
     :param num: the GEDCOM identifier
     """
 
-    counter = 0
+    _counter = 0
 
     def __init__(self, fid=None, tree=None, num=None):
         if num:
             self.num = num
         else:
-            Indi.counter += 1
-            self.num = Indi.counter
-        self.tree = tree
+            Indi._counter += 1
+            self.num = Indi._counter
+        self._tree = tree
         self.fid = fid
         self.famc_fid = set()
         self.fams_fid = set()
@@ -256,34 +309,13 @@ class Indi:
         self.sources = set()
         self.memories = set()
 
-    def json(self):
-      json = "{ \"persons\" : [ {"
-      if self.living and (self.living =="true" or self.living == True) :
-        json += "\"living\" : true,"
-      elif self.living and (self.living =="false" or self.living == False) :
-        json += "\"living\" : false,"
-      if self.gender:
-        json += "\"gender\" : { \"type\" : "
-        if self.gender == "M":
-          json += "\"http://gedcomx.org/Male\" },"
-        elif self.gender == "F":
-          json += "\"http://gedcomx.org/Female\" },"
-        elif self.gender == "X":
-          json += "\"http://gedcomx.org/Intersex\" },"
-        else:
-          json += "\"http://gedcomx.org/Unknown\" },"
-      if len(self.names) >0:
-        json += "\"names\" : ["
-        for name in self.names :
-          json += name.json()
-        json += " ],"
-      if len(self.facts) >0:
-        json += "\"facts\" : ["
-        for fact in self.facts :
-          json += fact.json()
-        json += " ],"
-      json += "} ] }"
-      return json
+    def jsonigi(self):
+      res = dict()
+      if self.living : res['living']= self.living
+      if self.gender : res['gender'] =  self.gender
+      if len(self.names) >0: res['names'] = [ o.jsonigi() for o in self.names ]
+      if len(self.facts) >0: res['facts'] = [ o.jsonigi() for o in self.facts ]
+      return res
       
 
     def add_data(self, data):
@@ -291,38 +323,39 @@ class Indi:
         if data:
             self.living = data["living"]
             for x in data["names"]:
-                self.names.add(Name(x, self.tree))
+                self.names.add(Name(x, self._tree))
                 if x["preferred"]:
-                    self.name = Name(x, self.tree)
+                    self.name = Name(x, self._tree)
                 else:
                     if x["type"] == "http://gedcomx.org/Nickname":
-                        self.nicknames.add(Name(x, self.tree))
+                        self.nicknames.add(Name(x, self._tree))
                     if x["type"] == "http://gedcomx.org/BirthName":
-                        self.birthnames.add(Name(x, self.tree))
+                        self.birthnames.add(Name(x, self._tree))
                     if x["type"] == "http://gedcomx.org/AlsoKnownAs":
-                        self.aka.add(Name(x, self.tree))
+                        self.aka.add(Name(x, self._tree))
                     if x["type"] == "http://gedcomx.org/MarriedName":
-                        self.married.add(Name(x, self.tree))
+                        self.married.add(Name(x, self._tree))
             if "gender" in data:
-                if data["gender"]["type"] == "http://gedcomx.org/Male":
-                    self.gender = "M"
-                elif data["gender"]["type"] == "http://gedcomx.org/Female":
-                    self.gender = "F"
-                elif data["gender"]["type"] == "http://gedcomx.org/Unknown":
-                    self.gender = "U"
+              self.gender = data["gender"]["type"]
+                #if data["gender"]["type"] == "http://gedcomx.org/Male":
+                #    self.gender = "M"
+                #elif data["gender"]["type"] == "http://gedcomx.org/Female":
+                #    self.gender = "F"
+                #elif data["gender"]["type"] == "http://gedcomx.org/Unknown":
+                #    self.gender = "U"
             if "facts" in data:
                 for x in data["facts"]:
                     if x["type"] == "http://familysearch.org/v1/LifeSketch":
                       self.notes.add(Note(
                          x["id"] if "id" in x else "FS note"
-                        ,x["subject"] if "subject" in x else self.tree.fs._("Life Sketch")
+                        ,x["subject"] if "subject" in x else self._tree.fs._("Life Sketch")
                         ,x["value"] if "value" in x else ""
-                        , self.tree))
+                        , self._tree))
                     else:
-                        self.facts.add(Fact(x, self.tree))
+                        self.facts.add(Fact(x, self._tree))
             # FARINDAĴO : portrait
             #if "links" in data:
-            #    req = self.tree.fs.get_url(
+            #    req = self._tree.fs.get_url(
             #        "/platform/tree/persons/%s/portrait" % self.fid
             #        , {"Accept": "image/*"}
             #    )
@@ -331,8 +364,8 @@ class Indi:
             #      self.portrait = req.text
             #      self.portrait_type = req.headers["Content-Type"]
             #      self.portrait_url = req.url
-            if self.tree.getsources and "sources" in data:
-                sources = self.tree.fs.get_url(
+            if self._tree.getsources and "sources" in data:
+                sources = self._tree.fs.get_url(
                     "/platform/tree/persons/%s/sources" % self.fid
                 )
                 if sources:
@@ -344,14 +377,14 @@ class Indi:
                             else None
                         )
                     for source in sources["sourceDescriptions"]:
-                        if source["id"] not in self.tree.sources:
-                            self.tree.sources[source["id"]] = Source(source, self.tree)
+                        if source["id"] not in self._tree.sources:
+                            self._tree.sources[source["id"]] = Source(source, self._tree)
                         self.sources.add(
-                            (self.tree.sources[source["id"]], quotes[source["id"]])
+                            (self._tree.sources[source["id"]], quotes[source["id"]])
                         )
             if "evidence" in data:
                 url = "/platform/tree/persons/%s/memories" % self.fid
-                memorie = self.tree.fs.get_url(url)
+                memorie = self._tree.fs.get_url(url)
                 if memorie and "sourceDescriptions" in memorie:
                     for x in memorie["sourceDescriptions"]:
                         # FARINDAĴO : "text/plain" + memory
@@ -364,7 +397,7 @@ class Indi:
                         #        val.get("value", "")
                         #        for val in x.get("descriptions", [])
                         #      )
-                        #    self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self.tree))
+                        #    self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self._tree))
                         #else:
                         self.memories.add(Memorie(x))
 
@@ -378,14 +411,14 @@ class Indi:
 
     def get_notes(self):
         """retrieve individual notes"""
-        notes = self.tree.fs.get_url("/platform/tree/persons/%s/notes" % self.fid)
+        notes = self._tree.fs.get_url("/platform/tree/persons/%s/notes" % self.fid)
         if notes:
             for n in notes["persons"][0]["notes"]:
                 self.notes.add(Note(
                     n["id"] if "id" in n else ""
                     ,n["subject"] if "subject" in n else ""
                     ,n["text"] if "text" in n else ""
-                    , self.tree))
+                    , self._tree))
 
     def get_ordinances(self):
         """retrieve LDS ordinances
@@ -396,7 +429,7 @@ class Indi:
         if self.living:
             return res, famc
         url = "/service/tree/tree-data/reservations/person/%s/ordinances" % self.fid
-        data = self.tree.fs.get_url(url, {})
+        data = self._tree.fs.get_url(url, {})
         if data:
             for key, o in data["data"].items():
                 if key == "baptism":
@@ -423,18 +456,18 @@ class Indi:
         """retrieve contributors"""
         temp = set()
         url = "/platform/tree/persons/%s/changes" % self.fid
-        data = self.tree.fs.get_url(url, {"Accept": "application/x-gedcomx-atom+json"})
+        data = self._tree.fs.get_url(url, {"Accept": "application/x-gedcomx-atom+json"})
         if data:
             for entries in data["entries"]:
                 for contributors in entries["contributors"]:
                     temp.add(contributors["name"])
         if temp:
             text = "\n".join(sorted(temp))
-            for n in self.tree.notes:
+            for n in self._tree.notes:
                 if n.text == text:
                     self.notes.add(n)
                     return
-            self.notes.add(Note('FS contributors',self.tree.fs._("Contributors"),text, self.tree))
+            self.notes.add(Note('FS contributors',self._tree.fs._("Contributors"),text, self._tree))
 
 class Fam:
     """GEDCOM family class
@@ -444,17 +477,17 @@ class Fam:
     :param num: a GEDCOM identifier
     """
 
-    counter = 0
+    _counter = 0
 
     def __init__(self, husb=None, wife=None, tree=None, num=None):
         if num:
             self.num = num
         else:
-            Fam.counter += 1
-            self.num = Fam.counter
+            Fam._counter += 1
+            self.num = Fam._counter
         self.husb_fid = husb if husb else None
         self.wife_fid = wife if wife else None
-        self.tree = tree
+        self._tree = tree
         self.husb_num = self.wife_num = self.fid = None
         self.facts = set()
         self.sealing_spouse = None
@@ -475,12 +508,12 @@ class Fam:
         if not self.fid:
             self.fid = fid
             url = "/platform/tree/couple-relationships/%s" % self.fid
-            data = self.tree.fs.get_url(url)
+            data = self._tree.fs.get_url(url)
             if data:
                 if "facts" in data["relationships"][0]:
                     for x in data["relationships"][0]["facts"]:
-                        self.facts.add(Fact(x, self.tree))
-                if self.tree.getsources and "sources" in data["relationships"][0]:
+                        self.facts.add(Fact(x, self._tree))
+                if self._tree.getsources and "sources" in data["relationships"][0]:
                     quotes = dict()
                     for x in data["relationships"][0]["sources"]:
                         quotes[x["descriptionId"]] = (
@@ -488,28 +521,28 @@ class Fam:
                             if "changeMessage" in x["attribution"]
                             else None
                         )
-                    new_sources = quotes.keys() - self.tree.sources.keys()
+                    new_sources = quotes.keys() - self._tree.sources.keys()
                     if new_sources:
-                        sources = self.tree.fs.get_url(
+                        sources = self._tree.fs.get_url(
                             "/platform/tree/couple-relationships/%s/sources" % self.fid
                         )
                         for source in sources["sourceDescriptions"]:
                             if (
                                 source["id"] in new_sources
-                                and source["id"] not in self.tree.sources
+                                and source["id"] not in self._tree.sources
                             ):
-                                self.tree.sources[source["id"]] = Source(
-                                    source, self.tree
+                                self._tree.sources[source["id"]] = Source(
+                                    source, self._tree
                                 )
                     for source_fid in quotes:
                         self.sources.add(
-                            (self.tree.sources[source_fid], quotes[source_fid])
+                            (self._tree.sources[source_fid], quotes[source_fid])
                         )
 
     def get_notes(self):
         """retrieve marriage notes"""
         if self.fid:
-            notes = self.tree.fs.get_url(
+            notes = self._tree.fs.get_url(
                 "/platform/tree/couple-relationships/%s/notes" % self.fid
             )
             if notes:
@@ -518,14 +551,14 @@ class Fam:
                          n["id"] if "id" in n else ""
                         ,n["subject"] if "subject" in n else ""
                         ,n["text"] if "text" in n else ""
-                        , self.tree))
+                        , self._tree))
 
     def get_contributors(self):
         """retrieve contributors"""
         if self.fid:
             temp = set()
             url = "/platform/tree/couple-relationships/%s/changes" % self.fid
-            data = self.tree.fs.get_url(
+            data = self._tree.fs.get_url(
                 url, {"Accept": "application/x-gedcomx-atom+json"}
             )
             if data:
@@ -534,11 +567,11 @@ class Fam:
                         temp.add(contributors["name"])
             if temp:
                 text = "\n".join(sorted(temp))
-                for n in self.tree.notes:
+                for n in self._tree.notes:
                     if n.text == text:
                         self.notes.add(n)
                         return
-                self.notes.add(Note('FS contributors',self.tree.fs._("Contributors"),text, self.tree))
+                self.notes.add(Note('FS contributors',self._tree.fs._("Contributors"),text, self._tree))
 
 class Tree:
     """family tree class
