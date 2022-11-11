@@ -36,7 +36,7 @@ class Session:
 
     def login(self):
         """retrieve FamilySearch session ID
-        (https://familysearch.org/developers/docs/guides/oauth2)
+        (https://www.familysearch.org/developers/docs/guides/oauth2)
         """
         nbtry = 1
         while True:
@@ -102,6 +102,65 @@ class Session:
             self.set_current()
             return True
 
+    def post_url(self, url, datumoj, headers=None):
+        if headers is None:
+            headers = {"Accept": "application/x-gedcomx-v1+json","Content-Type": "application/x-gedcomx-v1+json"}
+        while True:
+            try:
+                self.write_log("Downloading :" + url)
+                r = requests.post(
+                    "https://www.familysearch.org" + url,
+                    cookies={"fssessionid": self.fssessionid},
+                    timeout=self.timeout,
+                    headers=headers,
+                    data=datumoj,
+                    allow_redirects=False
+                )
+            except requests.exceptions.ReadTimeout:
+                self.write_log("Read timed out")
+                continue
+            except requests.exceptions.ConnectionError:
+                self.write_log("Connection aborted")
+                time.sleep(self.timeout)
+                continue
+            self.write_log("Status code: %s" % r.status_code)
+            if r.status_code == 204:
+                return r
+            if r.status_code == 401:
+                self.login()
+                continue
+            if r.status_code in {400, 404, 405, 406, 410, 500}:
+                self.write_log("WARNING: " + url)
+                self.write_log(r)
+                return r
+            try:
+                r.raise_for_status()
+            except requests.exceptions.HTTPError:
+                self.write_log("HTTPError")
+                if r.status_code == 403:
+                    if (
+                        "message" in r.json()["errors"][0]
+                        and r.json()["errors"][0]["message"]
+                        == "Unable to get ordinances."
+                    ):
+                        self.write_log(
+                            "Unable to get ordinances. "
+                            "Try with an LDS account or without option -c."
+                        )
+                        return "error"
+                    self.write_log(
+                        "WARNING: code 403 from %s %s"
+                        % (url, r.json()["errors"][0]["message"] or "")
+                    )
+                    return r
+                time.sleep(self.timeout)
+                continue
+            try:
+                return r
+            except Exception as e:
+                self.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
+                return None
+
     def get_url(self, url, headers=None):
         """retrieve JSON structure from a FamilySearch URL"""
         self.counter += 1
@@ -113,7 +172,7 @@ class Session:
             try:
                 self.write_log("Downloading :" + url)
                 r = requests.get(
-                    "https://familysearch.org" + url,
+                    "https://www.familysearch.org" + url,
                     cookies={"fssessionid": self.fssessionid},
                     timeout=self.timeout,
                     headers=headers,

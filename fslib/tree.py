@@ -41,19 +41,15 @@ def jsonigi(obj):
     ser = dict()
     for a in dir(obj):
       if not a.startswith('_') and not callable(getattr(obj, a)) :
-        tag = a
         attr = getattr(obj,a)
         cn = attr.__class__.__name__
-        if (    cn == 'bool'
-             or cn == 'str'
-             or cn == 'int'
-           ) :
-          ser[tag] = attr
+        if (    cn == 'bool' or cn == 'str' or cn == 'int') :
+          ser[a] = attr
         elif cn == 'set' and  len(attr) >0:
-            ser[tag] = [ jsonigi(o) for o in attr ]
+          ser[a] = [ jsonigi(o) for o in attr ]
         else :
           if cn != 'NoneType' :
-            print(" classe pas sérialisée : "+cn)
+            print(_("klaso ne json-igita : ")+cn)
     return ser
 
 
@@ -187,8 +183,8 @@ class Fact:
     def jsonigi(self):
       res = dict()
       if self.type : res['type']= self.type
-      if self.date : res['date']= {'formal': self.date}
-      if self.date : res['place']= {'original': self.place}
+      if self.date : res['date']= {'original':self.date,'formal': self.date}
+      if self.place : res['place']= {'original': self.place}
       return res
 
 class Memorie:
@@ -246,6 +242,7 @@ class Name:
     def jsonigi(self):
       res = dict()
       if self.type : res['type']= self.type
+      if self.preferred : res['preferred']= self.preferred
       res['nameForms'] = [ {
                 'fullText' : (self.given or '')+' '+(self.surname or ''),
                 'parts' :  [ {
@@ -311,8 +308,8 @@ class Indi:
 
     def jsonigi(self):
       res = dict()
-      if self.living : res['living']= self.living
-      if self.gender : res['gender'] =  self.gender
+      if self.living != None : res['living']= self.living
+      if self.gender : res['gender'] =  {'type':self.gender}
       if len(self.names) >0: res['names'] = [ o.jsonigi() for o in self.names ]
       if len(self.facts) >0: res['facts'] = [ o.jsonigi() for o in self.facts ]
       return res

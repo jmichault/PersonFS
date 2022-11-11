@@ -59,7 +59,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 
 # lokaloj 
 from fslib.session import Session
-from fslib.constants import FACT_TAGS
+from fslib.constants import FACT_TAGS, FACT_TYPES
 from fslib.tree import Tree, Name as fsName, Indi, Fact, jsonigi
 
 import sys
@@ -263,6 +263,7 @@ class PersonFS(Gramplet):
     active_handle = self.get_active('Person')
     person = self.dbstate.db.get_person_from_handle(active_handle)
     fsPerso = Indi(None,self.fs_Tree)
+    fsPerso.living = False
     if person.get_gender() == Person.MALE :
       fsPerso.gender = "http://gedcomx.org/Male"
     elif person.get_gender() == Person.FEMALE :
@@ -272,7 +273,9 @@ class PersonFS(Gramplet):
     grNomo = person.primary_name
     nomo = fsName()
     nomo.given = grNomo.first_name
+    nomo.type = 'http://gedcomx.org/BirthName'
     nomo.surname = grNomo.get_primary_surname().surname
+    nomo.preferred = True
     fsPerso.names.add(nomo)
     grFaktoj = person.event_ref_list
     for grFakto in grFaktoj :
@@ -295,13 +298,21 @@ class PersonFS(Gramplet):
       grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
       fsFakto = Fact()
       fsFakto.date = grFaktoDato
-      fsFakto.type = grTag
+      fsFakto.type = FACT_TYPES.get(grTag)
       fsFakto.place = grFaktoLoko
       fsFakto.value = grFaktoPriskribo
       fsPerso.facts.add(fsFakto)
     #peto = {'persons' : [fsPerso.jsonigi()]}
     peto = {'persons' : [jsonigi(fsPerso)]}
-    print (json.dumps(peto))
+    jsonpeto = json.dumps(peto)
+    print (jsonpeto)
+    #res = self.fs_Tree.fs.post_url( "/platform/tree/persons", peto )
+    res = self.fs_Tree.fs.post_url( "/platform/tree/persons", jsonpeto )
+    #from objbrowser import browse ;browse(locals())
+    print (res)
+    print (res.request.body)
+    print (res.request.headers)
+    if res.text : print (res.text)
     
     return
 
@@ -309,7 +320,7 @@ class PersonFS(Gramplet):
     model, iter_ = self.top.get_object("PersonFSResRes").get_selection().get_selected()
     if iter_ :
       fsid = model.get_value(iter_, 1)
-      print(fsid)
+      #print(fsid)
       active_handle = self.get_active('Person')
       person = self.dbstate.db.get_person_from_handle(active_handle)
       attr = None
@@ -332,7 +343,7 @@ class PersonFS(Gramplet):
     model, iter_ = self.top.get_object("PersonFSResRes").get_selection().get_selected()
     if iter_ :
       fsid = model.get_value(iter_, 1)
-      print(fsid)
+      #print(fsid)
       self.top.get_object("LinkoButonoSercxi").set_label(fsid)
       lien = 'https://familysearch.org/tree/person/' + fsid
       self.top.get_object("LinkoButonoSercxi").set_uri(lien)
@@ -415,15 +426,15 @@ class PersonFS(Gramplet):
     if not datumoj :
       return
     tot = datumoj["results"]
-    print ("nb résultats = "+str(tot))
+    #print ("nb résultats = "+str(tot))
     for entry in datumoj["entries"] :
-      print (entry.get("id")+ ";  score = "+str(entry.get("score")))
+      #print (entry.get("id")+ ";  score = "+str(entry.get("score")))
       fsId = entry.get("id")
       data=entry["content"]["gedcomx"]
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo.places:
-            print(" ajout place : "+place["id"])
+            #print(" ajout place : "+place["id"])
             self.fs_TreeSercxo.places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
@@ -435,14 +446,14 @@ class PersonFS(Gramplet):
           #from objbrowser import browse ;browse(locals())
           self.fs_TreeSercxo.indi[person["id"]] = Indi(person["id"], self.fs_TreeSercxo)
           self.fs_TreeSercxo.indi[person["id"]].add_data(person)
-          print("   person:"+person["id"])
+          #print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
-            print("   asc")
+            #print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
-              print("     mother")
+              #print("     mother")
               mother=self.fs_TreeSercxo.indi[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
-              print("     father")
+              #print("     father")
               father=self.fs_TreeSercxo.indi[person["id"]]
       fsPerso = PersonFS.fs_TreeSercxo.indi.get(fsId) or Indi()
       if "relationships" in data:
@@ -466,7 +477,7 @@ class PersonFS(Gramplet):
           elif rel["type"] == "http://gedcomx.org/ParentChild":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
-            print("   ParentChild;p1="+person1Id+";p2="+person2Id)
+            #print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
               person1=self.fs_TreeSercxo.indi[person1Id]
               if not father and person1.gender == "http://gedcomx.org/Male" :
