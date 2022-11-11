@@ -269,7 +269,6 @@ class PersonFS(Gramplet):
     return
 
   def ButImporti_clicked(self, dummy):
-    # FARINDAĴO
     gpr = PluginRegister.get_instance()
     plg = gpr.get_plugin('Importo de FamilySearch')
     run_plugin(plg,self.dbstate,self.uistate)
@@ -988,7 +987,7 @@ class PersonFS(Gramplet):
                   , self.grperso_datoj(edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
 		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
              ) )
-        # FARINDAĴOJ : familiaj eventoj (edziĝo, …)
+        # familiaj eventoj (edziĝo, …)
         fsFamilio = self.fs_Tree.fam[(fsEdzTrio[0], fsEdzTrio[1])]
         fsFaktoj = fsFamilio.facts.copy()
         for eventref in family.get_event_ref_list() :
@@ -1198,4 +1197,4 @@ class PersonFS(Gramplet):
     self._db_commit(person_handle)
     return
 
-  # FARINDAĴOJ : kopii, serĉi, redundoj, esploro, importado, …
+  # FARINDAĴOJ : kopii, redundoj, esploro, …
