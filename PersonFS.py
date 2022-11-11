@@ -46,12 +46,13 @@ from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
 from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.lib.date import gregorian
-from gramps.gen.plug import Gramplet
+from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
 from gramps.gui.dialog import OptionDialog
 from gramps.gui.editors import EditPerson
 from gramps.gui.listmodel import ListModel, NOSORT, COLOR
+from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
@@ -61,6 +62,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from fslib.session import Session
 from fslib.constants import FACT_TAGS, FACT_TYPES
 from fslib.tree import Tree, Name as fsName, Indi, Fact, jsonigi
+
 
 import sys
 import os
@@ -144,6 +146,7 @@ class PersonFS(Gramplet):
   fs_TreeSercxo = None
   Sercxi = None
   lingvo = None
+  FSID = None
   try:
       lingvo = config.get('preferences.place-lang')
   except AttributeError:
@@ -267,6 +270,9 @@ class PersonFS(Gramplet):
 
   def ButImporti_clicked(self, dummy):
     # FARINDAĴO
+    gpr = PluginRegister.get_instance()
+    plg = gpr.get_plugin('Importo de FamilySearch')
+    run_plugin(plg,self.dbstate,self.uistate)
     return
 
   def ButAldoni_clicked(self, dummy):
@@ -1155,6 +1161,7 @@ class PersonFS(Gramplet):
     #
     self._db_get(person_handle)
     self.db_fsid = fsid
+    PersonFS.FSID = fsid
     # ŝarĝante individuan "FamilySearch" :
     PersonFS.fs_Tree.add_indis([fsid])
     fsPerso = PersonFS.fs_Tree.indi.get(fsid) or Indi()

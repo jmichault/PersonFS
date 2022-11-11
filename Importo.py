@@ -87,6 +87,11 @@ class FSImportoOpcionoj(MenuToolOptions):
 
     if vorteco >= 3:
       print(_("Menuo Aldonita"))
+  def load_previous_values(self):
+    MenuToolOptions.load_previous_values(self)
+    if PersonFS.FSID :
+      self.handler.options_dict['FS_ID'] = PersonFS.FSID
+    return
 
 class FSImporto(PluginWindows.ToolManagedWindowBatch):
   """
@@ -117,7 +122,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     " 
     """
     self.__get_menu_options()
-    print("import ID "+self.FS_ID)
+    print("import ID :"+self.FS_ID)
     # FARINDAĴO : Progresa stango
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
@@ -127,12 +132,6 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       for attr in person.get_attribute_list():
         if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
           print(_('«FamilySearch» ekzistanta ID'))
-          #d = QuestionDialog2(_('«FamilySearch» ekzistanta ID')
-          #       ,_('«FamilySearch» ID uzata per %s.\n   Se vi daŭrigos, kreiĝos nur neekzistantaj personoj.\n\n      Ĉu vi volas daŭrigi?') % {person.gramps_id}
-          #       ,_('daŭrigi')
-          #       ,_('Cancel') )
-          #if not d.run():
-          #  return
         if attr.get_type() == '_FSFTID':
           self.fs_gr[attr.get_value()] = person_handle
           break
@@ -614,8 +613,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def __get_menu_options(self):
     menu = self.options.menu
-    self.FS_ID = self.options.menu.get_option_by_name('FS_ID').get_value()
-    self.asc = self.options.menu.get_option_by_name('gui_asc').get_value()
-    self.desc = self.options.menu.get_option_by_name('gui_desc').get_value()
-    self.edz = self.options.menu.get_option_by_name('gui_edz').get_value()
+    self.FS_ID = menu.get_option_by_name('FS_ID').get_value()
+    self.asc = menu.get_option_by_name('gui_asc').get_value()
+    self.desc = menu.get_option_by_name('gui_desc').get_value()
+    self.edz = menu.get_option_by_name('gui_edz').get_value()
 
