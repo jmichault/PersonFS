@@ -317,7 +317,17 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkButton" id="ButLancxi">
+                    <property name="label" translatable="yes">Lanĉi</property>
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <property name="receives-default">True</property>
+                    <signal name="clicked" handler="on_ButLancxi_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="left-attach">2</property>
+                    <property name="top-attach">3</property>
+                  </packing>
                 </child>
                 <child>
                   <placeholder/>
@@ -387,18 +397,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkButton" id="ButLancxi">
-                    <property name="label" translatable="yes">Lanĉi</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <signal name="clicked" handler="on_ButLancxi_clicked" swapped="no"/>
-                  </object>
-                  <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">False</property>
-                    <property name="position">0</property>
-                  </packing>
+                  <placeholder/>
                 </child>
                 <child>
                   <object class="GtkLabel">
@@ -491,41 +490,12 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
           </packing>
         </child>
         <child>
-          <!-- n-columns=5 n-rows=3 -->
+          <!-- n-columns=8 n-rows=4 -->
           <object class="GtkGrid">
             <property name="height-request">32</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkButton">
-                <property name="label">gtk-preferences</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="use-stock">True</property>
-                <signal name="clicked" handler="on_pref_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="left-attach">4</property>
-                <property name="top-attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLinkButton" id="LinkoButono">
-                <property name="label" translatable="yes">xxxx-xxx</property>
-                <property name="width-request">100</property>
-                <property name="height-request">30</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="relief">none</property>
-                <property name="uri">https://familysearch.org</property>
-              </object>
-              <packing>
-                <property name="left-attach">4</property>
-                <property name="top-attach">1</property>
-              </packing>
-            </child>
-            <child>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -533,17 +503,6 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
               <packing>
                 <property name="left-attach">0</property>
                 <property name="top-attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="label" translatable="yes">FamilySearch Identiga N° :</property>
-              </object>
-              <packing>
-                <property name="left-attach">3</property>
-                <property name="top-attach">1</property>
               </packing>
             </child>
             <child>
@@ -570,23 +529,10 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
+                <property name="width-chars">2</property>
               </object>
               <packing>
                 <property name="left-attach">0</property>
-                <property name="top-attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="ButEdzoj">
-                <property name="label" translatable="yes">Ŝarĝi edzojn kaj infanojn</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <property name="tooltip-text" translatable="yes">Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj</property>
-                <signal name="clicked" handler="on_ButEdzoj_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="left-attach">3</property>
                 <property name="top-attach">2</property>
               </packing>
             </child>
@@ -620,7 +566,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <signal name="clicked" handler="on_ButSercxi_clicked" swapped="no"/>
               </object>
               <packing>
-                <property name="left-attach">2</property>
+                <property name="left-attach">1</property>
                 <property name="top-attach">2</property>
               </packing>
             </child>
@@ -629,11 +575,151 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="hexpand">True</property>
+                <property name="width-chars">2</property>
               </object>
               <packing>
-                <property name="left-attach">1</property>
+                <property name="left-attach">2</property>
                 <property name="top-attach">2</property>
               </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ButEdzoj">
+                <property name="label" translatable="yes">Ŝarĝi edzojn kaj infanojn</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj</property>
+                <signal name="clicked" handler="on_ButEdzoj_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">3</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="width-chars">2</property>
+              </object>
+              <packing>
+                <property name="left-attach">4</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ButRefresxigi">
+                <property name="label" translatable="yes">refreŝigi</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_ButRefresxigi_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">5</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="width-chars">2</property>
+              </object>
+              <packing>
+                <property name="left-attach">6</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ButImporti">
+                <property name="label" translatable="yes">importi</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_ButImporti_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">7</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="label">gtk-preferences</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-stock">True</property>
+                <signal name="clicked" handler="on_pref_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">7</property>
+                <property name="top-attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLinkButton" id="LinkoButono">
+                <property name="label" translatable="yes">xxxx-xxx</property>
+                <property name="width-request">100</property>
+                <property name="height-request">30</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="relief">none</property>
+                <property name="uri">https://familysearch.org</property>
+              </object>
+              <packing>
+                <property name="left-attach">7</property>
+                <property name="top-attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">FamilySearch Identiga N° :</property>
+              </object>
+              <packing>
+                <property name="left-attach">5</property>
+                <property name="top-attach">1</property>
+                <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
             </child>
             <child>
               <placeholder/>
@@ -664,6 +750,9 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
             <property name="fill">True</property>
             <property name="position">3</property>
           </packing>
+        </child>
+        <child>
+          <placeholder/>
         </child>
       </object>
       <packing>

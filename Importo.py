@@ -592,8 +592,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # serĉi ekzistanta
     for handle in self.dbstate.db.get_event_handles():
       e = self.dbstate.db.get_event_from_handle(handle)
-      if ( e.type.string == evtType) :
-        #from objbrowser import browse ;browse(locals())
+      if ( e.type.value == evtType or e.type.string == gedTag) :
         if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
              and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))

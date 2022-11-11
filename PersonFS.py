@@ -255,9 +255,19 @@ class PersonFS(Gramplet):
             "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
             "on_ButAldoni_clicked"      : self.ButAldoni_clicked,
             "on_ButLigi_clicked"      : self.ButLigi_clicked,
+            "on_ButRefresxigi_clicked"      : self.ButRefresxigi_clicked,
+            "on_ButImporti_clicked"      : self.ButImporti_clicked,
 	})
 
     return self.res
+
+  def ButRefresxigi_clicked(self, dummy):
+    # FARINDAĴO
+    return
+
+  def ButImporti_clicked(self, dummy):
+    # FARINDAĴO
+    return
 
   def ButAldoni_clicked(self, dummy):
     active_handle = self.get_active('Person')
