@@ -1,19 +1,64 @@
 
 
 
-Ceci est un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) pour interfacer _gramps_ avec _familysearch.com_.
+Ceci est un module pour interfacer _gramps_ avec _familysearch.com_.
+il se compose de :
+* un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_.
+* un module d'import accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «Import de données FamilySearch»
 
-Dans l'état actuel il est très limité, il permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
+Pour pouvoir utiliser le gramplet il vous faut un compte _familysearch_, celui-ci est à renseigner dans les préférences, ainsi que le mot de passe associé.
+
+# installation
+## en chargeant le zip
+Sur la [page d'accueil du projet](https://github.com/jmichault/PersonFS), cliquez «Releases» (à droite), et dans «Assets» choisissez le fichier PersonFS.zip).  
+Puis extrayez le zip dans le dossier des plugins de Gramps (~/.gramps/gramps51/plugins pour la version 5.1 de gramps)
+
+## avec git
+Dans un terminal, exécutez les commandes suivantes :
+
+```
+cd ~/.gramps/gramps51/plugins
+git clone https://github.com/jmichault/PersonFS.git
+```
+
+# le gramplet
+## activation
+En étant positionné sur le panneau des Individus, cliquez sur le menu déroulant à droite des onglets (petit bouton «v») et choisissez «Ajouter un Gramplet», puis «FS».  
+Une fois ceci fait un nouvel onglet «FS» est ajouté.
+
+## utilisation
+Dans l'état actuel , il permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
 * nom/prénom principal
 * date et lieu de naissance
 * date et lieu de baptême
 * date et lieu de décès
 * date et lieu de d'inhumation
-* nom/prénom principal du père et de la mére
+* les parents (nom/prénom principal, années de naissance et de décès)
+* les évènements
 
-le lien avec _familysearch_ se fait grâce à un attribut de clé _«\_FSFTID»_ et ayant pour valeur le N° d'identification _familysearch_.  
-Note : le script python [_GetMyAncestors_]() renseigne cet attribut.
+La première colonne permet de visualiser rapidement quelles données ne sont pas en phase :
+* vert = en phase (attention : pour les personnes seuls les identifiants familysearch sont vérifiés, pour les dates/lieux, seules les dates sont vérifiées)
+* jaune ou orange : pas en phase ou pas présent des deux cotés.
+
+Note : le lien avec _familysearch_ se fait grâce à un attribut de clé _«\_FSFTID»_ et ayant pour valeur le N° d'identification _familysearch_.  
+
+Note : pour limiter le temps de chargement, au lancement les données détaillées des conjoints et enfants ne sont pas chargées. Vous pouvez les charger en cliquant sur le bouton «Charger conjoints et enfants».
 
 Les dates sont affichés chaque fois que c'est possible en utilisant le format [_«formal»_](https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md) de _familysearch_.
 
-Pour pouvoir utiliser le gramplet il vous faut un compte _familysearch_, celui-ci est à renseigner dans les préférences, ainsi que le mot de passe associé.
+Depuis le gramplet, vous pouvez aussi :
+* Accéder à la fiche FamilySearch complète en cliquant sur le N° d'identification (à droite de l'écran), ce qui lance votre navigateur internet.
+* Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de copier votre fiche vers FamilySearch
+* lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
+
+# le module d'import
+Vous pouvez le lancer soit depuis le menu, soit depuis le gramplet.  
+Vous avez juste à renseigner :
+* l'identifiant FamilySearch de départ
+* le nombre de générations d'ascendants à charger.
+* le nombre de générations descendantes.
+* décochez «Ne pas réimporter les personnes existantes» si vous voulez protéger vos individus existants.
+* cochez «Ajouter les conjoints» si vous voulez charger aussi les conjoints de toutes les personnes.
+
+Puis cliquez sur le bouton «Importer»
+
