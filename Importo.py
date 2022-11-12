@@ -78,6 +78,9 @@ class FSImportoOpcionoj(MenuToolOptions):
     self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
     self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
     menu.add_option(category_name, "gui_desc", self.__gui_desc)
+    self.__gui_edz = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
+    self.__gui_edz.set_help(_("Importi nur neekzistantajn personojn"))
+    menu.add_option(category_name, "gui_nereimporti", self.__gui_edz)
     self.__gui_edz = BooleanOption(_("Aldonu geedzoj"), False)
     self.__gui_edz.set_help(_("Aldonu informojn pri geedzoj kaj paro"))
     menu.add_option(category_name, "gui_edz", self.__gui_edz)
@@ -136,7 +139,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           self.fs_gr[attr.get_value()] = person_handle
           break
     if not PersonFS.fs_Session:
-      if PersonFS.fs_id == '' or PersonFS.fs_pasvorto == '':
+      if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
         import locale, os
         self.top = Gtk.Builder()
         self.top.set_translation_domain("addon")
@@ -150,7 +153,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         if parent_modal:
           self.uistate.window.set_modal(False)
         fsid = self.top.get_object("fsid_eniro")
-        fsid.set_text(PersonFS.fs_id)
+        fsid.set_text(PersonFS.fs_sn)
         fspv = self.top.get_object("fspv_eniro")
         fspv.set_text(PersonFS.fs_pasvorto)
         top.show()
@@ -158,24 +161,24 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         print ("res = " + str(res))
         top.hide()
         if res == -3:
-          PersonFS.fs_id = fsid.get_text()
+          PersonFS.fs_sn = fsid.get_text()
           PersonFS.fs_pasvorto = fspv.get_text()
-          CONFIG.set("preferences.fs_id", PersonFS.fs_id)
+          CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           if vorteco >= 3:
-            PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
           else :
-            PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         if vorteco >= 3:
-          PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, True, False, 2)
+          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
         else :
-          PersonFS.fs_Session = Session(PersonFS.fs_id, PersonFS.fs_pasvorto, False, False, 2)
+          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     print("import")
-    print(PersonFS.fs_id)
+    print(PersonFS.fs_sn)
     print(PersonFS.fs_Session)
     if not self.fs_TreeImp :
       self.fs_TreeImp = Tree(PersonFS.fs_Session)
@@ -374,11 +377,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           found = True
           break
       if not found:
-        eventref = EventRef()
-        eventref.set_role(EventRoleType.FAMILY)
-        eventref.set_reference_handle(event.get_handle())
+        er = EventRef()
+        er.set_role(EventRoleType.FAMILY)
+        er.set_reference_handle(event.get_handle())
         self.dbstate.db.commit_event(event, self.txn)
-        familio.add_event_ref(eventref)
+        familio.add_event_ref(er)
+      
     self.dbstate.db.commit_family(familio,self.txn)
 
     for c in fsFam.chil_fid:
@@ -468,10 +472,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       for fsNomo in fsPerso.nicknames :
         # FARINDAĴO : administri moknomojn ĝuste
         self.aldNomo( fsNomo, NameType.CUSTOM, grPerson)
-      if fsPerso.gender == "M" :
+      if fsPerso.gender == "http://gedcomx.org/Male" :
         grPerson.set_gender(Person.MALE)
-      elif fsPerso.gender == "F" :
+      elif fsPerso.gender == "http://gedcomx.org/Female" :
         grPerson.set_gender(Person.FEMALE)
+      else :
+        grPerson.set_gender(Person.UNKNOWN)
       attr = Attribute()
       attr.set_type('_FSFTID')
       attr.set_value(fsid)
@@ -481,6 +487,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.dbstate.db.commit_person(grPerson,self.txn)
       self.fs_gr[fsid] = grPerson.handle
     else :
+      if self.nereimporti :
+        return
       grPerson = self.dbstate.db.get_person_from_handle(grPersonoHandle)
 
     # faktoj
@@ -492,11 +500,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           found = True
           break
       if not found:
-        eventref = EventRef()
-        eventref.set_role(EventRoleType.PRIMARY)
-        eventref.set_reference_handle(event.get_handle())
+        er = EventRef()
+        er.set_role(EventRoleType.PRIMARY)
+        er.set_reference_handle(event.get_handle())
         self.dbstate.db.commit_event(event, self.txn)
-        grPerson.add_event_ref(eventref)
+        grPerson.add_event_ref(er)
+      if event.type == EventType.BIRTH :
+        grPerson.set_birth_ref(er)
+      elif event.type == EventType.DEATH :
+        grPerson.set_death_ref(er)
     # notoj
     for fsNoto in fsPerso.notes :
       noto = self.aldNoto(fsNoto,grPerson.note_list)
@@ -538,12 +550,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     for nh in EkzNotoj:
       n = self.dbstate.db.get_note_from_handle(nh)
       for t in n.text.get_tags():
-        if t.name == "fs_id" :
+        if t.name == "fs_sn" :
           titolo = n.get()[t.ranges[0][0]:t.ranges[0][1]]
           if titolo == fsNoto.subject:
             return n
     note = Note()
-    tags = [  StyledTextTag("fs_id", fsNoto.id,[(0, len(fsNoto.subject))])
+    tags = [  StyledTextTag("fs_sn", fsNoto.id,[(0, len(fsNoto.subject))])
             , StyledTextTag(StyledTextTagType.BOLD, True,[(0, len(fsNoto.subject))])
             , StyledTextTag(StyledTextTagType.FONTSIZE, 16,[(0, len(fsNoto.subject))])  ]
     titolo = StyledText(fsNoto.subject, tags)
@@ -567,6 +579,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     fsFaktoDato = fsFakto.date or ''
     if fsFakto.date:
       grDate = Date()
+      grDate.set_calendar(Date.CAL_GREGORIAN)
       if fsFakto.date[0] == 'A' :
         grDate.set_modifier(Date.MOD_ABOUT)
       elif fsFakto.date[0] == '/' :
@@ -576,16 +589,20 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
         posSigno = posMinus
       if len(fsFakto.date) >= posSigno+5 :
-        jaro = fsFakto.date[posSigno+0:posSigno+5]
-      else: jaro='0'
+        jaro = int(fsFakto.date[posSigno+0:posSigno+5])
+      else: jaro=0
       if len(fsFakto.date) >= posSigno+8 :
-        monato = fsFakto.date[posSigno+6:posSigno+8]
-      else: monato='0'
+        monato = int(fsFakto.date[posSigno+6:posSigno+8])
+      else: monato=0
       if len(fsFakto.date) >= posSigno+11 :
-        tago = fsFakto.date[posSigno+9:posSigno+11]
-      else: tago='0'
-      # FARINDAĴO : kompleksaj datoj
-      grDate.set_yr_mon_day(int(jaro), int(monato), int(tago))
+        tago = int(fsFakto.date[posSigno+9:posSigno+11])
+      else: tago=0
+      # FARINDAĴO : kompleksaj datoj, datoj post …
+      #if tago and monato and jaro :
+      #  grDate.set_yr_mon_day(jaro, monato, tago)
+      #else :
+      #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
+      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date[posSigno:],newyear=Date.NEWYEAR_JAN1)
     else : grDate = None
 
     # serĉi ekzistanta
@@ -617,4 +634,5 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.asc = menu.get_option_by_name('gui_asc').get_value()
     self.desc = menu.get_option_by_name('gui_desc').get_value()
     self.edz = menu.get_option_by_name('gui_edz').get_value()
+    self.nereimporti = menu.get_option_by_name('gui_nereimporti').get_value()
 

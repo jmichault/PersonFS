@@ -105,7 +105,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
           </packing>
         </child>
         <child>
-          <object class="GtkEntry" id="fsid_eniro">
+          <object class="GtkEntry" id="fssn_eniro">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
           </object>
@@ -380,8 +380,10 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
             </child>
             <child>
               <object class="GtkTreeView" id="PersonFSResRes">
+                <property name="height-request">200</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
+                <property name="enable-grid-lines">horizontal</property>
                 <child internal-child="selection">
                   <object class="GtkTreeSelection"/>
                 </child>

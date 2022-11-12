@@ -10,6 +10,7 @@ FACT_TAGS = {
     "http://gedcomx.org/Burial": "BURI",
     "http://gedcomx.org/PhysicalDescription": "DSCR",
     "http://gedcomx.org/Occupation": "OCCU",
+    "Profession": "OCCU",
     "http://gedcomx.org/MilitaryService": "_MILT",
     "http://gedcomx.org/Marriage": "MARR",
     "http://gedcomx.org/Divorce": "DIV",
