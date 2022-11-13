@@ -415,6 +415,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <child>
                   <object class="GtkButton" id="ButAldoni">
                     <property name="label" translatable="yes">Aldoni mian personon al FamilySearch</property>
+                    <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                     <signal name="clicked" handler="on_ButAldoni_clicked" swapped="no"/>

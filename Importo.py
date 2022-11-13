@@ -185,6 +185,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     else:
       self.fs_TreeImp.__init__(PersonFS.fs_Session)
     # Legi la personojn en «FamilySearch».
+    print(_("Elŝutante personon…"))
     if self.FS_ID:
       self.fs_TreeImp.add_indis([self.FS_ID])
     else : return
@@ -212,20 +213,26 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       todo = set(self.fs_TreeImp.indi.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
+    print(_("Elŝutante notojn…"))
     for fsPerso in self.fs_TreeImp.indi.values() :
       fsPerso.get_notes()
+    print(_("Elŝutante notojn…"))
     for fsFam in self.fs_TreeImp.fam.values() :
       fsFam.get_notes()
+    print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
     with DbTxn("FamilySearch import", self.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
+      print(_("Importado de lokoj…"))
       for id,pl in self.fs_TreeImp.places.items() :
         self.aldLoko(id,pl)
+      print(_("Importado de personoj…"))
       # importi personoj
       for id in self.fs_TreeImp.indi.keys() :
         self.aldPersono(id)
+      print(_("Importado de familioj…"))
       # importi familioj
       for fsFam in self.fs_TreeImp.fam.values() :
         self.aldFamilio(fsFam)
