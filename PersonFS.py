@@ -178,11 +178,11 @@ class PersonFS(Gramplet):
     with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
       if self.db_handle :
         sql = "UPDATE personfs_stato set fsid=?, estas_radiko=? , stat_dato=?, konf_dato=?, gramps_datomod=?, fs_datomod=?, konf_esenco=?, konf=? where p_handle=? "
-        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_handle, self.db_konf_esenco, self.db_konf ] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco or 'F', self.db_konf or 'F', self.db_handle] )
       else :
         self.db_handle = person_handle
         sql = "INSERT INTO personfs_stato(p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf) VALUES (?,?,?,?,?,?,?,?,?)"
-        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko, self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco, self.db_konf ] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco or 'F', self.db_konf or 'F' ] )
 
   def _db_get(self,person_handle):
     self.dbstate.db.dbapi.execute("select p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf from personfs_stato where p_handle=?",[person_handle])
@@ -267,7 +267,10 @@ class PersonFS(Gramplet):
 
   def ButRefresxigi_clicked(self, dummy):
     if self.FSID :
-      PersonFS.fs_Tree.indi.pop(self.FSID)
+      try:
+        PersonFS.fs_Tree.indi.pop(self.FSID)
+      except:
+        pass
       PersonFS.fs_Tree.add_indis([self.FSID])
     active_handle = self.get_active('Person')
     self.modelKomp.clear()
@@ -719,11 +722,11 @@ class PersonFS(Gramplet):
       posMinus = fsFakto.date.find('-')
       if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
         posSigno = posMinus
-      if len(fsFakto.date) >= posSigno+5 :
+      if len(fsFakto.date) >= posSigno+6 :
         res = res + fsFakto.date[posSigno+1:posSigno+5]
       else :
         res = res+'....'
-      if len(fsFakto.date) >= posSigno+6 and fsFakto.date[posSigno+6] == '/' :
+      if len(fsFakto.date) >= posSigno+7 and fsFakto.date[posSigno+6] == '/' :
         res = res + '/'
     else :
       res = res + '....'
@@ -1163,6 +1166,7 @@ class PersonFS(Gramplet):
     """
     " Komparas gramps kaj FamilySearch
     """
+    self._db_create_schema()
     self.FSID = None
     person = self.dbstate.db.get_person_from_handle(person_handle)
     fsid = getfsid(person)
