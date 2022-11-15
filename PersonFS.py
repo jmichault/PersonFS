@@ -178,11 +178,11 @@ class PersonFS(Gramplet):
     with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
       if self.db_handle :
         sql = "UPDATE personfs_stato set fsid=?, estas_radiko=? , stat_dato=?, konf_dato=?, gramps_datomod=?, fs_datomod=?, konf_esenco=?, konf=? where p_handle=? "
-        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco or 'F', self.db_konf or 'F', self.db_handle] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_fsid, int(self.db_estas_radiko or 0), self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, int(self.db_konf_esenco or 0), int(self.db_konf or 0), self.db_handle] )
       else :
         self.db_handle = person_handle
         sql = "INSERT INTO personfs_stato(p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf) VALUES (?,?,?,?,?,?,?,?,?)"
-        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, self.db_estas_radiko or 'F', self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, self.db_konf_esenco or 'F', self.db_konf or 'F' ] )
+        self.dbstate.db.dbapi.execute(sql, [ self.db_handle, self.db_fsid, int(self.db_estas_radiko or 0), self.db_stat_dato, self.db_konf_dato, self.db_gramps_datomod, self.db_fs_datomod, int(self.db_konf_esenco or 0), int(self.db_konf or 0) ] )
 
   def _db_get(self,person_handle):
     self.dbstate.db.dbapi.execute("select p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf from personfs_stato where p_handle=?",[person_handle])
@@ -991,6 +991,7 @@ class PersonFS(Gramplet):
         edzoNomo = edzo.primary_name
         edzoFsid = getfsid(edzo)
         fsEdzoId = ''
+        fsEdzTrio = None
         for fsEdzTrio in fsEdzoj :
           if fsEdzTrio[0] == edzoFsid :
             fsEdzoId = fsEdzTrio[0]
@@ -1014,6 +1015,8 @@ class PersonFS(Gramplet):
 		  , self.fsperso_datoj(fsEdzo) , fsNomo.surname +  ', ' + fsNomo.given  + ' [' + fsEdzoId  + ']'
              ) )
         # familiaj eventoj (edziĝo, …)
+        fsFamilio = None
+        fsFaktoj = set()
         if fsEdzTrio :
           fsFamilio = self.fs_Tree.fam[(fsEdzTrio[0], fsEdzTrio[1])]
           fsFaktoj = fsFamilio.facts.copy()

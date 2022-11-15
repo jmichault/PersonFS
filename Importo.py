@@ -22,6 +22,8 @@
 """
 " «FamilySearch» importo.
 """
+#import cProfile
+
 
 from gi.repository import Gtk
 
@@ -120,7 +122,10 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     return _("FamilySearch Importo Opcionoj")  # tab title
 
+  #@profile
   def run(self):
+  #  cProfile.runctx('self.run2()',globals(),locals())
+  #def run2(self):
     """
     " 
     """
@@ -377,7 +382,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.commit_person(grPatrino, self.txn)
     # familiaj faktoj
     for fsFakto in fsFam.facts:
-      event = self.aldFakto(fsFakto)
+      event = self.aldFakto(fsFakto,familio)
       found = False
       for er in familio.get_event_ref_list():
         if er.ref == event.handle:
@@ -500,7 +505,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
     # faktoj
     for fsFakto in fsPerso.facts:
-      event = self.aldFakto(fsFakto)
+      event = self.aldFakto(fsFakto,grPerson)
       found = False
       for er in grPerson.get_event_ref_list():
         if er.ref == event.handle:
@@ -575,7 +580,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.dbstate.db.commit_note(note, self.txn)
     return note
     
-  def aldFakto(self,fsFakto):
+  def aldFakto(self, fsFakto, obj):
     gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
     evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
     fsFaktoLoko = fsFakto.place or ''
@@ -613,8 +618,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     else : grDate = None
 
     # serĉi ekzistanta
-    for handle in self.dbstate.db.get_event_handles():
-      e = self.dbstate.db.get_event_from_handle(handle)
+    for fakto in obj.event_ref_list :
+      e = self.dbstate.db.get_event_from_handle(fakto.ref)
       if ( e.type.value == evtType or e.type.string == gedTag) :
         if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
