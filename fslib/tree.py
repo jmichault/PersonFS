@@ -27,31 +27,38 @@ from urllib.parse import unquote
 import babelfish
 
 # local imports
-#import getmyancestors
 from fslib.constants import (
     MAX_PERSONS,
     FACT_EVEN,
     FACT_TAGS,
     ORDINANCES_STATUS,
 )
+from fslib.dateformal import DateFormal
 
 def jsonigi(obj):
-    if hasattr(obj, "jsonigi"):
-        return obj.jsonigi()
-    ser = dict()
-    for a in dir(obj):
-      if not a.startswith('_') and not callable(getattr(obj, a)) :
-        attr = getattr(obj,a)
-        cn = attr.__class__.__name__
-        if (    cn == 'bool' or cn == 'str' or cn == 'int') :
-          ser[a] = attr
-        elif cn == 'set' and  len(attr) >0:
+  if hasattr(obj, "jsonigi"):
+    return obj.jsonigi()
+  ser = dict()
+  for a in dir(obj):
+    if not a.startswith('_') and not callable(getattr(obj, a)) :
+      attr = getattr(obj,a)
+      cn = attr.__class__.__name__
+      if (    cn == 'bool' or cn == 'str' or cn == 'int') :
+        ser[a] = attr
+      elif cn == 'set' :
+        if len(attr) >0 :
           ser[a] = [ jsonigi(o) for o in attr ]
-        else :
-          if cn != 'NoneType' :
-            print(_("klaso ne json-igita : ")+cn)
-    return ser
+      else :
+        if cn != 'NoneType' :
+          print(_("klaso ne json-igita : ")+cn)
+          ser[a] = str(attr)
+  return ser
 
+def maljsonigi(obj,d):
+   if hasattr(obj, "maljsonigi"):
+     return obj.maljsonigi(d)
+   # FARINDAĴO
+   return
 
 # fslib classes and functions
 def cont(string):
@@ -78,6 +85,22 @@ def cont(string):
         max_len = 248
     return ("\n%s CONT " % level).join(res) + "\n"
 
+class Date():
+  """
+  " original: str
+  " formal: DateFormal
+  """
+  def __init__(self):
+    original = None
+    formal = None
+
+  def __str__(self):
+   if self.formal :
+      return str(self.formal)
+   elif self.original :
+      return self.original
+   else : return ''
+    
 
 class Note:
     """GEDCOM Note class
@@ -142,14 +165,21 @@ class Source:
                     , self._tree))
 
 class Fact:
-    """GEDCOM Fact class
-    :param data: FS Fact data
-    :param tree: a tree object
-    """
+  """
+  " GEDCOMx Fact class
+  "   type: FactType
+  "   date: Date
+  "   place: str ... PlaceReference
+  "   value: str
+  "   qualifiers: Qualifier
+  "  :param data: FS Fact data
+  "  :param tree: a tree object
+  """
 
-    def __init__(self, data=None, tree=None):
-        self.value = self.type = self.date = self.place = self.note = self.map = None
-        if data:
+  def __init__(self, data=None, tree=None):
+    self.value = self.type = self.place = self.note = self.map = None
+    self.date = None
+    if data:
             if "value" in data:
                 self.value = data["value"]
             if "type" in data:
@@ -160,10 +190,12 @@ class Fact:
                     self.type = unquote(self.type[6:])
                 elif self.type not in FACT_TAGS:
                     self.type = None
-            if "date" in data and "formal" in data["date"]:
-                self.date = data["date"]["formal"]
-            elif "date" in data and "original" in data["date"]:
-                self.date = data["date"]["original"]
+            if "date" in data :
+              self.date = Date()
+              if "formal" in data["date"]:
+                self.date.formal = DateFormal(data["date"]["formal"])
+              if "original" in data["date"]:
+                self.date.original = data["date"]["original"]
             if "place" in data:
                 place = data["place"]
                 self.place = place["original"]
@@ -180,12 +212,12 @@ class Fact:
                 self.date or self.place
             ):
                 self.value = "Y"
-    def jsonigi(self):
-      res = dict()
-      if self.type : res['type']= self.type
-      if self.date : res['date']= {'original':self.date,'formal': self.date}
-      if self.place : res['place']= {'original': self.place}
-      return res
+  def jsonigi(self):
+    res = dict()
+    if self.type : res['type']= self.type
+    if self.date : res['date']= {'original':self.date.original or '','formal': str(self.date.formal or '')}
+    if self.place : res['place']= {'original': self.place}
+    return res
 
 class Memorie:
   """GEDCOM Memorie class

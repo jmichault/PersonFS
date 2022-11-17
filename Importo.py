@@ -592,36 +592,37 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     if fsFakto.date:
       grDate = Date()
       grDate.set_calendar(Date.CAL_GREGORIAN)
-      if fsFakto.date[0] == 'A' :
-        grDate.set_modifier(Date.MOD_ABOUT)
-      elif fsFakto.date[0] == '/' :
-        grDate.set_modifier(Date.MOD_BEFORE)
-      posSigno = fsFakto.date.find('+')
-      posMinus = fsFakto.date.find('-')
-      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
-        posSigno = posMinus
-      if len(fsFakto.date) >= posSigno+5 :
-        jaro = int(fsFakto.date[posSigno+0:posSigno+5])
-      else: jaro=0
-      if len(fsFakto.date) >= posSigno+8 :
-        monato = int(fsFakto.date[posSigno+6:posSigno+8])
-      else: monato=0
-      if len(fsFakto.date) >= posSigno+11 :
-        tago = int(fsFakto.date[posSigno+9:posSigno+11])
-      else: tago=0
-      # FARINDAĴO : kompleksaj datoj, datoj post …
-      #if tago and monato and jaro :
-      #  grDate.set_yr_mon_day(jaro, monato, tago)
-      #else :
-      #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
-      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date[posSigno:],newyear=Date.NEWYEAR_JAN1)
+      if fsFakto.date.formal :
+        if fsFakto.date.formal.proksimuma :
+          grDate.set_modifier(Date.MOD_ABOUT)
+        if fsFakto.date.formal.gamo :
+          if fsFakto.date.formal.finalaDato :
+            grDate.set_modifier(Date.MOD_BEFORE)
+          elif fsFakto.date.formal.finalaDato :
+            grDate.set_modifier(Date.MOD_AFTER)
+        if fsFakto.date.formal.unuaDato:
+          jaro = fsFakto.date.formal.unuaDato.jaro
+          monato = fsFakto.date.formal.unuaDato.monato
+          tago = fsFakto.date.formal.unuaDato.tago
+        else :
+          jaro = fsFakto.date.formal.finalaDato.jaro
+          monato = fsFakto.date.formal.finalaDato.monato
+          tago = fsFakto.date.formal.finalaDato.tago
+        # FARINDAĴO : kompleksaj datoj, dato gamo
+        #if tago and monato and jaro :
+        #  grDate.set_yr_mon_day(jaro, monato, tago)
+        #else :
+        #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
+      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original or '',newyear=Date.NEWYEAR_JAN1)
     else : grDate = None
 
     # serĉi ekzistanta
     for fakto in obj.event_ref_list :
       e = self.dbstate.db.get_event_from_handle(fakto.ref)
       if ( e.type.value == evtType or e.type.string == gedTag) :
-        if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
+        if ( e.get_date_object() == grDate ):
+          return e
+        elif ( ( e.get_date_object().is_empty() and not grDate)
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
              and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
            ) :
