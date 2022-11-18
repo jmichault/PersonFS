@@ -41,7 +41,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from PersonFS import PersonFS, CONFIG
 from fslib.session import Session
 from fslib.constants import FACT_TAGS
-from fslib.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
+from fslib.tree import Tree, Name as fsName, Note as fsNote, Fact
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -195,7 +195,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.fs_TreeImp.add_indis([self.FS_ID])
     else : return
     # ascendante
-    todo = set(self.fs_TreeImp.indi.keys())
+    todo = set(self.fs_TreeImp._indi.keys())
     done = set()
     for i in range(self.asc):
       if not todo:
@@ -204,7 +204,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print( _("Downloading %s. of generations of ancestors...") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
-    todo = set(self.fs_TreeImp.indi.keys())
+    todo = set(self.fs_TreeImp._indi.keys())
     done = set()
     for i in range(self.desc):
       if not todo:
@@ -215,14 +215,14 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # edzoj
     if self.edz :
       print(_("Downloading spouses and marriage information..."))
-      todo = set(self.fs_TreeImp.indi.keys())
+      todo = set(self.fs_TreeImp._indi.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
     print(_("Elŝutante notojn…"))
-    for fsPerso in self.fs_TreeImp.indi.values() :
+    for fsPerso in self.fs_TreeImp._indi.values() :
       fsPerso.get_notes()
     print(_("Elŝutante notojn…"))
-    for fsFam in self.fs_TreeImp.fam.values() :
+    for fsFam in self.fs_TreeImp._fam.values() :
       fsFam.get_notes()
     print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
@@ -231,15 +231,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.txn = txn
       # importi lokoj
       print(_("Importado de lokoj…"))
-      for id,pl in self.fs_TreeImp.places.items() :
+      for id,pl in self.fs_TreeImp._places.items() :
         self.aldLoko(id,pl)
       print(_("Importado de personoj…"))
       # importi personoj
-      for id in self.fs_TreeImp.indi.keys() :
+      for id in self.fs_TreeImp._indi.keys() :
         self.aldPersono(id)
       print(_("Importado de familioj…"))
       # importi familioj
-      for fsFam in self.fs_TreeImp.fam.values() :
+      for fsFam in self.fs_TreeImp._fam.values() :
         self.aldFamilio(fsFam)
     print("import fini.")
     self.txn = None
@@ -458,7 +458,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldPersono(self,fsid):
     grPersonoHandle = self.fs_gr.get(fsid)
-    fsPerso = self.fs_TreeImp.indi.get(fsid)
+    fsPerso = self.fs_TreeImp._indi.get(fsid)
     if not fsPerso :
       print(_("ID ne trovita."))
       return

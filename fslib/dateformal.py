@@ -91,6 +91,9 @@ class DateFormal:
     self.unuaDato = SimplaDato
     self.finalaDato = SimplaDato
     self.dauxro = None
+    self.maljsonigi(src)
+
+  def maljsonigi(self,src):
     if not src or len(src)<5: return
     if src[0] == 'A':
       self.proksimuma = True
@@ -109,6 +112,10 @@ class DateFormal:
       else:
         self.finalaDato = SimplaDato(partoj[1])
     
+  def jsonigi(self):
+    return str(self)
+
+
   def __str__(self):
     if self.proksimuma: res='A'
     else: res=''

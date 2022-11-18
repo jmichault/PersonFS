@@ -17,14 +17,15 @@
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from typing import Union
+
 import sys
 import re
-import time
 import asyncio
 from urllib.parse import unquote
 
 # global imports
-import babelfish
+#import babelfish
 
 # local imports
 from fslib.constants import (
@@ -35,64 +36,108 @@ from fslib.constants import (
 )
 from fslib.dateformal import DateFormal
 
+import gettext
+_ = gettext.gettext
+
 def jsonigi(obj):
   if hasattr(obj, "jsonigi"):
     return obj.jsonigi()
+  ko = obj.__class__.__name__
+  if ( ko == 'bool' or ko == 'str' or ko == 'int') :
+    return obj
+  elif ( ko == 'set' or ko == 'list'):
+    if len(obj) == 0: return
+    return [ jsonigi(o) for o in obj ]
+  elif ko == 'dict' :
+    if len(obj) == 0: return
+    x = dict()
+    for k,v in obj.items() :
+      json_k=jsonigi(k)
+      json_v=jsonigi(v)
+      x[json_k] = json_v
+    return x
   ser = dict()
   for a in dir(obj):
     if not a.startswith('_') and not callable(getattr(obj, a)) :
       attr = getattr(obj,a)
-      cn = attr.__class__.__name__
-      if (    cn == 'bool' or cn == 'str' or cn == 'int') :
-        ser[a] = attr
-      elif cn == 'set' :
-        if len(attr) >0 :
-          ser[a] = [ jsonigi(o) for o in attr ]
-      else :
-        if cn != 'NoneType' :
-          print(_("klaso ne json-igita : ")+cn)
-          ser[a] = str(attr)
+      ka = attr.__class__.__name__
+      if ka == 'NoneType' : continue
+      if ka == 'set' and len(attr)==0 : continue
+      ser[a] = jsonigi(attr)
   return ser
 
 def maljsonigi(obj,d):
-   if hasattr(obj, "maljsonigi"):
-     return obj.maljsonigi(d)
-   # FARINDAĴO
-   return
+  if hasattr(obj, "maljsonigi"):
+    obj.maljsonigi(d)
+    return
+  if not d: return
+  for k in d:
+    attr = getattr(obj,k, None)
+    ann = obj.__annotations__.get(k)
+    kn = str(ann)
+    if kn != 'None' :
+      if (  kn == "<class 'bool'>" or kn == "<class 'str'>" or kn == "<class 'int'>" or kn == "<class 'None'>") :
+        setattr(obj,k, d[k])
+      elif kn == "<class 'dict'>":
+        setattr(obj,k, d[k])
+      elif kn[:4] == 'set[' :
+        kn2 = kn[4:len(kn)-1]
+        #from objbrowser import browse ;browse(globals())
+        if kn2:
+          if (  kn2 == "bool" or kn2 == "str" or kn2 == "int" or kn2 == "None") :
+            setattr(obj,k, d[k])
+          else:
+            kn2s = kn2.split('.')
+            kl2 =globals()[kn2s[len(kn2s)-1]]
+            for x in d[k] :
+              novo = kl2()
+              maljsonigi(novo,x)
+              attr.add(novo)
+        else :
+          print("ne kognita : "+k)
+      elif kn[:8] == "<class '" :
+        kn2 = kn[8:len(kn)-2]
+        if kn2:
+          kn2s = kn2.split('.')
+          kl2 =globals()[kn2s[len(kn2s)-1]]
+          novo = kl2()
+          maljsonigi(novo,d[k])
+          setattr(obj,k, novo)
+        else:
+          print(_("farindaĵo : ")+kn)
+          print(attr)
+          print(ann)
+      else :
+        if kn != 'NoneType' :
+          print(_("klaso ne json-igita(2) : ")+kn)
+          print(attr)
+          print(ann)
 
-# fslib classes and functions
-def cont(string):
-    """parse a GEDCOM line adding CONT and CONT tags if necessary"""
-    level = int(string[:1]) + 1
-    lines = string.splitlines()
-    res = list()
-    max_len = 255
-    for line in lines:
-        c_line = line
-        to_conc = list()
-        while len(c_line.encode("utf-8")) > max_len:
-            index = min(max_len, len(c_line) - 2)
-            while (
-                len(c_line[:index].encode("utf-8")) > max_len
-                or re.search(r"[ \t\v]", c_line[index - 1 : index + 1])
-            ) and index > 1:
-                index -= 1
-            to_conc.append(c_line[:index])
-            c_line = c_line[index:]
-            max_len = 248
-        to_conc.append(c_line)
-        res.append(("\n%s CONC " % level).join(to_conc))
-        max_len = 248
-    return ("\n%s CONT " % level).join(res) + "\n"
+# gedcomx classes and functions
+class Qualifier:
+    name: str
+    value: str
+
+class Attribution:
+    contributor: str
+    modified: int
+    changeMessage: str
+    creator: str
+    created: int
+
+class SourceReference:
+    description: str
+    descriptionId: str
+    attribution: Attribution
+    qualifiers: set[Qualifier] = set()
 
 class Date():
   """
   " original: str
   " formal: DateFormal
   """
-  def __init__(self):
-    original = None
-    formal = None
+  original: str = None
+  formal: DateFormal = None
 
   def __str__(self):
    if self.formal :
@@ -115,16 +160,25 @@ class Note:
 
     def __init__(self, id,subject, text, tree=None, num=None):
         if num:
-            self.num = num
+            self._num = num
         else:
             Note._counter += 1
-            self.num = Note._counter
+            self._num = Note._counter
         self.id = id.strip()
         self.subject = subject.strip()
         self.text = text.strip()
 
         if tree:
             tree.notes.append(self)
+
+class Conclusion:
+    id: str
+    lang: str
+    sources: set[SourceReference] = set()
+    analysis: str
+    notes: set[Note] = set()
+    confidence: str
+    attribution: Attribution
 
 class Source:
     """GEDCOM Source class
@@ -137,16 +191,16 @@ class Source:
 
     def __init__(self, data=None, tree=None, num=None):
         if num:
-            self.num = num
+            self._num = _num
         else:
             Source._counter += 1
-            self.num = Source._counter
+            self._num = Source._counter
 
         self._tree = tree
-        self.url = self.citation = self.title = self.fid = None
+        self.url = self.citation = self.title = self.id = None
         self.notes = set()
         if data:
-            self.fid = data["id"]
+            self.id = data["id"]
             if "about" in data:
                 self.url = data["about"].replace(
                     "familysearch.org/platform/memories/memories",
@@ -164,7 +218,12 @@ class Source:
                     ,n["text"] if "text" in n else ""
                     , self._tree))
 
-class Fact:
+class PlaceReference:
+    original: str = ''
+    descriptionRef: str = ''
+
+
+class Fact(Conclusion):
   """
   " GEDCOMx Fact class
   "   type: FactType
@@ -175,6 +234,11 @@ class Fact:
   "  :param data: FS Fact data
   "  :param tree: a tree object
   """
+  type: str
+  date: Date
+  place: PlaceReference
+  value: str
+  qualifiers: Qualifier
 
   def __init__(self, data=None, tree=None):
     self.value = self.type = self.place = self.note = self.map = None
@@ -199,9 +263,9 @@ class Fact:
             if "place" in data:
                 place = data["place"]
                 self.place = place["original"]
-                if "description" in place and place["description"][1:] in tree.places:
+                if "description" in place and place["description"][1:] in tree._places:
                     #self.placeid = place["description"][1:]
-                    self.map = tree.places[place["description"][1:]]
+                    self.map = tree._places[place["description"][1:]]
             if "attribution" in data and "changeMessage" in data["attribution"]:
                 self.note = Note(
                       "FS attribution"
@@ -212,12 +276,12 @@ class Fact:
                 self.date or self.place
             ):
                 self.value = "Y"
-  def jsonigi(self):
-    res = dict()
-    if self.type : res['type']= self.type
-    if self.date : res['date']= {'original':self.date.original or '','formal': str(self.date.formal or '')}
-    if self.place : res['place']= {'original': self.place}
-    return res
+#  def jsonigi(self):
+#    res = dict()
+#    if self.type : res['type']= self.type
+#    if self.date : res['date']= {'original':self.date.original or '','formal': str(self.date.formal or '')}
+#    if self.place : res['place']= {'original': self.place}
+#    return res
 
 class Memorie:
   """GEDCOM Memorie class
@@ -236,20 +300,37 @@ class Memorie:
             ) + data["descriptions"][0]["value"]
 
 
-class Name:
+class Qualifier:
+    name: str
+    value: str
+
+class NamePart:
+    type: str
+    value: str
+    qualifiers: Qualifier
+
+class NameForm:
+    lang: str
+    fullText: str
+    parts: set[NamePart] = set()
+
+class Name(Conclusion):
     """GEDCOM Name class
     :param data: FS Name data
     :param tree: a Tree object
     """
+    type: str
+    nameForms: set[NameForm]=set()
+    date: Date
+    preferred: bool = False
+
+    _given: str = ''
 
     def __init__(self, data=None, tree=None):
-        self.given = ""
-        self.preferred = False
         self.surname = ""
         self.prefix = None
         self.suffix = None
         self.note = None
-        self.type = None
         if data:
             if "type" in data:
               self.type = data["type"]
@@ -271,19 +352,19 @@ class Name:
                     , tree.fs._("attribution")
                     , data["attribution"]["changeMessage"]
                     , tree)
-    def jsonigi(self):
-      res = dict()
-      if self.type : res['type']= self.type
-      if self.preferred : res['preferred']= self.preferred
-      res['nameForms'] = [ {
-                'fullText' : (self.given or '')+' '+(self.surname or ''),
-                'parts' :  [ {
-                    'type': 'http://gedcomx.org/Given',
-                    'value' : (self.given or '') },
-                    { 'type': 'http://gedcomx.org/Surname',
-                      'value' : (self.surname or '') }]
-            }]
-      return res
+#    def jsonigi(self):
+#      res = dict()
+#      if self.type : res['type']= self.type
+#      if self.preferred : res['preferred']= self.preferred
+#      res['nameForms'] = [ {
+#                'fullText' : (self.given or '')+' '+(self.surname or ''),
+#                'parts' :  [ {
+#                    'type': 'http://gedcomx.org/Given',
+#                    'value' : (self.given or '') },
+#                    { 'type': 'http://gedcomx.org/Surname',
+#                      'value' : (self.surname or '') }]
+#            }]
+#      return res
       
 class Ordinance:
     """GEDCOM Ordinance class
@@ -299,31 +380,57 @@ class Ordinance:
                 self.temple_code = data["completedTemple"]["code"]
             self.status = data["status"]
 
-class Indi:
+class Identifier:
+    value: str
+    type: str
+
+class EvidenceReference:
+    resource: str
+    attribution: Attribution
+
+class Subject(Conclusion):
+    extracted: bool = False
+    evidence: set[EvidenceReference] = set()
+    media: set[SourceReference] = set()
+    identifiers: set[Identifier] = set()
+
+class Gender(Conclusion):
+    type: str
+
+class Person(Subject):
     """GEDCOM individual class
-    :param fid' FamilySearch id
+    :param id' FamilySearch id
     :param tree: a tree object
     :param num: the GEDCOM identifier
     """
+    private: bool
+    gender: Gender
+    names: set[Name] = set()
+    facts: set[Fact] = set()
+    attribution: Attribution
+    links: dict
+
+    id: str = None
+    living: bool = True
+    names: set[Name] = set()
+    identifiers: set[int] = set()
 
     _counter = 0
 
-    def __init__(self, fid=None, tree=None, num=None):
+    def __init__(self, id=None, tree=None, num=None):
         if num:
-            self.num = num
+            self._num = num
         else:
-            Indi._counter += 1
-            self.num = Indi._counter
+            Person._counter += 1
+            self._num = Person._counter
         self._tree = tree
-        self.fid = fid
+        self.id = id
         self.famc_fid = set()
         self.fams_fid = set()
         self.famc_num = set()
         self.fams_num = set()
         self.name = None
-        self.names = set()
         self.gender = None
-        self.living = None
         self.parents = set()
         self.spouses = set()
         self.children = set()
@@ -338,13 +445,13 @@ class Indi:
         self.sources = set()
         self.memories = set()
 
-    def jsonigi(self):
-      res = dict()
-      if self.living != None : res['living']= self.living
-      if self.gender : res['gender'] =  {'type':self.gender}
-      if len(self.names) >0: res['names'] = [ o.jsonigi() for o in self.names ]
-      if len(self.facts) >0: res['facts'] = [ o.jsonigi() for o in self.facts ]
-      return res
+    #def jsonigi(self):
+    #  res = dict()
+    #  if self.living != None : res['living']= self.living
+    #  if self.gender : res['gender'] =  {'type':self.gender}
+    #  if len(self.names) >0: res['names'] = [ o.jsonigi() for o in self.names ]
+    #  if len(self.facts) >0: res['facts'] = [ o.jsonigi() for o in self.facts ]
+    #  return res
       
 
     def add_data(self, data):
@@ -385,7 +492,7 @@ class Indi:
             # FARINDAĴO : portrait
             #if "links" in data:
             #    req = self._tree.fs.get_url(
-            #        "/platform/tree/persons/%s/portrait" % self.fid
+            #        "/platform/tree/persons/%s/portrait" % self.id
             #        , {"Accept": "image/*"}
             #    )
             #    if req and req.text:
@@ -393,9 +500,9 @@ class Indi:
             #      self.portrait = req.text
             #      self.portrait_type = req.headers["Content-Type"]
             #      self.portrait_url = req.url
-            if self._tree.getsources and "sources" in data:
+            if self._tree._getsources and "sources" in data:
                 sources = self._tree.fs.get_url(
-                    "/platform/tree/persons/%s/sources" % self.fid
+                    "/platform/tree/persons/%s/sources" % self.id
                 )
                 if sources:
                     quotes = dict()
@@ -412,7 +519,7 @@ class Indi:
                             (self._tree.sources[source["id"]], quotes[source["id"]])
                         )
             if "evidence" in data:
-                url = "/platform/tree/persons/%s/memories" % self.fid
+                url = "/platform/tree/persons/%s/memories" % self.id
                 memorie = self._tree.fs.get_url(url)
                 if memorie and "sourceDescriptions" in memorie:
                     for x in memorie["sourceDescriptions"]:
@@ -440,7 +547,7 @@ class Indi:
 
     def get_notes(self):
         """retrieve individual notes"""
-        notes = self._tree.fs.get_url("/platform/tree/persons/%s/notes" % self.fid)
+        notes = self._tree.fs.get_url("/platform/tree/persons/%s/notes" % self.id)
         if notes:
             for n in notes["persons"][0]["notes"]:
                 self.notes.add(Note(
@@ -457,7 +564,7 @@ class Indi:
         famc = False
         if self.living:
             return res, famc
-        url = "/service/tree/tree-data/reservations/person/%s/ordinances" % self.fid
+        url = "/service/tree/tree-data/reservations/person/%s/ordinances" % self.id
         data = self._tree.fs.get_url(url, {})
         if data:
             for key, o in data["data"].items():
@@ -484,7 +591,7 @@ class Indi:
     def get_contributors(self):
         """retrieve contributors"""
         temp = set()
-        url = "/platform/tree/persons/%s/changes" % self.fid
+        url = "/platform/tree/persons/%s/changes" % self.id
         data = self._tree.fs.get_url(url, {"Accept": "application/x-gedcomx-atom+json"})
         if data:
             for entries in data["entries"]:
@@ -498,7 +605,13 @@ class Indi:
                     return
             self.notes.add(Note('FS contributors',self._tree.fs._("Contributors"),text, self._tree))
 
-class Fam:
+#class Fam:
+class Relationship(Subject):
+    type: str
+    person1: str
+    person2: str
+    facts: set[Fact] = set()
+
     """GEDCOM family class
     :param husb: husbant fid
     :param wife: wife fid
@@ -510,10 +623,10 @@ class Fam:
 
     def __init__(self, husb=None, wife=None, tree=None, num=None):
         if num:
-            self.num = num
+            self._num = num
         else:
-            Fam._counter += 1
-            self.num = Fam._counter
+            Relationship._counter += 1
+            self._num = Relationship._counter
         self.husb_fid = husb if husb else None
         self.wife_fid = wife if wife else None
         self._tree = tree
@@ -542,7 +655,7 @@ class Fam:
                 if "facts" in data["relationships"][0]:
                     for x in data["relationships"][0]["facts"]:
                         self.facts.add(Fact(x, self._tree))
-                if self._tree.getsources and "sources" in data["relationships"][0]:
+                if self._tree._getsources and "sources" in data["relationships"][0]:
                     quotes = dict()
                     for x in data["relationships"][0]["sources"]:
                         quotes[x["descriptionId"]] = (
@@ -602,23 +715,157 @@ class Fam:
                         return
                 self.notes.add(Note('FS contributors',self._tree.fs._("Contributors"),text, self._tree))
 
+class LangValue:
+    lang: str
+    value: str
+
+class SourceCitation(LangValue):
+  pass
+
+class TextValue(LangValue):
+  pass
+
+class Coverage:
+    spatial: PlaceReference
+    temporal: Date
+
+class Link:
+  accept: str
+  href: str
+
+class HypermediaEnabledData:
+  description: dict = dict()
+
+class SourceDescription:
+    id: str
+    links: dict
+    resourceType: str
+    citations: set[SourceCitation] = set()
+    mediaType: str
+    about: str
+    mediator: str
+    publisher: str
+    authors: set[str] = set()
+    sources: set[SourceReference] = set()
+    analysis: str
+    componentOf: SourceReference
+    titles: set[TextValue] = set()
+    notes: set[Note] = set()
+    attribution: Attribution
+    rights: set[str] = set()
+    coverage: set[Coverage] = set()
+    descriptions: set[TextValue] = set()
+    identifiers: dict = dict()
+    created: int
+    modified: int
+    published: int
+    repository: str
+
+class OnlineAccount:
+    serviceHomepage: str
+    accountName: str
+
+class Address:
+    value: str
+    city: str
+    country: str
+    postalCode: str
+    stateOrProvince: str
+    street: str
+    street2: str
+    street3: str
+    street4: str
+    street5: str
+    street6: str
+
+class Agent:
+    id: str
+    identifiers: set[Identifier] = set()
+    names: set[TextValue] = set()
+    homepage: str
+    openid: str
+    accounts: OnlineAccount
+    emails: set[str] = set()
+    phones: set[str] = set()
+    addresses: set[Address] = set()
+    person: str
+
+class EventRole(Conclusion):
+    person: str
+    type: str
+
+class Event(Subject):
+    type: str
+    date: Date
+    place: PlaceReference
+    roles: set[EventRole] = set()
+
+class Document(Conclusion):
+    type: str
+    extracted: bool = False
+    textType: str
+    text: str
+    attribution: Attribution
+
+class GroupRole(Conclusion):
+    person: str
+    type: str
+    date: Date
+    details: str
+
+class Group(Subject):
+    names: set[TextValue] = set()
+    date: Date
+    place: PlaceReference
+    roles: GroupRole
+
+class PlaceDescription(Subject):
+    names: set[TextValue] = set()
+    type: str
+    place: str
+    jurisdiction: str
+    latitude: float
+    longitude: float
+    temporalDescription: Date
+    spatialDescription: str
+
+class Gender(Conclusion):
+    type: str
+
 class Tree:
-    """family tree class
+    """ gedcomx tree class
     :param fs: a Session object
     """
+    id: str
+    lang: str
+    attribution: Attribution
+    persons: set[Person] = set()
+    relationships: set[Relationship] = set()
+    sourceDescriptions: set[SourceDescription] = set()
+    agents: set[Agent] = set()
+    events: set[Event] = set()
+    documents: set[Document] = set()
+    places: set[PlaceReference] = set()
+    groups: set[Group] = set()
+    description: str  # URI must resolve to SourceDescription
+
+    placeDescriptions: set[PlaceDescription] = set()
+    notes: Note
+    sourceReferences: set[SourceReference] = set()
+    genders: set[Gender] = set()
+    names: set[Name] = set()
+    facts: set[Fact] = set()
 
     def __init__(self, fs=None):
         self.fs = fs
-        self.indi = dict()
-        self.fam = dict()
-        self.notes = list()
-        self.sources = dict()
-        self.places = dict()
+        self._indi = dict()
+        self._fam = dict()
+        self._places = dict()
         self.display_name = self.lang = None
-        self.getsources = True
+        self._getsources = True
         if fs:
             self.display_name = fs.display_name
-            self.lang = babelfish.Language.fromalpha2(fs.lang).name
+            #self.lang = babelfish.Language.fromalpha2(fs.lang).name
 
     def add_indis(self, fids):
         """add individuals to the family tree
@@ -628,14 +875,14 @@ class Tree:
         async def add_datas(loop, data):
             futures = set()
             for person in data["persons"]:
-                self.indi[person["id"]] = Indi(person["id"], self)
+                self._indi[person["id"]] = Person(person["id"], self)
                 futures.add(
-                    loop.run_in_executor(None, self.indi[person["id"]].add_data, person)
+                    loop.run_in_executor(None, self._indi[person["id"]].add_data, person)
                 )
             for future in futures:
                 await future
 
-        new_fids = [fid for fid in fids if fid and fid not in self.indi]
+        new_fids = [fid for fid in fids if fid and fid not in self._indi]
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         while new_fids:
@@ -645,8 +892,8 @@ class Tree:
             if data:
                 if "places" in data:
                     for place in data["places"]:
-                        if place["id"] not in self.places:
-                            self.places[place["id"]] = (
+                        if place["id"] not in self._places:
+                            self._places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
                                 place["names"],
@@ -661,28 +908,28 @@ class Tree:
                             rel["parent2"]["resourceId"] if "parent2" in rel else None
                         )
                         child = rel["child"]["resourceId"] if "child" in rel else None
-                        if child in self.indi:
-                            self.indi[child].parents.add((father, mother))
-                        if father in self.indi:
-                            self.indi[father].children.add((father, mother, child))
-                        if mother in self.indi:
-                            self.indi[mother].children.add((father, mother, child))
+                        if child in self._indi:
+                            self._indi[child].parents.add((father, mother))
+                        if father in self._indi:
+                            self._indi[father].children.add((father, mother, child))
+                        if mother in self._indi:
+                            self._indi[mother].children.add((father, mother, child))
                 if "relationships" in data:
                     for rel in data["relationships"]:
                         if rel["type"] == "http://gedcomx.org/Couple":
                             person1 = rel["person1"]["resourceId"]
                             person2 = rel["person2"]["resourceId"]
                             relfid = rel["id"] or 'xxxx'
-                            if person1 in self.indi:
-                                self.indi[person1].spouses.add(
+                            if person1 in self._indi:
+                                self._indi[person1].spouses.add(
                                     (person1, person2, relfid)
                                 )
-                            if person2 in self.indi:
-                                self.indi[person2].spouses.add(
+                            if person2 in self._indi:
+                                self._indi[person2].spouses.add(
                                     (person1, person2, relfid)
                                 )
                             self.add_fam(person1,person2)
-                            family = self.fam[(person1, person2)]
+                            family = self._fam[(person1, person2)]
                             family.add_marriage(relfid)
             new_fids = new_fids[MAX_PERSONS:]
 
@@ -691,8 +938,8 @@ class Tree:
         :param father: the father fid or None
         :param mother: the mother fid or None
         """
-        if (father, mother) not in self.fam:
-            self.fam[(father, mother)] = Fam(father, mother, self)
+        if (father, mother) not in self._fam:
+            self._fam[(father, mother)] = Relationship(father, mother, self)
 
     def add_trio(self, father, mother, child):
         """add a children relationship to the family tree
@@ -700,34 +947,34 @@ class Tree:
         :param mother: the mother fid or None
         :param child: the child fid or None
         """
-        if father in self.indi:
-            self.indi[father].add_fams((father, mother))
-        if mother in self.indi:
-            self.indi[mother].add_fams((father, mother))
-        if child in self.indi and (father in self.indi or mother in self.indi):
-            self.indi[child].add_famc((father, mother))
+        if father in self._indi:
+            self._indi[father].add_fams((father, mother))
+        if mother in self._indi:
+            self._indi[mother].add_fams((father, mother))
+        if child in self._indi and (father in self._indi or mother in self._indi):
+            self._indi[child].add_famc((father, mother))
             self.add_fam(father, mother)
-            self.fam[(father, mother)].add_child(child)
+            self._fam[(father, mother)].add_child(child)
 
     def add_parents(self, fids):
         """add parents relationships
         :param fids: a set of fids
         """
         parents = set()
-        for fid in fids & self.indi.keys():
-            for couple in self.indi[fid].parents:
+        for fid in fids & self._indi.keys():
+            for couple in self._indi[fid].parents:
                 parents |= set(couple)
         if parents:
             self.add_indis(parents)
-        for fid in fids & self.indi.keys():
-            for father, mother in self.indi[fid].parents:
+        for fid in fids & self._indi.keys():
+            for father, mother in self._indi[fid].parents:
                 if (
-                    mother in self.indi
-                    and father in self.indi
+                    mother in self._indi
+                    and father in self._indi
                     or not father
-                    and mother in self.indi
+                    and mother in self._indi
                     or not mother
-                    and father in self.indi
+                    and father in self._indi
                 ):
                     self.add_trio(father, mother, fid)
         return set(filter(None, parents))
@@ -740,27 +987,27 @@ class Tree:
         async def add(loop, rels):
             futures = set()
             for father, mother, relfid in rels:
-                if (father, mother) in self.fam:
+                if (father, mother) in self._fam:
                     futures.add(
                         loop.run_in_executor(
-                            None, self.fam[(father, mother)].add_marriage, relfid
+                            None, self._fam[(father, mother)].add_marriage, relfid
                         )
                     )
             for future in futures:
                 await future
 
         rels = set()
-        for fid in fids & self.indi.keys():
-            rels |= self.indi[fid].spouses
+        for fid in fids & self._indi.keys():
+            rels |= self._indi[fid].spouses
         loop = asyncio.get_event_loop()
         if rels:
             self.add_indis(
                 set.union(*({father, mother} for father, mother, relfid in rels))
             )
             for father, mother, _ in rels:
-                if father in self.indi and mother in self.indi:
-                    self.indi[father].add_fams((father, mother))
-                    self.indi[mother].add_fams((father, mother))
+                if father in self._indi and mother in self._indi:
+                    self._indi[father].add_fams((father, mother))
+                    self._indi[mother].add_fams((father, mother))
                     self.add_fam(father, mother)
             loop.run_until_complete(add(loop, rels))
 
@@ -769,19 +1016,19 @@ class Tree:
         :param fids: a set of fid
         """
         rels = set()
-        for fid in fids & self.indi.keys():
-            rels |= self.indi[fid].children if fid in self.indi else set()
+        for fid in fids & self._indi.keys():
+            rels |= self._indi[fid].children if fid in self._indi else set()
         children = set()
         if rels:
             self.add_indis(set.union(*(set(rel) for rel in rels)))
             for father, mother, child in rels:
-                if child in self.indi and (
-                    mother in self.indi
-                    and father in self.indi
+                if child in self._indi and (
+                    mother in self._indi
+                    and father in self._indi
                     or not father
-                    and mother in self.indi
+                    and mother in self._indi
                     or not mother
-                    and father in self.indi
+                    and father in self._indi
                 ):
                     self.add_trio(father, mother, child)
                     children.add(child)
@@ -791,30 +1038,30 @@ class Tree:
         """retrieve ordinances
         :param fid: an individual fid
         """
-        if fid in self.indi:
-            ret, famc = self.indi[fid].get_ordinances()
-            if famc and famc in self.fam:
-                self.indi[fid].sealing_child.famc = self.fam[famc]
+        if fid in self._indi:
+            ret, famc = self._indi[fid].get_ordinances()
+            if famc and famc in self._fam:
+                self._indi[fid].sealing_child.famc = self._fam[famc]
             for o in ret:
                 spouse_id = o["relationships"]["spouseId"]
-                if (fid, spouse_id) in self.fam:
-                    self.fam[fid, spouse_id].sealing_spouse = Ordinance(o)
-                elif (spouse_id, fid) in self.fam:
-                    self.fam[spouse_id, fid].sealing_spouse = Ordinance(o)
+                if (fid, spouse_id) in self._fam:
+                    self._fam[fid, spouse_id].sealing_spouse = Ordinance(o)
+                elif (spouse_id, fid) in self._fam:
+                    self._fam[spouse_id, fid].sealing_spouse = Ordinance(o)
 
     def reset_num(self):
         """reset all GEDCOM identifiers"""
-        for husb, wife in self.fam:
-            self.fam[(husb, wife)].husb_num = self.indi[husb].num if husb else None
-            self.fam[(husb, wife)].wife_num = self.indi[wife].num if wife else None
-            self.fam[(husb, wife)].chil_num = set(
-                self.indi[chil].num for chil in self.fam[(husb, wife)].chil_fid
+        for husb, wife in self._fam:
+            self._fam[(husb, wife)].husb_num = self._indi[husb]._num if husb else None
+            self._fam[(husb, wife)].wife_num = self._indi[wife]._num if wife else None
+            self._fam[(husb, wife)].chil_num = set(
+                self._indi[chil]._num for chil in self._fam[(husb, wife)].chil_fid
             )
-        for fid in self.indi:
-            self.indi[fid].famc_num = set(
-                self.fam[(husb, wife)].num for husb, wife in self.indi[fid].famc_fid
+        for fid in self._indi:
+            self._indi[fid].famc_num = set(
+                self._fam[(husb, wife)]._num for husb, wife in self._indi[fid].famc_fid
             )
-            self.indi[fid].fams_num = set(
-                self.fam[(husb, wife)].num for husb, wife in self.indi[fid].fams_fid
+            self._indi[fid].fams_num = set(
+                self._fam[(husb, wife)]._num for husb, wife in self._indi[fid].fams_fid
             )
 
