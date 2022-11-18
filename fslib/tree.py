@@ -510,7 +510,7 @@ class Tree(gedcomx.Tree):
     """
     def __init__(self, fs=None):
         self.fs = fs
-        self._indi = dict()
+        self._persons = dict()
         self._fam = dict()
         self._places = dict()
         self.display_name = self.lang = None
@@ -519,7 +519,7 @@ class Tree(gedcomx.Tree):
         if fs:
             self.display_name = fs.display_name
 
-    def add_indis(self, fids):
+    def add_persons(self, fids):
         """add individuals to the family tree
         :param fids: an iterable of fid
         """
@@ -527,14 +527,14 @@ class Tree(gedcomx.Tree):
         async def add_datas(loop, data):
             futures = set()
             for person in data["persons"]:
-                self._indi[person["id"]] = Person(person["id"], self)
+                self._persons[person["id"]] = Person(person["id"], self)
                 futures.add(
-                    loop.run_in_executor(None, self._indi[person["id"]].add_data, person)
+                    loop.run_in_executor(None, self._persons[person["id"]].add_data, person)
                 )
             for future in futures:
                 await future
 
-        new_fids = [fid for fid in fids if fid and fid not in self._indi]
+        new_fids = [fid for fid in fids if fid and fid not in self._persons]
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         while new_fids:
@@ -560,24 +560,24 @@ class Tree(gedcomx.Tree):
                             rel["parent2"]["resourceId"] if "parent2" in rel else None
                         )
                         child = rel["child"]["resourceId"] if "child" in rel else None
-                        if child in self._indi:
-                            self._indi[child].parents.add((father, mother))
-                        if father in self._indi:
-                            self._indi[father].children.add((father, mother, child))
-                        if mother in self._indi:
-                            self._indi[mother].children.add((father, mother, child))
+                        if child in self._persons:
+                            self._persons[child].parents.add((father, mother))
+                        if father in self._persons:
+                            self._persons[father].children.add((father, mother, child))
+                        if mother in self._persons:
+                            self._persons[mother].children.add((father, mother, child))
                 if "relationships" in data:
                     for rel in data["relationships"]:
                         if rel["type"] == "http://gedcomx.org/Couple":
                             person1 = rel["person1"]["resourceId"]
                             person2 = rel["person2"]["resourceId"]
                             relfid = rel["id"] or 'xxxx'
-                            if person1 in self._indi:
-                                self._indi[person1].spouses.add(
+                            if person1 in self._persons:
+                                self._persons[person1].spouses.add(
                                     (person1, person2, relfid)
                                 )
-                            if person2 in self._indi:
-                                self._indi[person2].spouses.add(
+                            if person2 in self._persons:
+                                self._persons[person2].spouses.add(
                                     (person1, person2, relfid)
                                 )
                             self.add_fam(person1,person2)
@@ -599,12 +599,12 @@ class Tree(gedcomx.Tree):
         :param mother: the mother fid or None
         :param child: the child fid or None
         """
-        if father in self._indi:
-            self._indi[father].add_fams((father, mother))
-        if mother in self._indi:
-            self._indi[mother].add_fams((father, mother))
-        if child in self._indi and (father in self._indi or mother in self._indi):
-            self._indi[child].add_famc((father, mother))
+        if father in self._persons:
+            self._persons[father].add_fams((father, mother))
+        if mother in self._persons:
+            self._persons[mother].add_fams((father, mother))
+        if child in self._persons and (father in self._persons or mother in self._persons):
+            self._persons[child].add_famc((father, mother))
             self.add_fam(father, mother)
             self._fam[(father, mother)].add_child(child)
 
@@ -613,20 +613,20 @@ class Tree(gedcomx.Tree):
         :param fids: a set of fids
         """
         parents = set()
-        for fid in fids & self._indi.keys():
-            for couple in self._indi[fid].parents:
+        for fid in fids & self._persons.keys():
+            for couple in self._persons[fid].parents:
                 parents |= set(couple)
         if parents:
-            self.add_indis(parents)
-        for fid in fids & self._indi.keys():
-            for father, mother in self._indi[fid].parents:
+            self.add_persons(parents)
+        for fid in fids & self._persons.keys():
+            for father, mother in self._persons[fid].parents:
                 if (
-                    mother in self._indi
-                    and father in self._indi
+                    mother in self._persons
+                    and father in self._persons
                     or not father
-                    and mother in self._indi
+                    and mother in self._persons
                     or not mother
-                    and father in self._indi
+                    and father in self._persons
                 ):
                     self.add_trio(father, mother, fid)
         return set(filter(None, parents))
@@ -649,17 +649,17 @@ class Tree(gedcomx.Tree):
                 await future
 
         rels = set()
-        for fid in fids & self._indi.keys():
-            rels |= self._indi[fid].spouses
+        for fid in fids & self._persons.keys():
+            rels |= self._persons[fid].spouses
         loop = asyncio.get_event_loop()
         if rels:
-            self.add_indis(
+            self.add_persons(
                 set.union(*({father, mother} for father, mother, relfid in rels))
             )
             for father, mother, _ in rels:
-                if father in self._indi and mother in self._indi:
-                    self._indi[father].add_fams((father, mother))
-                    self._indi[mother].add_fams((father, mother))
+                if father in self._persons and mother in self._persons:
+                    self._persons[father].add_fams((father, mother))
+                    self._persons[mother].add_fams((father, mother))
                     self.add_fam(father, mother)
             loop.run_until_complete(add(loop, rels))
 
@@ -668,19 +668,19 @@ class Tree(gedcomx.Tree):
         :param fids: a set of fid
         """
         rels = set()
-        for fid in fids & self._indi.keys():
-            rels |= self._indi[fid].children if fid in self._indi else set()
+        for fid in fids & self._persons.keys():
+            rels |= self._persons[fid].children if fid in self._persons else set()
         children = set()
         if rels:
-            self.add_indis(set.union(*(set(rel) for rel in rels)))
+            self.add_persons(set.union(*(set(rel) for rel in rels)))
             for father, mother, child in rels:
-                if child in self._indi and (
-                    mother in self._indi
-                    and father in self._indi
+                if child in self._persons and (
+                    mother in self._persons
+                    and father in self._persons
                     or not father
-                    and mother in self._indi
+                    and mother in self._persons
                     or not mother
-                    and father in self._indi
+                    and father in self._persons
                 ):
                     self.add_trio(father, mother, child)
                     children.add(child)
@@ -690,10 +690,10 @@ class Tree(gedcomx.Tree):
         """retrieve ordinances
         :param fid: an individual fid
         """
-        if fid in self._indi:
-            ret, famc = self._indi[fid].get_ordinances()
+        if fid in self._persons:
+            ret, famc = self._persons[fid].get_ordinances()
             if famc and famc in self._fam:
-                self._indi[fid].sealing_child.famc = self._fam[famc]
+                self._persons[fid].sealing_child.famc = self._fam[famc]
             for o in ret:
                 spouse_id = o["relationships"]["spouseId"]
                 if (fid, spouse_id) in self._fam:
@@ -704,16 +704,16 @@ class Tree(gedcomx.Tree):
     def reset_num(self):
         """reset all GEDCOM identifiers"""
         for husb, wife in self._fam:
-            self._fam[(husb, wife)].husb_num = self._indi[husb]._num if husb else None
-            self._fam[(husb, wife)].wife_num = self._indi[wife]._num if wife else None
+            self._fam[(husb, wife)].husb_num = self._persons[husb]._num if husb else None
+            self._fam[(husb, wife)].wife_num = self._persons[wife]._num if wife else None
             self._fam[(husb, wife)].chil_num = set(
-                self._indi[chil]._num for chil in self._fam[(husb, wife)].chil_fid
+                self._persons[chil]._num for chil in self._fam[(husb, wife)].chil_fid
             )
-        for fid in self._indi:
-            self._indi[fid].famc_num = set(
-                self._fam[(husb, wife)]._num for husb, wife in self._indi[fid].famc_fid
+        for fid in self._persons:
+            self._persons[fid].famc_num = set(
+                self._fam[(husb, wife)]._num for husb, wife in self._persons[fid].famc_fid
             )
-            self._indi[fid].fams_num = set(
-                self._fam[(husb, wife)]._num for husb, wife in self._indi[fid].fams_fid
+            self._persons[fid].fams_num = set(
+                self._fam[(husb, wife)]._num for husb, wife in self._persons[fid].fams_fid
             )
 
