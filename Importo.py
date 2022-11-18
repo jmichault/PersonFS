@@ -428,7 +428,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # sercxi ekzistantan
     trovita = False
     for s in self.dbstate.db.iter_sources():
-      if s.abbrev == "FamilySearch " + fsFonto.fid :
+      if s.abbrev == "FamilySearch " + fsFonto.id :
         trovita = True
         break
     if not trovita :
@@ -440,7 +440,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       if fsFonto.url:
         s.set_publication_info(fsFonto.url)
       # FS ID
-      s.abbrev = "FamilySearch " + fsFonto.fid
+      s.abbrev = "FamilySearch " + fsFonto.id
       self.dbstate.db.add_source(s,self.txn)
       self.dbstate.db.commit_source(s,self.txn)
     # sercxi ekzistantan

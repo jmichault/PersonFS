@@ -61,7 +61,8 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 # lokaloj 
 from fslib.session import Session
 from fslib.constants import FACT_TAGS, FACT_TYPES
-from fslib.tree import Tree, Name as gedName, Person as gedPerson, Fact, jsonigi, Date as gedDate
+from fslib.tree import Tree, Name as gedName, Person as gedPerson, Fact
+from fslib.gedcomx import jsonigi, Date as gedDate
 
 
 import sys
