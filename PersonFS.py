@@ -62,14 +62,12 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from fslib.session import Session
 from fslib.constants import FACT_TAGS, FACT_TYPES
 from fslib.tree import Tree, Name as gedName, Person as gedPerson, Fact
-from fslib.gedcomx import jsonigi, Date as gedDate
-
+from fslib.gedcomx import Date as gedDate
+from fslib.json import jsonigi
 
 import sys
 import os
 import time
-
-
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -222,8 +220,9 @@ class PersonFS(Gramplet):
 
   def konekti_FS(self):
     if not PersonFS.fs_Session:
-      #PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-      PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+      print("konekti")
+      PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+      #PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     if not PersonFS.fs_Session.logged:
       return
     if not PersonFS.fs_Tree:
@@ -269,10 +268,10 @@ class PersonFS(Gramplet):
   def ButRefresxigi_clicked(self, dummy):
     if self.FSID :
       try:
-        PersonFS.fs_Tree._indi.pop(self.FSID)
+        PersonFS.fs_Tree._persons.pop(self.FSID)
       except:
         pass
-      PersonFS.fs_Tree.add_indis([self.FSID])
+      PersonFS.fs_Tree.add_persons([self.FSID])
     active_handle = self.get_active('Person')
     self.modelKomp.clear()
     if active_handle:
@@ -486,30 +485,30 @@ class PersonFS(Gramplet):
       if "persons" in data:
         for person in data["persons"]:
           #from objbrowser import browse ;browse(locals())
-          self.fs_TreeSercxo._indi[person["id"]] = gedPerson(person["id"], self.fs_TreeSercxo)
-          self.fs_TreeSercxo._indi[person["id"]].add_data(person)
+          self.fs_TreeSercxo._persons[person["id"]] = gedPerson(person["id"], self.fs_TreeSercxo)
+          self.fs_TreeSercxo._persons[person["id"]].add_data(person)
           #print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
             #print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
               #print("     mother")
-              mother=self.fs_TreeSercxo._indi[person["id"]]
+              mother=self.fs_TreeSercxo._persons[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
               #print("     father")
-              father=self.fs_TreeSercxo._indi[person["id"]]
-      fsPerso = PersonFS.fs_TreeSercxo._indi.get(fsId) or gedPerson()
+              father=self.fs_TreeSercxo._persons[person["id"]]
+      fsPerso = PersonFS.fs_TreeSercxo._persons.get(fsId) or gedPerson()
       if "relationships" in data:
         for rel in data["relationships"]:
           if rel["type"] == "http://gedcomx.org/Couple":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
             relfid = rel.get("id")
-            if person1Id in PersonFS.fs_TreeSercxo._indi:
-              PersonFS.fs_TreeSercxo._indi[person1Id].spouses.add(
+            if person1Id in PersonFS.fs_TreeSercxo._persons:
+              PersonFS.fs_TreeSercxo._persons[person1Id].spouses.add(
                  (person1Id, person2Id, relfid)
                 )
-            if person2Id in PersonFS.fs_TreeSercxo._indi:
-              PersonFS.fs_TreeSercxo._indi[person2Id].spouses.add(
+            if person2Id in PersonFS.fs_TreeSercxo._persons:
+              PersonFS.fs_TreeSercxo._persons[person2Id].spouses.add(
                  (person1Id, person2Id, relfid)
                 )
             self.fs_TreeSercxo.add_fam(person1Id, person2Id)
@@ -521,7 +520,7 @@ class PersonFS(Gramplet):
             person2Id = rel["person2"]["resourceId"]
             #print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
-              person1=self.fs_TreeSercxo._indi[person1Id]
+              person1=self.fs_TreeSercxo._persons[person1Id]
               if not father and person1.gender == "http://gedcomx.org/Male" :
                 father = person1
               elif not mother and person1.gender == "http://gedcomx.org/Female" :
@@ -556,7 +555,7 @@ class PersonFS(Gramplet):
         elif fsEdzTrio[1] == fsId:
           edzoId = fsEdzTrio[0]
         else: continue
-        fsEdzo = PersonFS.fs_TreeSercxo._indi.get(edzoId) or gedPerson()
+        fsEdzo = PersonFS.fs_TreeSercxo._persons.get(edzoId) or gedPerson()
         fsEdzoNomo = fsEdzo.name or gedName()
         if edzoj != '': edzoj = edzoj + "\n"
         edzoj = edzoj + fsEdzoNomo.surname +  ', ' + fsEdzoNomo._given
@@ -921,13 +920,13 @@ class PersonFS(Gramplet):
       fs_parents = next(iter(fsPerso.parents))
       fsfather_id = fs_parents[0] or ''
       fsmother_id = fs_parents[1] or ''
-      PersonFS.fs_Tree.add_indis([fsfather_id,fsmother_id])
-      fsFather = PersonFS.fs_Tree._indi.get(fsfather_id)
+      PersonFS.fs_Tree.add_persons([fsfather_id,fsmother_id])
+      fsFather = PersonFS.fs_Tree._persons.get(fsfather_id)
       if fsFather and fsFather.name :
         fs_father_name = fsFather.name.surname + ', ' + fsFather.name._given
       else :
         fs_father_name = ''
-      fsMother = PersonFS.fs_Tree._indi.get(fsmother_id)
+      fsMother = PersonFS.fs_Tree._persons.get(fsmother_id)
       if fsMother and fsMother.name :
         fs_mother_name = fsMother.name.surname + ', ' + fsMother.name._given
       else :
@@ -992,7 +991,7 @@ class PersonFS(Gramplet):
         coloro = "orange"
         if fsEdzoId != '' and edzoFsid == fsEdzoId :
           coloro = "green"
-        fsEdzo = PersonFS.fs_Tree._indi.get(fsEdzoId)
+        fsEdzo = PersonFS.fs_Tree._persons.get(fsEdzoId)
         if fsEdzo :
           fsNomo = fsEdzo.name
         else :
@@ -1080,7 +1079,7 @@ class PersonFS(Gramplet):
           coloro = "orange"
           if fsInfanoId != '' and fsInfanoId == infanoFsid :
             coloro = "green"
-          fsInfano = PersonFS.fs_Tree._indi.get(fsInfanoId)
+          fsInfano = PersonFS.fs_Tree._persons.get(fsInfanoId)
           if fsInfano :
             fsNomo = fsInfano.name
           else :
@@ -1095,7 +1094,7 @@ class PersonFS(Gramplet):
                 or (fsTrio[0] == fsEdzoId and fsTrio[1] == fsid )) :
               fsInfanoId = fsTrio[2]
               coloro = "orange"
-              fsInfano = PersonFS.fs_Tree._indi.get(fsInfanoId)
+              fsInfano = PersonFS.fs_Tree._persons.get(fsInfanoId)
               if fsInfano :
                 fsNomo = fsInfano.name
               else :
@@ -1113,7 +1112,7 @@ class PersonFS(Gramplet):
         fsEdzoId = fsEdzTrio[1]
       else :
         fsEdzoId = fsEdzTrio[0]
-      fsEdzo = PersonFS.fs_Tree._indi.get(fsEdzoId)
+      fsEdzo = PersonFS.fs_Tree._persons.get(fsEdzoId)
       if fsEdzo :
         fsNomo = fsEdzo.name
       else :
@@ -1127,7 +1126,7 @@ class PersonFS(Gramplet):
         if (  (fsTrio[0] == fsid and fsTrio[1] == fsEdzoId )
                 or (fsTrio[0] == fsEdzoId and fsTrio[1] == fsid )) :
               fsInfanoId = fsTrio[2]
-              fsInfano = PersonFS.fs_Tree._indi.get(fsInfanoId)
+              fsInfano = PersonFS.fs_Tree._persons.get(fsInfanoId)
               if fsInfano :
                 fsNomo = fsInfano.name
               else :
@@ -1141,7 +1140,7 @@ class PersonFS(Gramplet):
         fsInfanoj.remove(fsTrio)
     for fsTrio in fsInfanoj :
       fsInfanoId = fsTrio[2]
-      fsInfano = PersonFS.fs_Tree._indi.get(fsInfanoId)
+      fsInfano = PersonFS.fs_Tree._persons.get(fsInfanoId)
       if fsInfano :
         fsNomo = fsInfano.name
       else :
@@ -1181,8 +1180,8 @@ class PersonFS(Gramplet):
     self.db_fsid = fsid
     PersonFS.FSID = fsid
     # ŝarĝante individuan "FamilySearch" :
-    PersonFS.fs_Tree.add_indis([fsid])
-    fsPerso = PersonFS.fs_Tree._indi.get(fsid) or gedPerson()
+    PersonFS.fs_Tree.add_persons([fsid])
+    fsPerso = PersonFS.fs_Tree._persons.get(fsid) or gedPerson()
     if getfs == True :
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])

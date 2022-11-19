@@ -59,7 +59,7 @@ class Note(gedcomx.Note):
         self.text = text.strip()
 
         if tree:
-            tree.notes.append(self)
+            tree._notes.append(self)
 
 class Source:
     """ Source class
@@ -185,7 +185,7 @@ class Name(gedcomx.Name):
             if "parts" in data["nameForms"][0]:
                 for z in data["nameForms"][0]["parts"]:
                     if z["type"] == "http://gedcomx.org/Given":
-                        self.given = z["value"]
+                        self._given = z["value"]
                     if z["type"] == "http://gedcomx.org/Surname":
                         self.surname = z["value"]
                     if z["type"] == "http://gedcomx.org/Prefix":
@@ -248,6 +248,7 @@ class Person(gedcomx.Person):
         self.notes = set()
         self.sources = set()
         self.memories = set()
+        self.names = set()
 
     def add_data(self, data):
         """add FS individual data"""
@@ -394,7 +395,7 @@ class Person(gedcomx.Person):
                     temp.add(contributors["name"])
         if temp:
             text = "\n".join(sorted(temp))
-            for n in self._tree.notes:
+            for n in self._tree._notes:
                 if n.text == text:
                     self.notes.add(n)
                     return
@@ -498,13 +499,13 @@ class Relationship(gedcomx.Relationship):
                         temp.add(contributors["name"])
             if temp:
                 text = "\n".join(sorted(temp))
-                for n in self._tree.notes:
+                for n in self._tree._notes:
                     if n.text == text:
                         self.notes.add(n)
                         return
                 self.notes.add(Note('FS contributors',self._tree.fs._("Contributors"),text, self._tree))
 
-class Tree(gedcomx.Tree):
+class Tree(gedcomx.Gedcomx):
     """ gedcomx tree class
     :param fs: a Session object
     """
@@ -516,6 +517,7 @@ class Tree(gedcomx.Tree):
         self.display_name = self.lang = None
         self._getsources = True
         self._sources = dict()
+        self._notes = list()
         if fs:
             self.display_name = fs.display_name
 

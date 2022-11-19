@@ -45,11 +45,12 @@ class Session:
                   return False
                 nbtry = nbtry + 1
                 url = "https://www.familysearch.org/auth/familysearch/login"
+                headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
+                r = requests.get(url, params={"ldsauth": False}, allow_redirects=False, headers=headers)
                 url = r.headers["Location"]
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, allow_redirects=False)
+                r = requests.get(url, allow_redirects=False,headers=headers)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21 :].index('"')
                 params = r.text[idx + 21 : idx + 21 + span]
@@ -63,7 +64,7 @@ class Session:
                         "userName": self.username,
                         "password": self.password,
                     },
-                    allow_redirects=False,
+                    allow_redirects=False,headers=headers,
                 )
 
                 if "The username or password was incorrect" in r.text:
@@ -77,7 +78,7 @@ class Session:
 
                 url = r.headers["Location"]
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, allow_redirects=False)
+                r = requests.get(url, allow_redirects=False,headers=headers)
                 self.fssessionid = r.cookies["fssessionid"]
             except requests.exceptions.ReadTimeout:
                 self.write_log("Read timed out")
@@ -92,6 +93,7 @@ class Session:
                 continue
             except KeyError:
                 self.write_log("KeyError")
+                print(r.content)
                 time.sleep(self.timeout)
                 continue
             except ValueError:
@@ -105,6 +107,7 @@ class Session:
     def post_url(self, url, datumoj, headers=None):
         if headers is None:
             headers = {"Accept": "application/x-gedcomx-v1+json","Content-Type": "application/x-gedcomx-v1+json"}
+        headers.update( {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'})
         while True:
             try:
                 self.write_log("Downloading :" + url)
@@ -168,6 +171,7 @@ class Session:
             headers = {"Accept": "application/x-gedcomx-v1+json", "Accept-Language": "fr"}
         if "Accept-Language" not in headers :
             headers ["Accept-Language"] ="fr"
+        headers.update( {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'})
         while True:
             try:
                 self.write_log("Downloading :" + url)
@@ -226,6 +230,7 @@ class Session:
                 return r.json()
             except Exception as e:
                 self.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
+                print(r.content)
                 return None
 
     def set_current(self):

@@ -192,10 +192,10 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # Legi la personojn en «FamilySearch».
     print(_("Elŝutante personon…"))
     if self.FS_ID:
-      self.fs_TreeImp.add_indis([self.FS_ID])
+      self.fs_TreeImp.add_persons([self.FS_ID])
     else : return
     # ascendante
-    todo = set(self.fs_TreeImp._indi.keys())
+    todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.asc):
       if not todo:
@@ -204,7 +204,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print( _("Downloading %s. of generations of ancestors...") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
-    todo = set(self.fs_TreeImp._indi.keys())
+    todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.desc):
       if not todo:
@@ -215,11 +215,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # edzoj
     if self.edz :
       print(_("Downloading spouses and marriage information..."))
-      todo = set(self.fs_TreeImp._indi.keys())
+      todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
     print(_("Elŝutante notojn…"))
-    for fsPerso in self.fs_TreeImp._indi.values() :
+    for fsPerso in self.fs_TreeImp._persons.values() :
       fsPerso.get_notes()
     print(_("Elŝutante notojn…"))
     for fsFam in self.fs_TreeImp._fam.values() :
@@ -235,7 +235,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.aldLoko(id,pl)
       print(_("Importado de personoj…"))
       # importi personoj
-      for id in self.fs_TreeImp._indi.keys() :
+      for id in self.fs_TreeImp._persons.keys() :
         self.aldPersono(id)
       print(_("Importado de familioj…"))
       # importi familioj
@@ -458,7 +458,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldPersono(self,fsid):
     grPersonoHandle = self.fs_gr.get(fsid)
-    fsPerso = self.fs_TreeImp._indi.get(fsid)
+    fsPerso = self.fs_TreeImp._persons.get(fsid)
     if not fsPerso :
       print(_("ID ne trovita."))
       return
@@ -466,7 +466,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       grPerson = Person()
       nomo = Name()
       nomo.set_type(NameType(NameType.BIRTH))
-      nomo.set_first_name(fsPerso.name.given)
+      nomo.set_first_name(fsPerso.name._given)
       s = nomo.get_primary_surname()
       s.set_surname(fsPerso.name.surname)
       # noto al nomo
@@ -549,7 +549,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
   def aldNomo(self, fsNomo, type, grPerson):
       nomo = Name()
       nomo.set_type(NameType(type))
-      nomo.set_first_name(fsNomo.given)
+      nomo.set_first_name(fsNomo._given)
       s = nomo.get_primary_surname()
       s.set_surname(fsNomo.surname)
       if fsNomo.note:

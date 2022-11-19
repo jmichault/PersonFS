@@ -17,124 +17,92 @@
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from collections import ChainMap
-
 from fslib.dateformal import DateFormal
 
-def all_annotations(cls) -> ChainMap:
-    """Liveras vortar-similan ChainMap kiu inkluzivas komentadojn por ĉiuj
-        atributoj difinitaj en klaso aŭ hereditaj de superklasoj."""
-    return ChainMap(*(c.__annotations__ for c in cls.__mro__ if '__annotations__' in c.__dict__) )
+# gedcomx klasoj
+class ExtensibleData:
+  id: str
+  _indekso: dict = dict()
 
-def jsonigi(obj):
-  """Liveras jsonigita version de obj.
-  """
-  if hasattr(obj, "jsonigi"):
-    return obj.jsonigi()
-  ko = obj.__class__.__name__
-  if ( ko == 'bool' or ko == 'str' or ko == 'int') :
-    return obj
-  if ( ko == 'set' or ko == 'list'):
-    if len(obj) == 0: return
-    return [ jsonigi(o) for o in obj ]
-  if ko == 'dict' :
-    if len(obj) == 0: return
-    x = dict()
-    for k,v in obj.items() :
-      json_k=jsonigi(k)
-      json_v=jsonigi(v)
-      x[json_k] = json_v
-    return x
-  ser = dict()
-  for a in dir(obj):
-    if not a.startswith('_') and not callable(getattr(obj, a)) :
-      attr = getattr(obj,a)
-      ka = attr.__class__.__name__
-      if ka == 'NoneType' : continue
-      if ka == 'set' and len(attr)==0 : continue
-      ser[a] = jsonigi(attr)
-  return ser
+class HasText:
+  text: str
 
-def _aldKlaso(kl2,x):
-  if ( hasattr(kl2, "id") and hasattr(kl2, "_indekso")
-      and x.get("id") in kl2._indekso ) :
-    # FARINDAĴO : aŭ kompleti aktualan 
-    return None
-  nova = kl2()
-  maljsonigi(nova,x)
-  if ( hasattr(kl2, "id") and hasattr(kl2, "_indekso")):
-    if( hasattr(kl2, "_indekso")) :
-      kl2._indekso[x["id"]] = nova
-  return nova
+class Link:
+  href: str
+  template: str
+  title: str
+  type: str
+  accept: str
+  allow: str
+  hreflang: str
+  count: int
+  offset: int
+  results: int
 
-def maljsonigi(obj,d, nepre=False):
-  if not nepre and hasattr(obj, "maljsonigi"):
-    obj.maljsonigi(d)
-    return
-  if not d: return
-  for k in d :
-    ann = all_annotations(obj.__class__).get(k)
-    kn = str(ann)
-    if (  kn == "<class 'bool'>" or kn == "<class 'str'>" or kn == "<class 'int'>" or kn == "<class 'None'>") :
-      setattr(obj,k, d[k])
-    elif kn == "<class 'dict'>":
-      attr = getattr(obj,k, None) or dict()
-      attr.update(d[k])
-      setattr(obj,k, attr)
-      #from objbrowser import browse ;browse(locals())
-    elif kn[:4] == 'set[' :
-      kn2 = kn[4:len(kn)-1]
-      if (  kn2 == "bool" or kn2 == "str" or kn2 == "int" or kn2 == "None") :
-        attr = getattr(obj,k, None) or set()
-        attr.update(d[k])
-        setattr(obj,k, attr)
-        #from objbrowser import browse ;browse(locals())
-        #setattr(obj,k, d[k])
-      else :
-        attr = getattr(obj,k, None) or set()
-        #if k == 'parts':
-        #  from objbrowser import browse ;browse(locals())
-        kn2s = kn2.split('.')
-        kl2 =globals()[kn2s[len(kn2s)-1]]
-        for x in d[k] :
-          nova = _aldKlaso(kl2,x)
-          if nova : attr.add(nova)
-        setattr(obj,k, attr)
-    elif kn[:8] == "<class '" :
-      kn2 = kn[8:len(kn)-2]
-      kn2s = kn2.split('.')
-      kl2 =globals()[kn2s[len(kn2s)-1]]
-      nova = _aldKlaso(kl2,d[k])
-      if nova: 
-        setattr(obj,k, nova)
-    else:
-      print("clé inconnue: "+obj.__class__.__name__+":"+k)
-
-# gedcomx classes and functions
 class Qualifier:
   name: str
   value: str
 
-class Attribution:
+class HypermediaEnabledData(ExtensibleData):
+  links: dict[str,Link]
+
+class ResourceReference:
+  resourceId: str
+  resource: str
+
+class Attribution(ExtensibleData):
   contributor: str
   modified: int
   changeMessage: str
-  creator: str
+  changeMessageResource: str
+  creator: 	ResourceReference
   created: int
 
-class SourceReference:
+class SourceReference(HypermediaEnabledData):
   description: str
   descriptionId: str
   attribution: Attribution
   qualifiers: set[Qualifier]
 
-class Date():
+class ReferencesSources:
+  sources: set[SourceReference]
+
+class TextValue:
+  lang: str
+  value: str
+
+class VocabElement:
+  id: str
+  uri: str
+  subclass: str
+  type: str
+  sortName: str
+  labels: set[TextValue]
+  descriptions: set[TextValue]
+  sublist: str
+  position: int
+
+class VocabElementList:
+  id: str
+  title: str
+  description: str
+  uri: str
+  elements: set[VocabElement]
+
+class FamilyView(HypermediaEnabledData):
+  parent1: ResourceReference
+  parent2: ResourceReference
+  children: set[ResourceReference]
+
+class Date(ExtensibleData):
   """
   " original: str
   " formal: DateFormal
   """
-  original: str = None
-  formal: DateFormal = None
+  original: str
+  formal: DateFormal
+  normalized: set[TextValue]
+  confidence: str
 
   def __str__(self):
    if self.formal :
@@ -143,166 +111,168 @@ class Date():
       return self.original
    else : return ''
     
+class DisplayProperties(ExtensibleData):
+  name: str
+  gender: str
+  lifespan: str
+  birthDate: str
+  birthPlace: str
+  deathDate: str
+  deathPlace: str
+  marriageDate: str
+  marriagePlace: str
+  ascendancyNumber: str
+  descendancyNumber: str
+  relationshipDescription: str
+  familiesAsParent: set[FamilyView]
+  familiesAsChild: set[FamilyView]
+  role: str
 
-class Note:
-  """GEDCOM Note class
-  """
-  lang: str
+class Note(HypermediaEnabledData):
   subject: str
   text: str
   attribution: Attribution
-
-class Conclusion:
-  id: str = None
   lang: str
-  sources: set[SourceReference]
-  analysis: str
+
+class HasNotes:
   notes: set[Note]
-  confidence: str
+
+class Conclusion(HypermediaEnabledData):
   attribution: Attribution
-  links: dict
+  sources: set[SourceReference]
+  analysis: ResourceReference
+  notes: set[Note]
+  lang: str
+  confidence: str
+  sortKey: str
 
-class PlaceReference:
-  original: str = None
-  descriptionRef: str = None
-  normalized: str = None
+class CitationField:
+  # FARINDAĴO : ne dokumenta klaso ???
+  pass
 
+class SourceCitation(TextValue,HypermediaEnabledData):
+  citationTemplate: ResourceReference
+  fields: set[CitationField]
+
+class PlaceReference(ExtensibleData):
+  original: str
+  normalized: set[TextValue]
+  description: str
+  confidence: str
+  latitude: float # family search !
+  longitude: float # family search !
+  names: set[TextValue] # family search !
+
+class HasDateAndPlace:
+  date: Date
+  place: PlaceReference
 
 class Fact(Conclusion):
-  """
-  " GEDCOMx Fact class
-  "   type: FactType
-  "   date: Date
-  "   place: str ... PlaceReference
-  "   value: str
-  "   qualifiers: Qualifier
-  "  :param data: FS Fact data
-  "  :param tree: a tree object
-  """
-  id: str = None
-  type: str
   date: Date
   place: PlaceReference
   value: str
-  qualifiers: Qualifier
+  qualifiers: set[Qualifier]
+  type: str
 
-  _indekso = dict()
+class HasFacts:
+  facts: set[Fact]
 
 class Qualifier:
   name: str
   value: str
 
-class NamePart:
+class NamePart(ExtensibleData):
   type: str
   value: str
-  qualifiers: Qualifier
+  qualifiers: set[Qualifier]
 
-class NameForm:
+class NameForm(ExtensibleData):
   lang: str
-  fullText: str
   parts: set[NamePart]
+  fullText: str
+  nameFormInfo: str  # family search !
 
 class Name(Conclusion):
-  """GEDCOM Name class
-  """
-  id: str = None
-  type: str
-  nameForms: set[NameForm]=set()
+  preferred: bool
   date: Date
-  preferred: bool = None
+  nameForms: set[NameForm]
+  type: str
 
-  _indekso = dict()
-
-class EvidenceReference:
+class EvidenceReference(HypermediaEnabledData):
   resource: str
+  resourceId: str
   attribution: Attribution
 
 class Subject(Conclusion):
-  extracted: bool = None
   evidence: set[EvidenceReference]
   media: set[SourceReference]
-  identifiers: dict
+  identifiers: dict[str,set]
+  extracted: bool
 
 class Gender(Conclusion):
-    type: str
+  type: str
+
+class PersonInfo:
+  canUserEdit: bool
+  privateSpaceRestricted: bool
+  readOnly: bool
+  visibleToAll: bool
 
 class Person(Subject):
-  """GEDCOM individual class
-  """
-  id: str = None
   private: bool
+  living: bool
   gender: Gender
   names: set[Name]
   facts: set[Fact]
-  living: bool = False
-  names: set[Name]
-  display: dict
-
-  _indekso = dict()
+  display: DisplayProperties
+  personInfo: set[PersonInfo]  # family search !
 
 class Relationship(Subject):
-  type: str
   person1: str
   person2: str
   facts: set[Fact]
+  type: str
 
-  """GEDCOM Relationship class
-  """
 
-class LangValue:
-  lang: str
-  value: str
-
-class SourceCitation(LangValue):
-  pass
-
-class TextValue(LangValue):
-  pass
-
-class Coverage:
+class Coverage(HypermediaEnabledData):
   spatial: PlaceReference
   temporal: Date
 
-class Link:
-  accept: str
-  href: str
-
-class HypermediaEnabledData:
-  description: dict
-
-class SourceDescription:
-  id: str = None
-  resourceType: str
+class SourceDescription(HypermediaEnabledData):
   citations: set[SourceCitation]
-  mediaType: str
-  about: str
-  mediator: str
-  publisher: str
+  mediator: ResourceReference
+  publisher: ResourceReference
   authors: set[str]
   sources: set[SourceReference]
-  analysis: str
+  analysis: ResourceReference
   componentOf: SourceReference
   titles: set[TextValue]
   notes: set[Note]
   attribution: Attribution
-  links: dict
+  identifiers: dict[str,set]
   rights: set[str]
+  replacedBy: str
+  replaces: set[str]
+  statuses: set[str]
+  lang: str
+  about: str
+  version: str
+  resourceType: str
+  mediaType: str
+
+  mediator: str
   coverage: set[Coverage]
   descriptions: set[TextValue]
-  identifiers: dict
   created: int
   modified: int
   published: int
   repository: str
 
-  _indekso = dict()
-
-class OnlineAccount:
-  serviceHomepage: str
+class OnlineAccount(ExtensibleData):
+  serviceHomepage: ResourceReference
   accountName: str
 
-class Address:
-  value: str
+class Address(ExtensibleData):
   city: str
   country: str
   postalCode: str
@@ -313,20 +283,18 @@ class Address:
   street4: str
   street5: str
   street6: str
+  value: str
 
-class Agent:
-  id: str = None
-  identifiers: dict
+class Agent(HypermediaEnabledData):
+  identifiers: dict[str,set]
   names: set[TextValue]
-  homepage: str
-  openid: str
-  accounts: OnlineAccount
-  emails: set[str]
-  phones: set[str]
+  homepage: ResourceReference
+  openid: ResourceReference
+  accounts: set[OnlineAccount]
+  emails: set[ResourceReference]
+  phones: set[ResourceReference]
   addresses: set[Address]
-  person: str
-
-  _indekso = dict()
+  person: ResourceReference
 
 class EventRole(Conclusion):
   person: str
@@ -340,7 +308,7 @@ class Event(Subject):
 
 class Document(Conclusion):
   type: str
-  extracted: bool = None
+  extracted: bool
   textType: str
   text: str
   attribution: Attribution
@@ -357,41 +325,51 @@ class Group(Subject):
   place: PlaceReference
   roles: GroupRole
 
+class PlaceDisplayProperties(ExtensibleData):
+  name: str
+  fullName: str
+  type: str
+
 class PlaceDescription(Subject):
   names: set[TextValue]
-  type: str
-  place: str
-  jurisdiction: str
+  temporalDescription: Date
   latitude: float
   longitude: float
-  temporalDescription: Date
-  spatialDescription: str
+  spatialDescription: ResourceReference
+  place: ResourceReference
+  jurisdiction: ResourceReference
+  display: PlaceDisplayProperties
+  type: str
 
 class Gender(Conclusion):
   type: str
 
-class Tree:
-  """ gedcomx tree class
-  """
-  id: str = None
-  lang: str
+class ChildAndParentsRelationship(Subject):
+  # https://www.familysearch.org/developers/docs/api/types/json_ChildAndParentsRelationship
+  parent1: ResourceReference
+  parent2: ResourceReference
+  child: ResourceReference
+  parent1Facts: set[Fact]
+  parent2Facts: set[Fact]
+
+class Gedcomx(HypermediaEnabledData):
+  # de https://github.com/FamilySearch/gedcomx/blob/master/specifications/xml-format-specification.md#gedcomx-type
   attribution: Attribution
   persons: set[Person]
   relationships: set[Relationship]
   sourceDescriptions: set[SourceDescription]
   agents: set[Agent]
   events: set[Event]
+  places: set[PlaceDescription]
   documents: set[Document]
-  places: set[PlaceReference]
   groups: set[Group]
+  lang: str
   description: str  # URI must resolve to SourceDescription
-
-  placeDescriptions: set[PlaceDescription]
+  # ne en specifo
   notes: Note
+  childAndParentsRelationships: set[ChildAndParentsRelationship]
   sourceReferences: set[SourceReference]
   genders: set[Gender]
   names: set[Name]
   facts: set[Fact]
-
-  _indekso = dict()
 
