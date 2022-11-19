@@ -714,7 +714,9 @@ class PersonFS(Gramplet):
       if fsFakto.date.formal.unuaDato :
         res = res + str(fsFakto.date.formal.unuaDato.jaro)
       if fsFakto.date.formal.gamo :
-        if fsFakto.date.formal.finalaDato :
+        if fsFakto.date.formal.finalaDato and fsFakto.date.formal.finalaDato.jaro:
+          res = res +'/'+ str(fsFakto.date.formal.finalaDato.jaro)
+        elif fsFakto.date.formal.unuaDato and fsFakto.date.formal.unuaDato.jaro:
           res = res +'/'+ str(fsFakto.date.formal.finalaDato.jaro)
     else :
       res = res + '....'
