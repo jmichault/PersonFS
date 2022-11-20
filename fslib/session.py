@@ -112,7 +112,7 @@ class Session:
             try:
                 self.write_log("Downloading :" + url)
                 r = requests.post(
-                    "https://www.familysearch.org" + url,
+                    "https://api.familysearch.org" + url,
                     cookies={"fssessionid": self.fssessionid},
                     timeout=self.timeout,
                     headers=headers,

@@ -62,7 +62,7 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from fslib.session import Session
 from fslib.constants import FACT_TAGS, FACT_TYPES
 from fslib.tree import Tree, Name as gedName, Person as gedPerson, Fact
-from fslib.gedcomx import Date as gedDate
+from fslib import gedcomx
 from fslib.json import jsonigi
 
 import sys
@@ -299,45 +299,58 @@ class PersonFS(Gramplet):
     else:
       fsPerso.gender = "http://gedcomx.org/Unknown"
     grNomo = person.primary_name
-    nomo = gedName()
-    nomo._given = grNomo.first_name
+    nomo = gedcomx.Name()
+    nomo.surname = None
     if grNomo.type == 3 :
       nomo.type = 'http://gedcomx.org/MarriedName'
     elif grNomo.type == 1 :
       nomo.type = 'http://gedcomx.org/AlsoKnownAs'
     else :
       nomo.type = 'http://gedcomx.org/BirthName'
-    nomo.surname = grNomo.get_primary_surname().surname
+    nf = gedcomx.NameForm()
+    nomo.nameForms = set()
+    nomo.nameForms.add(nf)
+    nf.parts = set()
+    np1=gedcomx.NamePart()
+    np1.type = "http://gedcomx.org/Given"
+    np1.value = grNomo.first_name
+    nf.parts.add(np1)
+    np2=gedcomx.NamePart()
+    np2.type = "http://gedcomx.org/Surname"
+    np2.value = grNomo.get_primary_surname().surname
+    nf.parts.add(np2)
     nomo.preferred = True
     fsPerso.names.add(nomo)
     # FARINDAĴO : aliaj nomoj
-    grFaktoj = person.event_ref_list
-    for grFakto in grFaktoj :
-      if int(grFakto.get_role()) != EventRoleType.PRIMARY:
-        continue
-      event = self.dbstate.db.get_event_from_handle(grFakto.ref)
-      titolo = str(EventType(event.type))
-      grFaktoPriskribo = event.description or ''
-      grFaktoDato = grdato_al_formal(event.date)
-      if event.place and event.place != None :
-        place = self.dbstate.db.get_place_from_handle(event.place)
-        grFaktoLoko = place.name.value
-      else :
-        grFaktoLoko = ''
-      # FARINDAĴO : norma loknomo
-      if grFaktoLoko == '' :
-        grValoro = grFaktoPriskribo
-      else :
-        grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
-      grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
-      fsFakto = Fact()
-      fsFakto.date.original = grFaktoDato
-      fsFakto.type = FACT_TYPES.get(grTag)
-      fsFakto.place = grFaktoLoko
-      fsFakto.value = grFaktoPriskribo
-      fsPerso.facts.add(fsFakto)
+    #grFaktoj = person.event_ref_list
+    #for grFakto in grFaktoj :
+    #  if int(grFakto.get_role()) != EventRoleType.PRIMARY:
+    #    continue
+    #  event = self.dbstate.db.get_event_from_handle(grFakto.ref)
+    #  titolo = str(EventType(event.type))
+    #  grFaktoPriskribo = event.description or ''
+    #  grFaktoDato = grdato_al_formal(event.date)
+    #  if event.place and event.place != None :
+    #    place = self.dbstate.db.get_place_from_handle(event.place)
+    #    grFaktoLoko = place.name.value
+    #  else :
+    #    grFaktoLoko = ''
+    #  # FARINDAĴO : norma loknomo
+    #  if grFaktoLoko == '' :
+    #    grValoro = grFaktoPriskribo
+    #  else :
+    #    grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+    #  grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+    #  fsFakto = Fact()
+    #  fsFakto.date = gedcomx.Date()
+    #  fsFakto.date.original = grFaktoDato
+    #  fsFakto.type = FACT_TYPES.get(grTag)
+    #  fsFakto.place = grFaktoLoko
+    #  fsFakto.value = grFaktoPriskribo
+    #  fsPerso.facts.add(fsFakto)
     # FARINDAĴOJ : fontoj, …
     peto = {'persons' : [jsonigi(fsPerso)]}
+    print(peto)
     jsonpeto = json.dumps(peto)
     res = self.fs_Tree.fs.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
@@ -350,7 +363,9 @@ class PersonFS(Gramplet):
         self.dbstate.db.commit_person(person,txn)
         self.FSID = fsid
         self.ButRefresxigi_clicked(self,None)
-    #else :
+    else :
+      print (res.headers)
+      #from objbrowser import browse ;browse(locals())
     #  FARINDAĴO 
     
     return
