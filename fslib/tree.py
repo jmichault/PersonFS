@@ -24,7 +24,7 @@ import asyncio
 from urllib.parse import unquote
 
 # global imports
-import babelfish
+#import babelfish
 
 # local imports
 #import getmyancestors
@@ -586,7 +586,7 @@ class Tree:
         self.getsources = True
         if fs:
             self.display_name = fs.display_name
-            self.lang = babelfish.Language.fromalpha2(fs.lang).name
+            #self.lang = babelfish.Language.fromalpha2(fs.lang).name
 
     def add_indis(self, fids):
         """add individuals to the family tree

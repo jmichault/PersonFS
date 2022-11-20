@@ -339,6 +339,7 @@ class PersonFS(Gramplet):
     # FARINDAĴOJ : fontoj, …
     peto = {'persons' : [jsonigi(fsPerso)]}
     jsonpeto = json.dumps(peto)
+    print (jsonpeto)
     res = self.fs_Tree.fs.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
       with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
@@ -350,7 +351,8 @@ class PersonFS(Gramplet):
         self.dbstate.db.commit_person(person,txn)
         self.FSID = fsid
         self.ButRefresxigi_clicked(self,None)
-    #else :
+    else :
+      print (res.headers)
     #  FARINDAĴO 
     
     return
