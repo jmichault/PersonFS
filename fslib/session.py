@@ -46,10 +46,11 @@ class Session:
                 nbtry = nbtry + 1
                 url = "https://www.familysearch.org/auth/familysearch/login"
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, params={"ldsauth": False}, allow_redirects=False)
+                headers = {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'}
+                r = requests.get(url, params={"ldsauth": False}, allow_redirects=False, headers=headers)
                 url = r.headers["Location"]
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, allow_redirects=False)
+                r = requests.get(url, allow_redirects=False, headers=headers)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21 :].index('"')
                 params = r.text[idx + 21 : idx + 21 + span]
@@ -63,7 +64,7 @@ class Session:
                         "userName": self.username,
                         "password": self.password,
                     },
-                    allow_redirects=False,
+                    allow_redirects=False, headers=headers,
                 )
 
                 if "The username or password was incorrect" in r.text:
@@ -77,7 +78,7 @@ class Session:
 
                 url = r.headers["Location"]
                 self.write_log("Downloading : " + url)
-                r = requests.get(url, allow_redirects=False)
+                r = requests.get(url, allow_redirects=False, headers=headers)
                 self.fssessionid = r.cookies["fssessionid"]
             except requests.exceptions.ReadTimeout:
                 self.write_log("Read timed out")
@@ -105,6 +106,7 @@ class Session:
     def post_url(self, url, datumoj, headers=None):
         if headers is None:
             headers = {"Accept": "application/x-gedcomx-v1+json","Content-Type": "application/x-gedcomx-v1+json"}
+        headers.update( {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'})
         while True:
             try:
                 self.write_log("Downloading :" + url)
@@ -166,6 +168,7 @@ class Session:
         self.counter += 1
         if headers is None:
             headers = {"Accept": "application/x-gedcomx-v1+json", "Accept-Language": "fr"}
+        headers.update( {'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36'})
         if "Accept-Language" not in headers :
             headers ["Accept-Language"] ="fr"
         while True:

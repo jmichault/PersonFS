@@ -350,7 +350,7 @@ class PersonFS(Gramplet):
         person.add_attribute(attr)
         self.dbstate.db.commit_person(person,txn)
         self.FSID = fsid
-        self.ButRefresxigi_clicked(self,None)
+        self.ButRefresxigi_clicked(None)
     else :
       print (res.headers)
     #  FARINDAĴO 
