@@ -290,14 +290,15 @@ class PersonFS(Gramplet):
   def ButAldoni_clicked(self, dummy):
     active_handle = self.get_active('Person')
     person = self.dbstate.db.get_person_from_handle(active_handle)
-    fsPerso = gedPerson(None,self.fs_Tree)
+    fsPerso = gedcomx.Person()
+    fsPerso.gender = gedcomx.Gender()
     fsPerso.living = False
     if person.get_gender() == Person.MALE :
-      fsPerso.gender = "http://gedcomx.org/Male"
+      fsPerso.gender.type = "http://gedcomx.org/Male"
     elif person.get_gender() == Person.FEMALE :
-      fsPerso.gender = "http://gedcomx.org/Female"
+      fsPerso.gender.type = "http://gedcomx.org/Female"
     else:
-      fsPerso.gender = "http://gedcomx.org/Unknown"
+      fsPerso.gender.type = "http://gedcomx.org/Unknown"
     grNomo = person.primary_name
     nomo = gedcomx.Name()
     nomo.surname = None
@@ -350,8 +351,8 @@ class PersonFS(Gramplet):
     #  fsPerso.facts.add(fsFakto)
     # FARINDAĴOJ : fontoj, …
     peto = {'persons' : [jsonigi(fsPerso)]}
-    print(peto)
     jsonpeto = json.dumps(peto)
+    print(jsonpeto)
     res = self.fs_Tree.fs.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
       with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
