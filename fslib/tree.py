@@ -33,6 +33,7 @@ from fslib.constants import (
     ORDINANCES_STATUS,
 )
 from fslib.dateformal import DateFormal
+from fslib.json import maljsonigi
 
 import gettext
 _ = gettext.gettext
@@ -99,55 +100,6 @@ class Source:
                     ,n["text"] if "text" in n else ""
                     , self._tree))
 
-class Fact(gedcomx.Fact):
-  """
-  " GEDCOMx Fact class
-  "   type: FactType
-  "   date: Date
-  "   place: str ... PlaceReference
-  "   value: str
-  "   qualifiers: Qualifier
-  "  :param data: FS Fact data
-  "  :param tree: a tree object
-  """
-
-  def __init__(self, data=None, tree=None):
-    self.value = self.type = self.place = self.note = self.map = None
-    self.date = None
-    if data:
-            if "value" in data:
-                self.value = data["value"]
-            if "type" in data:
-                self.type = data["type"]
-                if self.type in FACT_EVEN:
-                    self.type = tree.fs._(FACT_EVEN[self.type])
-                elif self.type[:6] == "data:,":
-                    self.type = unquote(self.type[6:])
-                elif self.type not in FACT_TAGS:
-                    self.type = None
-            if "date" in data :
-              self.date = gedcomx.Date()
-              if "formal" in data["date"]:
-                self.date.formal = DateFormal(data["date"]["formal"])
-              if "original" in data["date"]:
-                self.date.original = data["date"]["original"]
-            if "place" in data:
-                place = data["place"]
-                self.place = place["original"]
-                if "description" in place and place["description"][1:] in tree._places:
-                    #self.placeid = place["description"][1:]
-                    self.map = tree._places[place["description"][1:]]
-            if "attribution" in data and "changeMessage" in data["attribution"]:
-                self.note = Note(
-                      "FS attribution"
-                    , tree.fs._("attribution")
-                    , data["attribution"]["changeMessage"]
-                    , tree)
-            if self.type == "http://gedcomx.org/Death" and not (
-                self.date or self.place
-            ):
-                self.value = "Y"
-
 class Memorie:
   """ Memorie class
   " :param data: FS Memorie data
@@ -165,39 +117,6 @@ class Memorie:
             ) + data["descriptions"][0]["value"]
 
 
-class Name(gedcomx.Name):
-    """GEDCOM Name class
-    :param data: FS Name data
-    :param tree: a Tree object
-    """
-    _given: str = ''
-
-    def __init__(self, data=None, tree=None):
-        self.surname = ""
-        self.prefix = None
-        self.suffix = None
-        self.note = None
-        if data:
-            if "type" in data:
-              self.type = data["type"]
-            if "preferred" in data and data["preferred"]:
-              self.preferred = True
-            if "parts" in data["nameForms"][0]:
-                for z in data["nameForms"][0]["parts"]:
-                    if z["type"] == "http://gedcomx.org/Given":
-                        self._given = z["value"]
-                    if z["type"] == "http://gedcomx.org/Surname":
-                        self.surname = z["value"]
-                    if z["type"] == "http://gedcomx.org/Prefix":
-                        self.prefix = z["value"]
-                    if z["type"] == "http://gedcomx.org/Suffix":
-                        self.suffix = z["value"]
-            if "attribution" in data and "changeMessage" in data["attribution"]:
-                self.note = Note(
-                      "FS attribution"
-                    , tree.fs._("attribution")
-                    , data["attribution"]["changeMessage"]
-                    , tree)
 class Ordinance:
     """ Ordinance class
     :param data: FS Ordinance data
@@ -252,86 +171,37 @@ class Person(gedcomx.Person):
 
     def add_data(self, data):
         """add FS individual data"""
-        if data:
-            self.living = data["living"]
-            for x in data["names"]:
-                self.names.add(Name(x, self._tree))
-                if x["preferred"]:
-                    self.name = Name(x, self._tree)
-                else:
-                    if x["type"] == "http://gedcomx.org/Nickname":
-                        self.nicknames.add(Name(x, self._tree))
-                    if x["type"] == "http://gedcomx.org/BirthName":
-                        self.birthnames.add(Name(x, self._tree))
-                    if x["type"] == "http://gedcomx.org/AlsoKnownAs":
-                        self.aka.add(Name(x, self._tree))
-                    if x["type"] == "http://gedcomx.org/MarriedName":
-                        self.married.add(Name(x, self._tree))
-            if "gender" in data:
-              self.gender = data["gender"]["type"]
-                #if data["gender"]["type"] == "http://gedcomx.org/Male":
-                #    self.gender = "M"
-                #elif data["gender"]["type"] == "http://gedcomx.org/Female":
-                #    self.gender = "F"
-                #elif data["gender"]["type"] == "http://gedcomx.org/Unknown":
-                #    self.gender = "U"
-            if "facts" in data:
-                for x in data["facts"]:
-                    if x["type"] == "http://familysearch.org/v1/LifeSketch":
-                      self.notes.add(Note(
-                         x["id"] if "id" in x else "FS note"
-                        ,x["subject"] if "subject" in x else self._tree.fs._("Life Sketch")
-                        ,x["value"] if "value" in x else ""
-                        , self._tree))
-                    else:
-                        self.facts.add(Fact(x, self._tree))
-            # FARINDAĴO : portrait
-            #if "links" in data:
-            #    req = self._tree.fs.get_url(
-            #        "/platform/tree/persons/%s/portrait" % self.id
-            #        , {"Accept": "image/*"}
-            #    )
-            #    if req and req.text:
-            #      print(req.url)
-            #      self.portrait = req.text
-            #      self.portrait_type = req.headers["Content-Type"]
-            #      self.portrait_url = req.url
-            if self._tree._getsources and "sources" in data:
-                sources = self._tree.fs.get_url(
-                    "/platform/tree/persons/%s/sources" % self.id
-                )
-                if sources:
-                    quotes = dict()
-                    for quote in sources["persons"][0]["sources"]:
-                        quotes[quote["descriptionId"]] = (
-                            quote["attribution"]["changeMessage"]
-                            if "changeMessage" in quote["attribution"]
-                            else None
-                        )
-                    for source in sources["sourceDescriptions"]:
-                        if source["id"] not in self._tree._sources:
-                            self._tree._sources[source["id"]] = Source(source, self._tree)
-                        self.sources.add(
-                            (self._tree._sources[source["id"]], quotes[source["id"]])
-                        )
-            if "evidence" in data:
-                url = "/platform/tree/persons/%s/memories" % self.id
-                memorie = self._tree.fs.get_url(url)
-                if memorie and "sourceDescriptions" in memorie:
-                    for x in memorie["sourceDescriptions"]:
-                        # FARINDAĴO : "text/plain" + memory
-                        #if x["mediaType"] == "text/plain":
-                        #    subject = "\n".join(
-                        #        val.get("value", "")
-                        #        for val in x.get("titles", [])
-                        #      )
-                        #    text = "\n".join(
-                        #        val.get("value", "")
-                        #        for val in x.get("descriptions", [])
-                        #      )
-                        #    self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self._tree))
-                        #else:
-                        self.memories.add(Memorie(x))
+        maljsonigi(self,data)
+        return
+        #    # FARINDAĴO : portrait
+        #    #if "links" in data:
+        #    #    req = self._tree.fs.get_url(
+        #    #        "/platform/tree/persons/%s/portrait" % self.id
+        #    #        , {"Accept": "image/*"}
+        #    #    )
+        #    #    if req and req.text:
+        #    #      print(req.url)
+        #    #      self.portrait = req.text
+        #    #      self.portrait_type = req.headers["Content-Type"]
+        #    #      self.portrait_url = req.url
+        #    if "evidence" in data:
+        #        url = "/platform/tree/persons/%s/memories" % self.id
+        #        memorie = self._tree.fs.get_url(url)
+        #        if memorie and "sourceDescriptions" in memorie:
+        #            for x in memorie["sourceDescriptions"]:
+        #                # FARINDAĴO : "text/plain" + memory
+        #                #if x["mediaType"] == "text/plain":
+        #                #    subject = "\n".join(
+        #                #        val.get("value", "")
+        #                #        for val in x.get("titles", [])
+        #                #      )
+        #                #    text = "\n".join(
+        #                #        val.get("value", "")
+        #                #        for val in x.get("descriptions", [])
+        #                #      )
+        #                #    self.notes.add(Note(x["id"] if "id" in x else "FS memorie",subject,text, self._tree))
+        #                #else:
+        #                self.memories.add(Memorie(x))
 
     def add_fams(self, fams):
         """add family fid (for spouse or parent)"""
@@ -442,9 +312,10 @@ class Relationship(gedcomx.Relationship):
             url = "/platform/tree/couple-relationships/%s" % self.fid
             data = self._tree.fs.get_url(url)
             if data:
-                if "facts" in data["relationships"][0]:
-                    for x in data["relationships"][0]["facts"]:
-                        self.facts.add(Fact(x, self._tree))
+                maljsonigi(self._tree,data)
+                #if "facts" in data["relationships"][0]:
+                #    for x in data["relationships"][0]["facts"]:
+                #        self.facts.add(Fact(x, self._tree))
                 if self._tree._getsources and "sources" in data["relationships"][0]:
                     quotes = dict()
                     for x in data["relationships"][0]["sources"]:
@@ -514,12 +385,9 @@ class Tree(gedcomx.Gedcomx):
         self._persons = dict()
         self._fam = dict()
         self._places = dict()
-        self.display_name = self.lang = None
         self._getsources = True
         self._sources = dict()
         self._notes = list()
-        if fs:
-            self.display_name = fs.display_name
 
     def add_persons(self, fids):
         """add individuals to the family tree
@@ -544,14 +412,14 @@ class Tree(gedcomx.Gedcomx):
                 "/platform/tree/persons?pids=" + ",".join(new_fids[:MAX_PERSONS])
             )
             if data:
-                if "places" in data:
-                    for place in data["places"]:
-                        if place["id"] not in self._places:
-                            self._places[place["id"]] = (
-                                str(place["latitude"]),
-                                str(place["longitude"]),
-                                place["names"],
-                            )
+                #if "places" in data:
+                #    for place in data["places"]:
+                #        if place["id"] not in self._places:
+                #            self._places[place["id"]] = (
+                #                str(place["latitude"]),
+                #                str(place["longitude"]),
+                #                place["names"],
+                #            )
                 loop.run_until_complete(add_datas(loop, data))
                 if "childAndParentsRelationships" in data:
                     for rel in data["childAndParentsRelationships"]:
@@ -687,35 +555,4 @@ class Tree(gedcomx.Gedcomx):
                     self.add_trio(father, mother, child)
                     children.add(child)
         return children
-
-    def add_ordinances(self, fid):
-        """retrieve ordinances
-        :param fid: an individual fid
-        """
-        if fid in self._persons:
-            ret, famc = self._persons[fid].get_ordinances()
-            if famc and famc in self._fam:
-                self._persons[fid].sealing_child.famc = self._fam[famc]
-            for o in ret:
-                spouse_id = o["relationships"]["spouseId"]
-                if (fid, spouse_id) in self._fam:
-                    self._fam[fid, spouse_id].sealing_spouse = Ordinance(o)
-                elif (spouse_id, fid) in self._fam:
-                    self._fam[spouse_id, fid].sealing_spouse = Ordinance(o)
-
-    def reset_num(self):
-        """reset all GEDCOM identifiers"""
-        for husb, wife in self._fam:
-            self._fam[(husb, wife)].husb_num = self._persons[husb]._num if husb else None
-            self._fam[(husb, wife)].wife_num = self._persons[wife]._num if wife else None
-            self._fam[(husb, wife)].chil_num = set(
-                self._persons[chil]._num for chil in self._fam[(husb, wife)].chil_fid
-            )
-        for fid in self._persons:
-            self._persons[fid].famc_num = set(
-                self._fam[(husb, wife)]._num for husb, wife in self._persons[fid].famc_fid
-            )
-            self._persons[fid].fams_num = set(
-                self._fam[(husb, wife)]._num for husb, wife in self._persons[fid].fams_fid
-            )
 

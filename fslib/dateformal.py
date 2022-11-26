@@ -66,8 +66,8 @@ class SimplaDato:
       if len(x)>2 : self.sekundo=int(x[2])
   def __str__(self):
     #±YYYY[-MM[-DD[Thh:[mm[:ss]][±hh[:mm]|Z]]]]
+    if self.jaro ==0 : return ''
     if self.jaro >= 0 : res='+'
-    else : res = ''
     res += "%04d" %(self.jaro)
     if self.monato:
       res += "-%02d" %(self.monato)

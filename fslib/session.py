@@ -189,8 +189,8 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             self.write_log("Status code: %s" % r.status_code)
-            if r.status_code == 204:
-                return None
+            if r.status_code == 204 or r.status_code == 301:
+                return r
             if r.status_code == 401:
                 self.login()
                 continue

@@ -41,7 +41,8 @@ from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTE
 from PersonFS import PersonFS, CONFIG
 from fslib.session import Session
 from fslib.constants import FACT_TAGS
-from fslib.tree import Tree, Name as fsName, Note as fsNote, Fact
+from fslib.tree import Tree
+from fslib import gedcomx
 
 try:
     _trans = glocale.get_addon_translator(__file__)

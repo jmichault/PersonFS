@@ -20,11 +20,12 @@
 from collections import ChainMap
 
 from fslib.dateformal import DateFormal
+from fslib.gedcomx import Link
 
-def all_annotations(cls) -> ChainMap:
+def all_annotations(klaso) -> ChainMap:
     """Liveras vortar-similan ChainMap kiu inkluzivas komentadojn por ĉiuj
         atributoj difinitaj en klaso aŭ hereditaj de superklasoj."""
-    return ChainMap(*(c.__annotations__ for c in cls.__mro__ if '__annotations__' in c.__dict__) )
+    return ChainMap(*(k.__annotations__ for k in klaso.__mro__ if '__annotations__' in k.__dict__) )
 
 def jsonigi(obj):
   """Liveras jsonigita version de obj.
@@ -43,7 +44,8 @@ def jsonigi(obj):
     for k,v in obj.items() :
       json_k=jsonigi(k)
       json_v=jsonigi(v)
-      x[json_k] = json_v
+      if json_v:
+        x[json_k] = json_v
     return x
   ser = dict()
   for a in dir(obj):
@@ -51,7 +53,7 @@ def jsonigi(obj):
       attr = getattr(obj,a)
       ka = attr.__class__.__name__
       if ka == 'NoneType' : continue
-      if (ka == 'set' or ka == 'list') and len(attr)==0 : continue
+      if (ka == 'set' or ka == 'list' or ka == 'str' or ka == 'dict') and len(attr)==0 : continue
       ser[a] = jsonigi(attr)
   return ser
 
@@ -74,61 +76,83 @@ def maljsonigi(obj,d, nepre=False):
     obj.maljsonigi(d)
     return
   if not d: return
+  if obj.__class__.__name__ == 'str' :
+    obj=d
+    return
+  if obj.__class__.__name__ == 'set' :
+    for v in d :
+      obj.add(v)
+    obj = obj.union()
+    return
   for k in d :
-    #try:
-    ann = all_annotations(obj.__class__).get(k)
-    #except:
-    #  from objbrowser import browse ;browse(locals())
-    #  return:
+    # serĉi ĉiu ero en la komentarioj de «obj»
+    if ( k[:38] == '{http://www.w3.org/XML/1998/namespace}'):
+      print("K="+k)
+      ann = all_annotations(obj.__class__).get(k[38:])
+      attrnomo = k[38:]
+    else:
+      attrnomo = k
+      ann = all_annotations(obj.__class__).get(k)
     kn = str(ann)
     if (  kn == "<class 'bool'>" or kn == "<class 'str'>" or kn == "<class 'int'>" or kn == "<class 'float'>" or kn == "<class 'None'>") :
-      setattr(obj,k, d[k])
+      setattr(obj,attrnomo, d[k])
     elif kn == "<class 'set'>":
-      attr = getattr(obj,k, None) or set()
-      attr.update(d[k])
-      setattr(obj,k, attr)
+      attr = getattr(obj,attrnomo, None) or set()
+      #attr.update(d[k])
+      attr = attr.union(d[k])
+      setattr(obj,attrnomo, attr)
     elif kn == "<class 'list'>":
-      attr = getattr(obj,k, None) or list()
+      attr = getattr(obj,attrnomo, None) or list()
       attr.update(d[k])
-      setattr(obj,k, attr)
+      setattr(obj,attrnomo, attr)
     elif kn == "<class 'dict'>":
-      attr = getattr(obj,k, None) or dict()
+      attr = getattr(obj,attrnomo, None) or dict()
       attr.update(d[k])
-      setattr(obj,k, attr)
+      setattr(obj,attrnomo, attr)
+    elif kn[:8] == "<class '" :
+      kl2 = ann
+      nova = _aldKlaso(kl2,d[k])
+      if nova: 
+        setattr(obj,attrnomo, nova)
+      else:
+        print("maljsonigi:eraro : k="+k+"; d[k]="+str(d[k]))
     elif kn[:4] == 'set[' :
       kn2 = kn[4:len(kn)-1]
       if (  kn2 == "bool" or kn2 == "str" or kn2 == "int" or kn2 == "float" or kn2 == "None") :
-        attr = getattr(obj,k, None) or set()
-        attr.update(d[k])
-        setattr(obj,k, attr)
+        attr = getattr(obj,attrnomo, None) or set()
+        #attr.update(d[k])
+        attr = attr.union(d[k])
+        setattr(obj,attrnomo, attr)
       else :
-        attr = getattr(obj,k, None) or set()
-        kn2s = kn2.split('.')
-        kl2 =globals()[kn2s[len(kn2s)-1]]
+        attr = getattr(obj,attrnomo, None) or set()
+        kl2 = ann.__args__[0]
         for x in d[k] :
           nova = _aldKlaso(kl2,x)
-          if nova : attr.add(nova)
-        setattr(obj,k, attr)
-    elif kn[:8] == "<class '" :
-      kn2 = kn[8:len(kn)-2]
-      kn2s = kn2.split('.')
-      kl2 =globals()[kn2s[len(kn2s)-1]]
-      nova = _aldKlaso(kl2,d[k])
-      if nova: 
-        setattr(obj,k, nova)
+          if nova :
+            trov = False
+            if hasattr(kl2,"iseq"):
+              for x in attr :
+                if x.iseq(nova):
+                  trov = True
+                  break
+            if not trov:
+              attr.add(nova)
+          else:
+            print("maljsonigi:eraro : k="+k+"; x="+str(x))
+        attr = attr.union()
+        setattr(obj,attrnomo, attr)
     elif kn[:9] == 'dict[str,' : # speciala kazo : dict[str,Link]
-     if "Link" in kn:# speciala kazo : dict[str,Link]
-      attr = getattr(obj,k, None) or dict()
+      kl2 = ann.__args__[1]
+      attr = getattr(obj,attrnomo, None) or dict()
       for k2,v in d[k].items() :
-        nova = _aldKlaso(Link,v)
+        nova = _aldKlaso(kl2,v)
         if nova : attr[k2] =nova
-      setattr(obj,k, attr)
-     if ",set]" in kn:# speciala kazo : dict[str,set]
-      attr = getattr(obj,k, None) or dict()
-      for k2,v in d[k].items() :
-        attr[k2] =v
-      setattr(obj,k, attr)
+        else:
+            print("maljsonigi:eraro : k="+k+";k2="+str(k2)+"; v="+str(v)+"; kl2="+str(kl2))
+      setattr(obj,attrnomo, attr)
     else:
-      print("nekonata ero: "+obj.__class__.__name__+":"+k)
+      print("maljsonigi:nekonata ero: "+obj.__class__.__name__+":"+k)
       #from objbrowser import browse ;browse(locals())
+    if not nepre and hasattr(obj, "postmaljsonigi"):
+      obj.postmaljsonigi(d)
 

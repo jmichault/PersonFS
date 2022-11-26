@@ -17,15 +17,43 @@
 # Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# https://github.com/FamilySearch/gedcomx/blob/master/specifications/json-format-specification.md
+# https://github.com/FamilySearch/gedcomx/blob/master/specifications/conceptual-model-specification.md
+# https://www.familysearch.org/developers/docs/api/gx_json
+# https://www.familysearch.org/developers/docs/api/fs_json
+ 
+from collections import ChainMap
+
 from fslib.dateformal import DateFormal
+
+def all_annotations(klaso) -> ChainMap:
+    """Liveras vortar-similan ChainMap kiu inkluzivas komentadojn por ĉiuj
+        atributoj difinitaj en klaso aŭ hereditaj de superklasoj."""
+    return ChainMap(*(k.__annotations__ for k in klaso.__mro__ if '__annotations__' in k.__dict__) )
+
+def klaso_ini(obj):
+  for atr,k2 in all_annotations(obj.__class__).items() :
+     if k2 == set or k2 == dict :
+       setattr(obj,atr,k2())
+     elif str(k2)[:4] == 'set[' :
+       setattr(obj,atr,set())
+     elif str(k2)[:5] == 'dict[' :
+       setattr(obj,atr,dict())
+     else :
+       setattr(obj,atr,None)
+
 
 # gedcomx klasoj
 class ExtensibleData:
   id: str
   _indekso: dict = dict()
+  def __init__(self):
+    klaso_ini(self)
 
 class HasText:
   text: str
+  def __init__(self):
+    klaso_ini(self)
 
 class Link:
   href: str
@@ -38,10 +66,14 @@ class Link:
   count: int
   offset: int
   results: int
+  def __init__(self):
+    klaso_ini(self)
 
 class Qualifier:
   name: str
   value: str
+  def __init__(self):
+    klaso_ini(self)
 
 class HypermediaEnabledData(ExtensibleData):
   links: dict[str,Link]
@@ -49,9 +81,11 @@ class HypermediaEnabledData(ExtensibleData):
 class ResourceReference:
   resourceId: str
   resource: str
+  def __init__(self):
+    klaso_ini(self)
 
 class Attribution(ExtensibleData):
-  contributor: str
+  contributor: ResourceReference
   modified: int
   changeMessage: str
   changeMessageResource: str
@@ -66,10 +100,18 @@ class SourceReference(HypermediaEnabledData):
 
 class ReferencesSources:
   sources: set[SourceReference]
+  def __init__(self):
+    klaso_ini(self)
 
 class TextValue:
   lang: str
   value: str
+  def __init__(self):
+    klaso_ini(self)
+  def iseq(self,other):
+    if isinstance(other,TextValue):
+      return (self.lang == other.lang and self.value == other.value)
+    return False
 
 class VocabElement:
   id: str
@@ -81,6 +123,8 @@ class VocabElement:
   descriptions: set[TextValue]
   sublist: str
   position: int
+  def __init__(self):
+    klaso_ini(self)
 
 class VocabElementList:
   id: str
@@ -88,11 +132,15 @@ class VocabElementList:
   description: str
   uri: str
   elements: set[VocabElement]
+  def __init__(self):
+    klaso_ini(self)
 
 class FamilyView(HypermediaEnabledData):
   parent1: ResourceReference
   parent2: ResourceReference
   children: set[ResourceReference]
+  def __init__(self):
+    klaso_ini(self)
 
 class Date(ExtensibleData):
   """
@@ -136,6 +184,8 @@ class Note(HypermediaEnabledData):
 
 class HasNotes:
   notes: set[Note]
+  def __init__(self):
+    klaso_ini(self)
 
 class Conclusion(HypermediaEnabledData):
   attribution: Attribution
@@ -148,7 +198,8 @@ class Conclusion(HypermediaEnabledData):
 
 class CitationField:
   # FARINDAĴO : ne dokumenta klaso ???
-  pass
+  def __init__(self):
+    klaso_ini(self)
 
 class SourceCitation(TextValue,HypermediaEnabledData):
   citationTemplate: ResourceReference
@@ -166,6 +217,8 @@ class PlaceReference(ExtensibleData):
 class HasDateAndPlace:
   date: Date
   place: PlaceReference
+  def __init__(self):
+    klaso_ini(self)
 
 class Fact(Conclusion):
   date: Date
@@ -176,10 +229,14 @@ class Fact(Conclusion):
 
 class HasFacts:
   facts: set[Fact]
+  def __init__(self):
+    klaso_ini(self)
 
 class Qualifier:
   name: str
   value: str
+  def __init__(self):
+    klaso_ini(self)
 
 class NamePart(ExtensibleData):
   type: str
@@ -191,12 +248,46 @@ class NameForm(ExtensibleData):
   parts: set[NamePart]
   fullText: str
   nameFormInfo: str  # family search !
+  def iseq(self,other):
+    if isinstance(other,NameForm):
+      return (self.lang == other.lang and self.fullText == other.fullText)
+    return False
 
 class Name(Conclusion):
   preferred: bool
   date: Date
   nameForms: set[NameForm]
   type: str
+  #def postmaljsonigi(self,d):
+  #  """ forigi duplikatajn nomformojn
+  #  """
+  #  nfs=set()
+  #  for nf in self.nameForms:
+  #    trov = False
+  #    for nf2 in nfs:
+  #      #if nf.lang == nf2.lang and nf.fullText==nf2.fullText:
+  #      if nf.lang == nf2.lang and nf.fullText==nf2.fullText:
+  #        trov=True
+  #        break
+  #    if not trov:
+  #      nfs.add(nf)
+  #  self.nameForms = nfs
+  def akSurname(self):
+    """ akiri familian nomon
+    """
+    for nf in self.nameForms:
+      for p in nf.parts :
+        if p.type == 'http://gedcomx.org/Surname':
+          return p.value
+    return ''
+  def akGiven(self):
+    """ akiri la antaŭnomon
+    """
+    for nf in self.nameForms:
+      for p in nf.parts :
+        if p.type == 'http://gedcomx.org/Given':
+          return p.value
+    return ''
 
 class EvidenceReference(HypermediaEnabledData):
   resource: str
@@ -217,6 +308,8 @@ class PersonInfo:
   privateSpaceRestricted: bool
   readOnly: bool
   visibleToAll: bool
+  def __init__(self):
+    klaso_ini(self)
 
 class Person(Subject):
   private: bool
@@ -226,6 +319,13 @@ class Person(Subject):
   facts: set[Fact]
   display: DisplayProperties
   personInfo: set[PersonInfo]  # family search !
+  def akPrefNomo(self):
+    """ akiri preferatan nomon
+    """
+    for n in self.names:
+      if n.preferred: return n
+    if len(self.names): return next(iter(self.names))
+    return Name()
 
 class Relationship(Subject):
   person1: str
@@ -267,6 +367,19 @@ class SourceDescription(HypermediaEnabledData):
   modified: int
   published: int
   repository: str
+  #def postmaljsonigi(self,d):
+  #  """ forigi duplikatajn «citations»
+  #  """
+  #  cs=set()
+  #  for c in self.citations:
+  #    trov = False
+  #    for c2 in cs:
+  #      if c.lang == c2.lang and c.value==c2.value:
+  #        trov=True
+  #        break
+  #    if not trov:
+  #      cs.add(c)
+  #  self.citations = cs
 
 class OnlineAccount(ExtensibleData):
   serviceHomepage: ResourceReference
