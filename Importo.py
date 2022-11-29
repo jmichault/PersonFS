@@ -37,12 +37,12 @@ from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT, TOKENS
 
+# gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
+import gedcomx
 
 from PersonFS import PersonFS, CONFIG
-from fslib.session import Session
-from fslib.constants import FACT_TAGS
-from fslib.tree import Tree
-from fslib import gedcomx
+from constants import FACT_TAGS
+from tree import Tree
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -173,16 +173,16 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           if vorteco >= 3:
-            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+            PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
           else :
-            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+            PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         if vorteco >= 3:
-          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
         else :
-          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     print("import")
     print(PersonFS.fs_sn)
     print(PersonFS.fs_Session)
@@ -220,11 +220,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.fs_TreeImp.add_spouses(todo)
     # notoj
     print(_("Elŝutante notojn…"))
-    for fsPerso in self.fs_TreeImp._persons.values() :
-      fsPerso.get_notes()
-    print(_("Elŝutante notojn…"))
-    for fsFam in self.fs_TreeImp._fam.values() :
-      fsFam.get_notes()
+    for fsPersono in self.fs_TreeImp.persons :
+      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/notes" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/sources" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/memories" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+    #for fsFam in self.fs_TreeImp._fam.values() :
+    #  fsFam.get_notes()
     print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
@@ -232,12 +236,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.txn = txn
       # importi lokoj
       print(_("Importado de lokoj…"))
-      for id,pl in self.fs_TreeImp._places.items() :
-        self.aldLoko(id,pl)
+      for pl in self.fs_TreeImp.places :
+        self.aldLoko(pl)
       print(_("Importado de personoj…"))
       # importi personoj
-      for id in self.fs_TreeImp._persons.keys() :
-        self.aldPersono(id)
+      for fsPersono in self.fs_TreeImp.persons :
+        self.aldPersono(fsPersono)
       print(_("Importado de familioj…"))
       # importi familioj
       for fsFam in self.fs_TreeImp._fam.values() :
@@ -286,16 +290,17 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
 
 
-  def aldLoko(self, id, pl):
-    nomo = pl[2][0]["value"]
-    pl[2][0]["handle"] = None
+  def aldLoko(self, pl):
+    # FARINDAĴO : Elekti nomo
+    nomo = next(iter(pl.names))
+    pl._handle = None
     # sercxi por loko kun cî nomo
     grLoko = self.akiriLoko(nomo, None)
     if grLoko:
-      pl[2][0]["handle"] = grLoko.handle
+      pl._handle = grLoko.handle
       return
     
-    partoj = nomo.split(', ')
+    partoj = nomo.value.split(', ')
     if len(partoj) <1:
       return
 
@@ -303,28 +308,28 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     lando = partoj.pop(len(partoj)-1)
     grLando = self.kreiLoko(lando, None)
     if grLando:
-      pl[2][0]["handle"] = grLando.handle
+      pl._handle = grLando.handle
     if len(partoj) <1:
       return
 
     regiono = partoj.pop(len(partoj)-1)
     grRegiono = self.kreiLoko(regiono, grLando)
     if grRegiono:
-      pl[2][0]["handle"] = grRegiono.handle
+      pl._handle = grRegiono.handle
     if len(partoj) <1:
       return
 
     fako = partoj.pop(len(partoj)-1)
     grFako = self.kreiLoko(fako, grRegiono)
     if grFako:
-      pl[2][0]["handle"] = grFako.handle
+      pl._handle = grFako.handle
     if len(partoj) <1:
       return
 
     municipo = partoj.pop(len(partoj)-1)
     grMunicipo = self.kreiLoko(municipo, grFako)
     if grMunicipo:
-      pl[2][0]["handle"] = grMunicipo.handle
+      pl._handle = grMunicipo.handle
     if len(partoj) <1:
       pn = PlaceName()
       pn.set_value(nomo)
@@ -334,7 +339,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
     lokloko = ", ".join(partoj)
     grLoko = self.kreiLoko(lokloko, grMunicipo)
-    pl[2][0]["handle"] = grLoko.handle
+    pl_handle = grLoko.handle
     pn = PlaceName()
     pn.set_value(nomo)
     grLoko.add_alternative_name(pn)
@@ -418,7 +423,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       noto = self.aldNoto(fsNoto,familio.note_list)
       familio.add_note(noto.handle)
     # fontoj
-    for fsFonto,quote in fsFam.sources :
+    for fsFonto in fsFam.sources :
       c = self.aldFonto(fsFonto,familio,familio.citation_list)
       #familio.add_citation(c.handle)
     # FARINDAĴOJ : FS ID
@@ -433,13 +438,17 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         trovita = True
         break
     if not trovita :
+      print("aldFonto : "+fsFonto.id+" - "+fsFonto.description)
       s = Source()
-      if fsFonto.title:
-        s.set_title(fsFonto.title)
-      if fsFonto.citation:
-        s.set_author(fsFonto.citation)
-      if fsFonto.url:
-        s.set_publication_info(fsFonto.url)
+      if fsFonto.description:
+        s.set_title(fsFonto.description)
+      # FARINDAĴO : Elekti aŭtoro de SourceDescriptionId
+      #fsFontoDesc = ???
+      #if len(fsFontoDesc.authors):
+      #  s.set_author(next(iter(fsFontoDesc.authors)))
+      if len(fsFonto.links) and 'source-reference' in fsFonto.links:
+        link = fsFonto.links['source-reference']
+        s.set_publication_info(link.href)
       # FS ID
       s.abbrev = "FamilySearch " + fsFonto.id
       self.dbstate.db.add_source(s,self.txn)
@@ -457,37 +466,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     
     return citation
 
-  def aldPersono(self,fsid):
+  def aldPersono(self,fsPersono):
+    fsid = fsPersono.id
     grPersonoHandle = self.fs_gr.get(fsid)
-    fsPerso = self.fs_TreeImp._persons.get(fsid)
-    if not fsPerso :
-      print(_("ID ne trovita."))
-      return
     if not grPersonoHandle:
       grPerson = Person()
-      nomo = Name()
-      nomo.set_type(NameType(NameType.BIRTH))
-      nomo.set_first_name(fsPerso.name._given)
-      s = nomo.get_primary_surname()
-      s.set_surname(fsPerso.name.surname)
-      # noto al nomo
-      if fsPerso.name.note:
-        noto = self.aldNoto(fsPerso.name.note,nomo.note_list)
-        nomo.add_note(noto.handle)
-      grPerson.set_primary_name(nomo)
-      # aliaj nomoj
-      for fsNomo in fsPerso.married :
-        self.aldNomo( fsNomo, NameType.MARRIED, grPerson)
-      for fsNomo in fsPerso.aka :
-        self.aldNomo( fsNomo, NameType.AKA, grPerson)
-      for fsNomo in fsPerso.birthnames :
-        self.aldNomo( fsNomo, NameType.BIRTH, grPerson)
-      for fsNomo in fsPerso.nicknames :
-        # FARINDAĴO : administri moknomojn ĝuste
-        self.aldNomo( fsNomo, NameType.CUSTOM, grPerson)
-      if fsPerso.gender == "http://gedcomx.org/Male" :
+      self.aldNomoj( fsPersono, grPerson)
+      if fsPersono.gender.type == "http://gedcomx.org/Male" :
         grPerson.set_gender(Person.MALE)
-      elif fsPerso.gender == "http://gedcomx.org/Female" :
+      elif fsPersono.gender.type == "http://gedcomx.org/Female" :
         grPerson.set_gender(Person.FEMALE)
       else :
         grPerson.set_gender(Person.UNKNOWN)
@@ -505,7 +492,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       grPerson = self.dbstate.db.get_person_from_handle(grPersonoHandle)
 
     # faktoj
-    for fsFakto in fsPerso.facts:
+    for fsFakto in fsPersono.facts:
       event = self.aldFakto(fsFakto,grPerson)
       found = False
       for er in grPerson.get_event_ref_list():
@@ -523,14 +510,14 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       elif event.type == EventType.DEATH :
         grPerson.set_death_ref(er)
     # notoj
-    for fsNoto in fsPerso.notes :
+    for fsNoto in fsPersono.notes :
       noto = self.aldNoto(fsNoto,grPerson.note_list)
       grPerson.add_note(noto.handle)
     # fontoj
-    for fsFonto,quote in fsPerso.sources :
+    for fsFonto in fsPersono.sources :
       c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
     # FARINDAĴOJ : memoroj
-    for fsMemoro in fsPerso.memories :
+    #for fsMemoro in fsPersono.memories :
       #print("memorie :")
       #print(fsMemoro)
       #m = Media()
@@ -543,20 +530,36 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       #self.dbstate.db.add_citation(citation,self.txn)
       #self.dbstate.db.commit_citation(citation,self.txn)
       #grPerson.add_citation(citation.handle)
-      continue
+      #continue
       
     self.dbstate.db.commit_person(grPerson,self.txn)
 
-  def aldNomo(self, fsNomo, type, grPerson):
+  def aldNomoj(self, fsPersono, grPerson):
+    for fsNomo in fsPersono.names :
       nomo = Name()
-      nomo.set_type(NameType(type))
-      nomo.set_first_name(fsNomo._given)
+      if fsNomo.type == 'http://gedcomx.org/MarriedName' :
+        nomo.set_type(NameType(NameType.MARRIED))
+      elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
+        nomo.set_type(NameType(NameType.AKA))
+      elif fsNomo.type == 'http://gedcomx.org/BirthName' :
+        nomo.set_type(NameType(NameType.BIRTH))
+      #elif fsNomo.type == 'http://gedcomx.org/NickName' :
+      #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
+      #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
+      #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
+      else :
+        # FARINDAĴO : administri moknomojn ĝuste
+        nomo.set_type(NameType(NameType.CUSTOM))
+      nomo.set_first_name(fsNomo.akGiven())
       s = nomo.get_primary_surname()
-      s.set_surname(fsNomo.surname)
-      if fsNomo.note:
-        noto = self.aldNoto(fsNomo.note,nomo.note_list)
+      s.set_surname(fsNomo.akSurname())
+      for fsNoto in fsNomo.notes :
+        noto = self.aldNoto(fsNoto,nomo.note_list)
         nomo.add_note(noto.handle)
-      grPerson.add_alternate_name(nomo)
+      if fsNomo.preferred :
+        grPerson.set_primary_name(nomo)
+      else:
+        grPerson.add_alternate_name(nomo)
 
   def aldNoto(self,fsNoto,EkzNotoj):
     # sercxi ekzistantan
@@ -585,9 +588,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
     evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
     fsFaktoLoko = fsFakto.place or ''
-    if fsFakto.map:
-      grLokoHandle = fsFakto.map[2][0]["handle"]
-    else: grLokoHandle = None
+    grLokoHandle = None
     fsFaktoPriskribo = fsFakto.value or ''
     fsFaktoDato = fsFakto.date or ''
     if fsFakto.date:
@@ -636,8 +637,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       event.set_date_object( grDate )
     event.set_description(fsFaktoPriskribo)
     # noto
-    if fsFakto.note:
-      noto = self.aldNoto(fsFakto.note,event.note_list)
+    for fsNoto in fsFakto.notes:
+      noto = self.aldNoto(fsNoto,event.note_list)
       event.add_note(noto.handle)
     self.dbstate.db.add_event(event, self.txn)
     return event
