@@ -266,12 +266,21 @@ class PersonFS(Gramplet):
     return self.res
 
   def ButRefresxigi_clicked(self, dummy):
+    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
+    f = open('arbo1.out.json','w')
+    json.dump(rezulto,f,indent=2)
+    f.close()
     if self.FSID :
       try:
         PersonFS.fs_Tree._persons.pop(self.FSID)
       except:
         pass
       PersonFS.fs_Tree.add_persons([self.FSID])
+    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
+    f = open('arbo2.out.json','w')
+    json.dump(rezulto,f,indent=2)
+    f.close()
+
     active_handle = self.get_active('Person')
     self.modelKomp.clear()
     if active_handle:
@@ -879,11 +888,13 @@ class PersonFS(Gramplet):
         grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
         if gedTag != grTag :
           continue
-        fsFaktoDato = str(fsFakto.date or '')
+        if fsFakto and fsFakto.date :
+          fsFaktoDato = str(fsFakto.date)
         if (fsFaktoDato != grFaktoDato) :
           fsFaktoDato = ''
           continue
-        fsFaktoLoko = fsFakto.place.original or ''
+        if fsFakto and fsFakto.place :
+          fsFaktoLoko = fsFakto.place.original or ''
         fsFaktoPriskribo = fsFakto.value or ''
         coloro = "green"
         fsFaktoj.remove(fsFakto)
@@ -1111,7 +1122,7 @@ class PersonFS(Gramplet):
                     or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))
                  and triopo.child.resourceId == infanoFsid ) :
               fsInfanoId = infanoFsid
-              fsInfanoj.remove(paro)
+              fsInfanoj.remove(triopo)
               break
           coloro = "orange"
           if fsInfanoId != '' and fsInfanoId == infanoFsid :
@@ -1137,9 +1148,9 @@ class PersonFS(Gramplet):
                   , '', ''
                   , self.fsperso_datoj(fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
                  ) )
-              toRemove.add(fsTrio)
-        for fsTrio in toRemove :
-          fsInfanoj.remove(fsTrio)
+              toRemove.add(triopo)
+        for triopo in toRemove :
+          fsInfanoj.remove(triopo)
     coloro = "orange"
     for paro in fsEdzoj :
       if paro.person1.resourceId == fsid :

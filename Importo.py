@@ -244,8 +244,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.aldPersono(fsPersono)
       print(_("Importado de familioj…"))
       # importi familioj
-      for fsFam in self.fs_TreeImp._fam.values() :
-        self.aldFamilio(fsFam)
+      for fsFam in self.fs_TreeImp.relationships :
+        if fsFam.type == 'http://gedcomx.org/Couple':
+          self.aldFamilio(fsFam)
     print("import fini.")
     self.txn = None
 
@@ -348,8 +349,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldFamilio(self,fsFam):
     familio = None
-    grPatroHandle = self.fs_gr.get(fsFam.husb_fid)
-    grPatrinoHandle = self.fs_gr.get(fsFam.wife_fid) 
+    grPatroHandle = self.fs_gr.get(fsFam.person1.resourceId)
+    grPatrinoHandle = self.fs_gr.get(fsFam.person2.resourceId) 
     if grPatroHandle :
       grPatro = self.dbstate.db.get_person_from_handle(grPatroHandle)
       if grPatrinoHandle :
@@ -403,8 +404,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       
     self.dbstate.db.commit_family(familio,self.txn)
 
-    for c in fsFam.chil_fid:
-      infanoHandle = self.fs_gr.get(c)
+    for cp in self.fs_TreeImp.childAndParentsRelationships :
+      if cp.parent1.resourceId != fsFam.person1.resourceId : continue
+      if cp.parent2.resourceId != fsFam.person2.resourceId : continue
+      infanoHandle = self.fs_gr.get(cp.child.resourceId)
+      if not infanoHandle: continue
       found = False
       for cr in familio.get_child_ref_list() :
         if cr.get_reference_handle() == infanoHandle:
