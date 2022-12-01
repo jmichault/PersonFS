@@ -35,6 +35,7 @@ from gramps.gen.lib import Person, Place, PlaceName, PlaceRef, PlaceType, Source
 from gramps.gen.plug.menu import StringOption, PersonOption, BooleanOption, NumberOption, FilterOption, MediaOption
 from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
+from gramps.gui.utils import ProgressMeter
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT, TOKENS
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
@@ -109,6 +110,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     " 
     """
+    self.uistate = user.uistate
     PluginWindows.ToolManagedWindowBatch.__init__(self, dbstate, user, options_class, name, callback)
 
   def get_title(self):
@@ -133,10 +135,17 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.__get_menu_options()
     print("import ID :"+self.FS_ID)
     # FARINDAĴO : Progresa stango
+    self.progress = ProgressMeter(_("FamilySearch Importo"), _('Starting'),
+                                      parent=self.uistate.window)
+    self.uistate.set_busy_cursor(True)
+    self.dbstate.db.disable_signals()
+    self.progress.set_pass(_('Konstrui FSID listo'), mode= ProgressMeter.MODE_ACTIVITY)
+    cnt=0
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
     for person_handle in self.dbstate.db.get_person_handles() :
+      self.progress.step()
       person = self.dbstate.db.get_person_from_handle(person_handle)
       for attr in person.get_attribute_list():
         if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
@@ -191,36 +200,44 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     else:
       self.fs_TreeImp.__init__(PersonFS.fs_Session)
     # Legi la personojn en «FamilySearch».
+    self.progress.set_pass(_('Elŝutante personon…'))
     print(_("Elŝutante personon…"))
     if self.FS_ID:
       self.fs_TreeImp.add_persons([self.FS_ID])
     else : return
+    self.progress.set_pass(_('Elŝutante ascendantojn…'))
     # ascendante
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.asc):
+      self.progress.step()
       if not todo:
         break
       done |= todo
       print( _("Downloading %s. of generations of ancestors...") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
+    self.progress.set_pass(_('Elŝutante pesteulojn…'))
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.desc):
+      self.progress.step()
       if not todo:
         break
       done |= todo
       print( _("Downloading %s. of generations of descendants...") % (i + 1))
       todo = self.fs_TreeImp.add_children(todo) - done
     # edzoj
+    self.progress.set_pass(_('Elŝutante edzojn…'))
     if self.edz :
       print(_("Downloading spouses and marriage information..."))
       todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
+    self.progress.set_pass(_('Elŝutante notojn…'),len(self.fs_TreeImp.persons))
     print(_("Elŝutante notojn…"))
     for fsPersono in self.fs_TreeImp.persons :
+      self.progress.step()
       datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/notes" % fsPersono.id)
       gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
       datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/sources" % fsPersono.id)
@@ -229,19 +246,28 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
     #for fsFam in self.fs_TreeImp._fam.values() :
     #  fsFam.get_notes()
+    if vorteco >= 3:
+      rezulto = gedcomx.jsonigi(self.fs_TreeImp)
+      f = open('importo.out.json','w')
+      json.dump(rezulto,f,indent=2)
+      f.close()
+
     print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
     with DbTxn("FamilySearch import", self.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
+      self.progress.set_pass(_('Importado de lokoj…'))
       print(_("Importado de lokoj…"))
       for pl in self.fs_TreeImp.places :
         self.aldLoko(pl)
+      self.progress.set_pass(_('Importado de personoj…'))
       print(_("Importado de personoj…"))
       # importi personoj
       for fsPersono in self.fs_TreeImp.persons :
         self.aldPersono(fsPersono)
+      self.progress.set_pass(_('Importado de familioj…'))
       print(_("Importado de familioj…"))
       # importi familioj
       for fsFam in self.fs_TreeImp.relationships :
@@ -249,6 +275,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           self.aldFamilio(fsFam)
     print("import fini.")
     self.txn = None
+    self.uistate.set_busy_cursor(False)
+    #self.progress.close()
+    #from objbrowser import browse ;browse(locals())
+    self.dbstate.db.enable_signals()
+    self.dbstate.db.request_rebuild()
+    self.close()
 
   def akiriLoko(self, nomo, parent):
     # sercxi por loko kun cî nomo
@@ -589,7 +621,10 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     return note
     
   def aldFakto(self, fsFakto, obj):
-    gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+    if fsFakto.type[:6] == 'data:,':
+      gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+    else:
+      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
     evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
     fsFaktoLoko = fsFakto.place or ''
     grLokoHandle = None

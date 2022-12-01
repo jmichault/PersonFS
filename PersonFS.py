@@ -882,7 +882,10 @@ class PersonFS(Gramplet):
       fsFaktoLoko = ''
       fsFaktoPriskribo = ''
       for fsFakto in fsFaktoj :
-        gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+        if fsFakto.type[:6] == 'data:,':
+          gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+        else:
+          gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
         if not gedTag :
           continue
         grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
@@ -911,7 +914,10 @@ class PersonFS(Gramplet):
     for fsFakto in fsFaktoj :
       if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
         continue
-      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+      if fsFakto.type[:6] == 'data:,':
+        gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+      else:
+        gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
       evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 
       if evtType :
         titolo = str(EventType(evtType))
