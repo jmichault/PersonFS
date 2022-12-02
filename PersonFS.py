@@ -59,7 +59,15 @@ from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-import gedcomx
+import importlib
+gedcomx_spec = importlib.util.find_spec("gedcomx")
+if gedcomx_spec and gedcomx_spec.loader:
+  import gedcomx
+else:
+  print ('gedcomx ne trovita')
+  import pip
+  pip.main(['install', '--user', 'gedcomx-v1'])
+  import gedcomx
 
 # lokaloj 
 from constants import FACT_TAGS, FACT_TYPES
