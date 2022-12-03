@@ -153,6 +153,7 @@ class PersonFS(Gramplet):
   fs_Tree = None
   fs_TreeSercxo = None
   Sercxi = None
+  Dup = None
   lingvo = None
   FSID = None
   try:
@@ -264,6 +265,7 @@ class PersonFS(Gramplet):
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
             "on_ButSercxi_clicked"      : self.ButSercxi_clicked,
+            "on_ButDup_clicked"      : self.ButDup_clicked,
             "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
             "on_ButAldoni_clicked"      : self.ButAldoni_clicked,
             "on_ButLigi_clicked"      : self.ButLigi_clicked,
@@ -370,7 +372,7 @@ class PersonFS(Gramplet):
     peto = {'persons' : [gedcomx.jsonigi(fsPerso)]}
     jsonpeto = json.dumps(peto)
     print(jsonpeto)
-    res = self.fs_Tree.fs.post_url( "/platform/tree/persons", jsonpeto )
+    res = self.fs_Tree._fs.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
       with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
         fsid = res.headers['X-Entity-Id']
@@ -424,7 +426,51 @@ class PersonFS(Gramplet):
     else :
       self.top.get_object("LinkoButonoSercxi").set_label('xxxx-xxx')
       self.top.get_object("LinkoButonoSercxi").set_uri('https://familysearch.org/')
+
+  def SerDupCxangxo(self, dummy):
     return
+
+  def ButDup_clicked(self, dummy):
+    if not self.Dup :
+      self.Dup = self.top.get_object("PersonFSDup")
+      self.Dup.set_transient_for(self.uistate.window)
+      parent_modal = self.uistate.window.get_modal()
+      if parent_modal:
+        self.uistate.window.set_modal(False)
+      TreeRes = self.top.get_object("PersonFSDupRes")
+      titles = [  
+                (_('score'), 1, 80),
+                (_('FS Id'), 2, 90),
+                (_('Nomo, antaŭnomo'), 3, 200),
+                (_('Birth'), 4, 250),
+                (_('Death'), 5, 250),
+                (_('Parents'), 6, 250),
+                (_('Spouses'), 7, 250),
+             ]
+      self.modelRes = ListModel(TreeRes, titles,self.SerDupCxangxo)
+    active_handle = self.get_active('Person')
+    person = self.dbstate.db.get_person_from_handle(active_handle)
+    grNomo = person.primary_name
+
+    self.ButLancxi_clicked(None)
+    if not PersonFS.fs_TreeSercxo:
+      PersonFS.fs_TreeSercxo = Tree(PersonFS.fs_Session)
+      PersonFS.fs_TreeSercxo._getsources = False
+    self.modelRes.clear()
+    mendo = "/platform/tree/persons/"+self.FSID+"/matches"
+    datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json"}
+                )
+    if datumoj :
+      self.DatRes(datumoj)
+
+    self.Dup.show()
+    res = self.Dup.run()
+    print ("res = " + str(res))
+    self.Dup.hide()
+
+    return
+
 
   def ButSercxi_clicked(self, dummy):
     if not self.Sercxi :
@@ -477,33 +523,33 @@ class PersonFS(Gramplet):
       PersonFS.fs_TreeSercxo = Tree(PersonFS.fs_Session)
       PersonFS.fs_TreeSercxo._getsources = False
     self.modelRes.clear()
-    if self.FSID :
-      mendo = "/platform/tree/persons/"+self.FSID+"/matches"
-    else:
-      mendo = "/platform/tree/search?"
-      grNomo = self.top.get_object("fs_nomo_eniro").get_text()
-      if grNomo :
-        mendo = mendo + "q.surname=\"%s\"&" % grNomo
-      grANomo = self.top.get_object("fs_anomo_eniro").get_text()
-      if grANomo :
-        mendo = mendo + "q.givenName=\"%s\"&" % grANomo
-      sekso = self.top.get_object("fs_sekso_eniro").get_text()
-      if sekso :
-        mendo = mendo + "q.sex=%s&" % sekso
-      birdo = self.top.get_object("fs_birdo_eniro").get_text()
-      if birdo :
-        mendo = mendo + "q.birthLikeDate=%s&" % birdo
-      loko = self.top.get_object("fs_loko_eniro").get_text()
-      if loko :
-        mendo = mendo + "q.anyPlace=\"%s\"&" % loko
-      mendo = mendo + "offset=0&count=10"
-    datumoj = self.fs_TreeSercxo.fs.get_jsonurl(
-                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+    mendo = "/platform/tree/search?"
+    grNomo = self.top.get_object("fs_nomo_eniro").get_text()
+    if grNomo :
+      mendo = mendo + "q.surname=\"%s\"&" % grNomo
+    grANomo = self.top.get_object("fs_anomo_eniro").get_text()
+    if grANomo :
+      mendo = mendo + "q.givenName=\"%s\"&" % grANomo
+    sekso = self.top.get_object("fs_sekso_eniro").get_text()
+    if sekso :
+      mendo = mendo + "q.sex=%s&" % sekso
+    birdo = self.top.get_object("fs_birdo_eniro").get_text()
+    if birdo :
+      mendo = mendo + "q.birthLikeDate=%s&" % birdo
+    loko = self.top.get_object("fs_loko_eniro").get_text()
+    if loko :
+      mendo = mendo + "q.anyPlace=\"%s\"&" % loko
+    mendo = mendo + "offset=0&count=10"
+    datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
+                    mendo ,{"Accept": "application/json"}
                 )
     if not datumoj :
       return
-    tot = datumoj["results"]
+    #tot = datumoj["results"]
     #print ("nb résultats = "+str(tot))
+    self.DatRes(datumoj)
+
+  def DatRes(self,datumoj):
     for entry in datumoj["entries"] :
       #print (entry.get("id")+ ";  score = "+str(entry.get("score")))
       fsId = entry.get("id")

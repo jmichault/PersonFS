@@ -42,10 +42,11 @@ _ = gettext.gettext
 
 class Tree(gedcomx.Gedcomx):
     """ gedcomx tree class
-    :param fs: a Session object
+    :param fs: a FsSession object
     """
     def __init__(self, fs=None):
-        self.fs = fs
+        gedcomx._utila.klaso_ini(self)
+        self._fs = fs
         self._fam = dict()
         self._places = dict()
         self._persons = dict()
@@ -59,7 +60,7 @@ class Tree(gedcomx.Gedcomx):
         """
         new_fids = [fid for fid in fids if fid and fid not in gedcomx.Person._indekso]
         while new_fids:
-            data = self.fs.get_jsonurl(
+            data = self._fs.get_jsonurl(
                 "/platform/tree/persons?pids=" + ",".join(new_fids[:MAX_PERSONS])
             )
             if data:
@@ -110,7 +111,7 @@ class Tree(gedcomx.Gedcomx):
     #def get_marriage_notes(self,ids):
         #"""retrieve marriage notes"""
         #if self.fid:
-        #    notes = self._tree.fs.get_jsonurl(
+        #    notes = self._tree._fs.get_jsonurl(
         #        "/platform/tree/couple-relationships/%s/notes" % self.fid
         #    )
         #    if notes:
@@ -122,21 +123,21 @@ class Tree(gedcomx.Gedcomx):
         #if not self.fid:
         #    self.fid = fid
         #    url = "/platform/tree/couple-relationships/%s" % self.fid
-        #    data = self._tree.fs.get_jsonurl(url)
+        #    data = self._tree._fs.get_jsonurl(url)
     #def get_notes(self,id):
         #"""retrieve individual notes"""
-        #notes = self._tree.fs.get_jsonurl("/platform/tree/persons/%s/notes" % self.id)
+        #notes = self._tree._fs.get_jsonurl("/platform/tree/persons/%s/notes" % self.id)
         #if notes:
     #def get_person_contributors(self,id):
         #"""retrieve contributors"""
         #temp = set()
         #url = "/platform/tree/persons/%s/changes" % self.id
-        #data = self._tree.fs.get_jsonurl(url, {"Accept": "application/x-gedcomx-atom+json"})
+        #data = self._tree._fs.get_jsonurl(url, {"Accept": "application/x-gedcomx-atom+json"})
         #if data:
     #def
         #    # FARINDAĴO : portrait
         #    #if "links" in data:
-        #    #    req = self._tree.fs.get_jsonurl(
+        #    #    req = self._tree._fs.get_jsonurl(
         #    #        "/platform/tree/persons/%s/portrait" % self.id
         #    #        , {"Accept": "image/*"}
         #    #    )
@@ -144,13 +145,13 @@ class Tree(gedcomx.Gedcomx):
     #def
         #    if "evidence" in data:
         #        url = "/platform/tree/persons/%s/memories" % self.id
-        #        memorie = self._tree.fs.get_jsonurl(url)
+        #        memorie = self._tree._fs.get_jsonurl(url)
         #        if memorie and "sourceDescriptions" in memorie:
     #def get_person_contributors(self):
         #"""retrieve contributors"""
         #temp = set()
         #url = "/platform/tree/persons/%s/changes" % self.id
-        #data = self._tree.fs.get_jsonurl(url, {"Accept": "application/x-gedcomx-atom+json"})
+        #data = self._tree._fs.get_jsonurl(url, {"Accept": "application/x-gedcomx-atom+json"})
     #def add_marriage(self, fid):
         #"""retrieve and add marriage information
         #:param fid: the marriage fid
@@ -158,5 +159,5 @@ class Tree(gedcomx.Gedcomx):
         #if not self.fid:
         #    self.fid = fid
         #    url = "/platform/tree/couple-relationships/%s" % self.fid
-        #    data = self._tree.fs.get_jsonurl(url)
+        #    data = self._tree._fs.get_jsonurl(url)
         #    if data:

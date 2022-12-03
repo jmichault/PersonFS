@@ -1,14 +1,17 @@
 
 
-
 Ceci est un module pour interfacer _gramps_ avec _familysearch.com_.
 il se compose de :
 * un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_.
 * un module d'import accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «Import de données FamilySearch»
 
-Pour pouvoir utiliser le gramplet il vous faut un compte _familysearch_, celui-ci est à renseigner dans les préférences, ainsi que le mot de passe associé.
+Pour pouvoir utiliser le gramplet il vous faut un compte _familysearch_, celui-ci sera demandé au lancement du gramplet, ainsi que le mot de passe associé.
 
 # installation
+## prérequis
+Les module python «requests» et «gedcomx-v1» doivent être installés.
+De ce fait ce plugin ne peut pas être utilisé avec la distribution AIO de gramps.
+
 ## en chargeant le zip
 Sur la [page d'accueil du projet](https://github.com/jmichault/PersonFS), cliquez «Releases» (à droite), et dans «Assets» choisissez le fichier PersonFS.zip).  
 Puis extrayez le zip dans le dossier des plugins de Gramps (~/.gramps/gramps51/plugins pour la version 5.1 de gramps)
@@ -20,7 +23,7 @@ Dans un terminal, exécutez les commandes suivantes :
 cd ~/.gramps/gramps51/plugins
 git clone https://github.com/jmichault/PersonFS.git
 ```
-
+(note : à adapter si gramps n'est pas en version 5.1)
 # le gramplet
 ## activation
 En étant positionné sur le panneau des Individus, cliquez sur le menu déroulant à droite des onglets (petit bouton «v») et choisissez «Ajouter un Gramplet», puis «FS».  
@@ -48,7 +51,7 @@ Les dates sont affichés chaque fois que c'est possible en utilisant le format [
 
 Depuis le gramplet, vous pouvez aussi :
 * Accéder à la fiche FamilySearch complète en cliquant sur le N° d'identification (à droite de l'écran), ce qui lance votre navigateur internet.
-* Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de copier votre fiche vers FamilySearch
+* Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de copier votre fiche vers FamilySearch si vous ne trouvez pas de correspondance.
 * lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
 
 # le module d'import
@@ -59,6 +62,7 @@ Vous avez juste à renseigner :
 * le nombre de générations descendantes.
 * décochez «Ne pas réimporter les personnes existantes» si vous voulez protéger vos individus existants.
 * cochez «Ajouter les conjoints» si vous voulez charger aussi les conjoints de toutes les personnes.
+  (note : si vous chargez des générations descendantes, les conjoints seront chargés)
 
 Puis cliquez sur le bouton «Importer»
 

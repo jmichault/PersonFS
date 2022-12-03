@@ -91,9 +91,9 @@ class FSImportoOpcionoj(MenuToolOptions):
     self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
     self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
     menu.add_option(category_name, "gui_desc", self.__gui_desc)
-    self.__gui_edz = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
-    self.__gui_edz.set_help(_("Importi nur neekzistantajn personojn"))
-    menu.add_option(category_name, "gui_nereimporti", self.__gui_edz)
+    self.__gui_nereimporti = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
+    self.__gui_nereimporti.set_help(_("Importi nur neekzistantajn personojn"))
+    menu.add_option(category_name, "gui_nereimporti", self.__gui_nereimporti)
     self.__gui_edz = BooleanOption(_("Aldoni geedzoj"), False)
     self.__gui_edz.set_help(_("Aldoni informojn pri geedzoj"))
     menu.add_option(category_name, "gui_edz", self.__gui_edz)
@@ -204,10 +204,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     print("importo")
     print(PersonFS.fs_sn)
     print(PersonFS.fs_Session)
-    if not self.fs_TreeImp :
-      self.fs_TreeImp = Tree(PersonFS.fs_Session)
-    else:
-      self.fs_TreeImp.__init__(PersonFS.fs_Session)
+    if self.fs_TreeImp:
+      del self.fs_TreeImp
+    self.fs_TreeImp = Tree(PersonFS.fs_Session)
     # Legi la personojn en «FamilySearch».
     progress.set_pass(_('Elŝutante personojn…'), mode= ProgressMeter.MODE_ACTIVITY)
     print(_("Elŝutante personon…"))
@@ -237,6 +236,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print( _("Elŝutante %s generaciojn de posteulojn…") % (i + 1))
       todo = self.fs_TreeImp.add_children(todo) - done
     # edzoj
+    if self.desc and not self.edz:
+      print("posteuloj elŝutantaj : devigi elŝutanto de edzoj ")
+      self.edz = True
     if self.edz :
       progress.set_pass(_('Elŝutante edzojn…'), mode= ProgressMeter.MODE_ACTIVITY)
       print(_("Elŝutante edzojn…"))
@@ -418,10 +420,16 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     else:
       print(_('sengepatra familio ???'))
       return
+    if not grPatro and fsFam.person1.resourceId: return
+    if not grPatrino and fsFam.person2.resourceId: return
     if not familio :
       familio = Family()
       familio.set_father_handle(grPatroHandle)
       familio.set_mother_handle(grPatrinoHandle)
+      attr = Attribute()
+      attr.set_type('_FSFTID')
+      attr.set_value(fsFam.id)
+      familio.add_attribute(attr)
       self.dbstate.db.add_family(familio, self.txn)
       self.dbstate.db.commit_family(familio, self.txn)
       if grPatro:
@@ -578,6 +586,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         grPerson.set_birth_ref(er)
       elif event.type == EventType.DEATH :
         grPerson.set_death_ref(er)
+      self.dbstate.db.commit_person(grPerson,self.txn)
     # notoj
     for fsNoto in fsPersono.notes :
       noto = self.aldNoto(fsNoto,grPerson.note_list)
