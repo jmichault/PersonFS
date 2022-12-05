@@ -459,7 +459,7 @@ class PersonFS(Gramplet):
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
     datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
-                    mendo ,{"Accept": "application/x-gedcomx-atom+json"}
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
     if datumoj :
       self.DatRes(datumoj)
@@ -541,7 +541,7 @@ class PersonFS(Gramplet):
       mendo = mendo + "q.anyPlace=\"%s\"&" % loko
     mendo = mendo + "offset=0&count=10"
     datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
-                    mendo ,{"Accept": "application/json"}
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
     if not datumoj :
       return
@@ -554,6 +554,8 @@ class PersonFS(Gramplet):
       #print (entry.get("id")+ ";  score = "+str(entry.get("score")))
       fsId = entry.get("id")
       data=entry["content"]["gedcomx"]
+      # bizare, FamilySearch ne uzas gedcomx-formaton
+      #gedcomx.maljsonigi(self.fs_TreeSercxo, data )
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo._places:
@@ -563,62 +565,65 @@ class PersonFS(Gramplet):
                                 str(place["longitude"]),
                             )
       father = None
+      fatherId = None
       mother = None
+      motherId = None
       if "persons" in data:
         for person in data["persons"]:
-          #from objbrowser import browse ;browse(locals())
           self.fs_TreeSercxo._persons[person["id"]] = gedcomx.Person(person["id"], self.fs_TreeSercxo)
-          self.fs_TreeSercxo._persons[person["id"]].add_data(person)
+          gedcomx.maljsonigi(self.fs_TreeSercxo._persons[person["id"]],person)
+        for person in data["persons"]:
           #print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
             #print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
               #print("     mother")
+              motherId=person["id"]
               mother=self.fs_TreeSercxo._persons[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
               #print("     father")
+              fatherId=person["id"]
               father=self.fs_TreeSercxo._persons[person["id"]]
       fsPerso = PersonFS.fs_TreeSercxo._persons.get(fsId) or gedcomx.Person()
+      edzoj = ''
       if "relationships" in data:
         for rel in data["relationships"]:
           if rel["type"] == "http://gedcomx.org/Couple":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
-            relfid = rel.get("id")
-            if person1Id in PersonFS.fs_TreeSercxo._persons:
-              PersonFS.fs_TreeSercxo._persons[person1Id].spouses.add(
-                 (person1Id, person2Id, relfid)
-                )
-            if person2Id in PersonFS.fs_TreeSercxo._persons:
-              PersonFS.fs_TreeSercxo._persons[person2Id].spouses.add(
-                 (person1Id, person2Id, relfid)
-                )
-            self.fs_TreeSercxo.add_fam(person1Id, person2Id)
-            family = self.fs_TreeSercxo._fam[(person1Id, person2Id)]
-            if relfid:
-              family.add_marriage(relfid)
+            edzoId = None
+            if person2Id==fsId:
+              edzoId = person1Id
+            elif person1Id==fsId:
+              edzoId = person2Id
+            if edzoId:
+              fsEdzo = PersonFS.fs_TreeSercxo._persons.get(edzoId) or gedcomx.Person()
+              fsEdzoNomo = fsEdzo.akPrefNomo()
+              if edzoj != '': edzoj = edzoj + "\n"
+              edzoj = edzoj + fsEdzoNomo.akSurname() +  ', ' + fsEdzoNomo.akGiven()
           elif rel["type"] == "http://gedcomx.org/ParentChild":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
             #print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
               person1=self.fs_TreeSercxo._persons[person1Id]
-              if not father and person1.gender == "http://gedcomx.org/Male" :
+              if not father and person1.gender.type == "http://gedcomx.org/Male" :
                 father = person1
-              elif not mother and person1.gender == "http://gedcomx.org/Female" :
+              elif not mother and person1.gender.type == "http://gedcomx.org/Female" :
                 mother = person1
               
       fsNomo = fsPerso.akPrefNomo()
       fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or gedcomx.Fact()
       fsBirthLoko = fsBirth.place 
+      #from objbrowser import browse ;browse(locals())
       if fsBirthLoko :
-        fsBirth = str(fsBirth.date or '') + ' \n@ ' +fsBirthLoko
+        fsBirth = str(fsBirth.date or '') + ' \n@ ' +fsBirthLoko.original
       else :
         fsBirth = str(fsBirth.date or '')
       fsDeath = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' ) or gedcomx.Fact()
       fsDeathLoko = fsDeath.place 
       if fsDeathLoko :
-        fsDeath = str(fsDeath.date or '') + ' \n@ ' +fsDeathLoko
+        fsDeath = str(fsDeath.date or '') + ' \n@ ' +fsDeathLoko.original
       else :
         fsDeath = str(fsDeath.date or '')
       #from objbrowser import browse ;browse(locals())
@@ -626,21 +631,10 @@ class PersonFS(Gramplet):
         fsPatroNomo = father.akPrefNomo()
       else:
         fsPatroNomo = gedcomx.Name()
-      if mother and mother.name :
+      if mother :
         fsPatrinoNomo = mother.akPrefNomo()
       else:
         fsPatrinoNomo = gedcomx.Name()
-      edzoj = ''
-      for fsEdzTrio in fsPerso.spouses :
-        if fsEdzTrio[0] == fsId:
-          edzoId = fsEdzTrio[1]
-        elif fsEdzTrio[1] == fsId:
-          edzoId = fsEdzTrio[0]
-        else: continue
-        fsEdzo = PersonFS.fs_TreeSercxo._persons.get(edzoId) or gedcomx.Person()
-        fsEdzoNomo = fsEdzo.akPrefNomo()
-        if edzoj != '': edzoj = edzoj + "\n"
-        edzoj = edzoj + fsEdzoNomo.akSurname() +  ', ' + fsEdzoNomo.akGiven()
       self.modelRes.add( ( 
 		  str(entry.get("score"))
 		, fsId
