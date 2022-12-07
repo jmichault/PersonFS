@@ -288,8 +288,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         progress.step()
         if fsFam.type == 'http://gedcomx.org/Couple':
           self.aldFamilio(fsFam)
+      self.txn = None
     print("import fini.")
-    self.txn = None
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()

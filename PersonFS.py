@@ -44,7 +44,7 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
 from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
@@ -98,7 +98,7 @@ CONFIG.register("preferences.fs_sn", '')
 CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
 
-def get_fsfact(self, person, fact_tipo):
+def get_fsfact(person, fact_tipo):
   """
   " Liveras la unuan familysearch fakton de la donita tipo.
   """
@@ -209,7 +209,7 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
   if (grFaktoDato == fsFaktoDato) :
     coloro = "green"
   if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
-    return
+    return None
   return ( coloro , titolo
 		, grFaktoDato , grFaktoLoko
 		, fsFaktoDato , fsFaktoLoko
@@ -257,6 +257,29 @@ def getfsid(grPersono) :
     if attr.get_type() == '_FSFTID':
       return attr.get_value()
   return ''
+
+def db_create_schema(db):
+    # krei datumbazan tabelon
+    with DbTxn(_("FamilySearch krei"), db) as txn:
+      if not db.dbapi.table_exists("personfs_stato"):
+        db.dbapi.execute('CREATE TABLE personfs_stato '
+                           '('
+                           'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
+                           'fsid CHAR(8), '
+                           'estas_radiko CHAR(1), '
+                           'stat_dato integer, '
+                           'konf_dato integer, '
+                           'gramps_datomod integer, '
+                           'fs_datomod integer,'
+                           'konf_esenco CHAR(1),'
+                           'konf CHAR(1) '
+                           ')')
+      if not db.get_tag_from_name('FS_Esenco'):
+        tag = Tag()
+        tag.set_name('FS_Esenco')
+        tag.set_color('green')
+        db.add_tag(tag, txn)
+        db.commit_tag(tag, txn)
 
 class PersonFS(Gramplet):
   """
@@ -323,26 +346,6 @@ class PersonFS(Gramplet):
         PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     return PersonFS.fs_Session
 
-  def _db_create_schema(self):
-    # krei datumbazan tabelon
-    with DbTxn(_("FamilySearch krei"), self.dbstate.db) as txn:
-    if not self.dbstate.db.dbapi.table_exists("personfs_stato"):
-      self.dbstate.db.dbapi.execute('CREATE TABLE personfs_stato '
-                           '('
-                           'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
-                           'fsid CHAR(8), '
-                           'estas_radiko CHAR(1), '
-                           'stat_dato integer, '
-                           'konf_dato integer, '
-                           'gramps_datomod integer, '
-                           'fs_datomod integer,'
-                           'konf_esenco CHAR(1),'
-                           'konf CHAR(1) '
-                           ')')
-    if not self.dbstate.db.get_tag_from_name('FS_Esenco'):
-      tag = Tag()
-      tag.set_name('FS_Esenco')
-      tag.set_color('green')
 
   def _db_commit(self,person_handle):
     with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
@@ -375,7 +378,7 @@ class PersonFS(Gramplet):
     # FARINDAĴO : uzi PersonFS.lingvo
 
     # krei datumbazan tabelon
-    self._db_create_schema()
+    #self._db_create_schema()
 
     self.gui.WIDGET = self.krei_gui()
     self.gui.get_container_widget().remove(self.gui.textview)
@@ -1293,7 +1296,7 @@ class PersonFS(Gramplet):
     """
     " Komparas gramps kaj FamilySearch
     """
-    self._db_create_schema()
+    db_create_schema(self.dbstate.db)
     self.FSID = None
     person = self.dbstate.db.get_person_from_handle(person_handle)
     fsid = getfsid(person)
@@ -1334,16 +1337,16 @@ class PersonFS(Gramplet):
     if res[0] != "green" : self.db_konf_esenco = False
 
     res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
-    if res[0] != "green" : self.db_konf_esenco = False
-    self.modelKomp.add(res)
+    if res and res[0] != "green" : self.db_konf_esenco = False
+    if res: self.modelKomp.add(res)
 
     res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-    self.modelKomp.add(res)
+    if res: self.modelKomp.add(res)
     res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
-    if res[0] != "green" : self.db_konf_esenco = False
-    self.modelKomp.add(res)
+    if res and res[0] != "green" : self.db_konf_esenco = False
+    if res: self.modelKomp.add(res)
     res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
-    self.modelKomp.add(res)
+    if res: self.modelKomp.add(res)
 
     fsPerso.konf = (self.aldGepKomp( person, fsPerso) and fsPerso.konf)
 
@@ -1351,8 +1354,8 @@ class PersonFS(Gramplet):
 
     fsPerso.konf = (self.aldAliajFaktojKomp( person, fsPerso) and fsPerso.konf)
 
-    self.db_konf_esenco = (fsPerso._konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
-    self.db_konf = fsPerso.konf
+    #self.db_konf_esenco = (fsPerso._konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
+    #self.db_konf = fsPerso.konf
     self.db_gramps_datomod = person.change
 
     # FARINDAĴOJ : db_datoj : db_…

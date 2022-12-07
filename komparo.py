@@ -1,9 +1,31 @@
+#
+# Gramplet - fs (interfaco por familysearch)
+#
+# Kopirajto © 2022 Jean Michault
+# Licenco «GPL-3.0-or-later»
+#
+# Ĉi tiu programo estas libera programaro; vi povas redistribui ĝin kaj/aŭ modifi
+# ĝi laŭ la kondiĉoj de la Ĝenerala Publika Permesilo de GNU kiel eldonita de
+# la Free Software Foundation; ĉu versio 3 de la Licenco, aŭ
+# (laŭ via elekto) ajna posta versio.
+#
+# Ĉi tiu programo estas distribuata kun la espero, ke ĝi estos utila,
+# sed SEN AJN GARANTIO; sen eĉ la implicita garantio de
+# KOMERCEBLECO aŭ TAĜECO POR APARTA CELO. Vidu la
+# GNU Ĝenerala Publika Permesilo por pliaj detaloj.
+#
+# Vi devus esti ricevinta kopion de la Ĝenerala Publika Permesilo de GNU
+# kune kun ĉi tiu programo; se ne, skribu al 
+# Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gen.plug.menu import FilterOption, TextOption, NumberOption, BooleanOption
 from gramps.gen.db import DbTxn
 from gramps.gui.dialog import OkDialog, WarningDialog
 from gramps.gen.filters import CustomFilters, GenericFilterFactory, rules
+from gramps.gen.lib import EventType
+
 
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 try:
@@ -13,7 +35,7 @@ except ValueError:
 _ = _trans.gettext
 
 from tree import Tree
-from PersonFS import getfsid, PersonFS, SeksoKomp, NomojKomp
+from PersonFS import getfsid, PersonFS, SeksoKomp, NomojKomp, FaktoKomp, db_create_schema
 
 class FSKomparoOpcionoj(MenuToolOptions):
 
@@ -69,15 +91,16 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       PersonFS.fs_Tree = Tree(PersonFS.fs_Session)
       PersonFS.fs_Tree._getsources = False
     self.db = self.dbstate.get_database()
+    db_create_schema(self.db)
     filter_ = self.options.menu.get_option_by_name('Person').get_filter()
     self.plist = set(filter_.apply(self.db, self.db.iter_person_handles()))
     pOrdList = list()
     for handle in self.plist:
-      person = self.dbstate.db.get_person_from_handle(handle)
+      person = self.db.get_person_from_handle(handle)
       fsid = getfsid(person)
       if(fsid == ''): continue
-      self.dbstate.db.dbapi.execute("select stat_dato from personfs_stato where p_handle=?",[handle])
-      datumoj = self.dbstate.db.dbapi.fetchone()
+      self.db.dbapi.execute("select stat_dato from personfs_stato where p_handle=?",[handle])
+      datumoj = self.db.dbapi.fetchone()
       if datumoj and datumoj[0]:
         pOrdList.append([datumoj[0],handle,fsid])
       else:
@@ -93,17 +116,24 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
         continue
-      grPersono = self.dbstate.db.get_person_from_handle(handle)
+      grPersono = self.db.get_person_from_handle(paro[1])
       konfEsenco = True
       res = SeksoKomp(grPersono, fsPersono)
-      if res[0] != "green" : konfEsenco = False
+      if res and res[0] != "green" : konfEsenco = False
       res = NomojKomp(grPersono, fsPersono)
-      if res[0][0] != "green" : konfEsenco = False
-      res = FaktoKomp(grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
-      if res[0] != "green" : konfEsenco = False
-      res = FaktoKomp(grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
-      if res[0] != "green" : konfEsenco = False
+      if res and res[0][0] != "green" : konfEsenco = False
+      res = FaktoKomp(self.db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
+      if res and res[0] != "green" : konfEsenco = False
+      res = FaktoKomp(self.db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
+      if res and res[0] != "green" : konfEsenco = False
       print (konfEsenco)
+      with DbTxn(_("FamilySearch tags"), self.db) as txn:
+        tag_esenco = self.db.get_tag_from_name('FS_Esenco')
+        if not konfEsenco and tag_esenco in grPersono.tag_list:
+          grPersono.remove_tag(tag_esenco)
+        if tag_esenco and konfEsenco and tag_esenco not in grPersono.tag_list:
+          grPersono.add_tag(tag_esenco)
+        self.db.commit_person(grPersono, txn)
       
 
 
