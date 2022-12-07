@@ -69,9 +69,11 @@ else:
   pip.main(['install', '--user', 'gedcomx-v1'])
   import gedcomx
 
-# lokaloj 
+# lokaloj importadoj
 from constants import FACT_TAGS, FACT_TYPES
+from komparo import kompariFsGr
 from tree import Tree
+from utila import getfsid
 
 import sys
 import os
@@ -249,14 +251,6 @@ def grdato_al_formal( dato) :
   # FARINDAĴOJ : range ?  estimate ? calculate ? heure ?
   
   return res
-
-def getfsid(grPersono) :
-  if not grPersono :
-    return ''
-  for attr in grPersono.get_attribute_list():
-    if attr.get_type() == '_FSFTID':
-      return attr.get_value()
-  return ''
 
 def db_create_schema(db):
     # krei datumbazan tabelon
@@ -1326,15 +1320,8 @@ class PersonFS(Gramplet):
     if getfs == True :
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
-
-    self.db_konf_esenco = True
-    res = NomojKomp( person, fsPerso)
-    if res[0][0] != "green" : self.db_konf_esenco = False
-    for linio in res:
-       self.modelKomp.add( linio)
-    res = SeksoKomp( person, fsPerso)
-    self.modelKomp.add( res )
-    if res[0] != "green" : self.db_konf_esenco = False
+    
+    kompariFsGr(fsPerso, person, self.dbstate.db, self.modelKomp)
 
     res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
     if res and res[0] != "green" : self.db_konf_esenco = False

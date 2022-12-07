@@ -35,7 +35,8 @@ except ValueError:
 _ = _trans.gettext
 
 from tree import Tree
-from PersonFS import getfsid, PersonFS, SeksoKomp, NomojKomp, FaktoKomp, db_create_schema
+from PersonFS import PersonFS, SeksoKomp, NomojKomp, FaktoKomp, db_create_schema
+from utila import getfsid
 
 class FSKomparoOpcionoj(MenuToolOptions):
 
@@ -117,24 +118,29 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         print (_('FS ID %s ne trovita') % (fsid))
         continue
       grPersono = self.db.get_person_from_handle(paro[1])
-      konfEsenco = True
-      res = SeksoKomp(grPersono, fsPersono)
-      if res and res[0] != "green" : konfEsenco = False
-      res = NomojKomp(grPersono, fsPersono)
-      if res and res[0][0] != "green" : konfEsenco = False
-      res = FaktoKomp(self.db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
-      if res and res[0] != "green" : konfEsenco = False
-      res = FaktoKomp(self.db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
-      if res and res[0] != "green" : konfEsenco = False
-      print (konfEsenco)
-      with DbTxn(_("FamilySearch tags"), self.db) as txn:
-        tag_esenco = self.db.get_tag_from_name('FS_Esenco')
-        if not konfEsenco and tag_esenco in grPersono.tag_list:
-          grPersono.remove_tag(tag_esenco)
-        if tag_esenco and konfEsenco and tag_esenco not in grPersono.tag_list:
-          grPersono.add_tag(tag_esenco)
-        self.db.commit_person(grPersono, txn)
-      
+      kompariFsGr(fsPersono,grPersono,self.db)
 
+def kompariFsGr(fsPersono,grPersono,db,model=None):
+  konfEsenco = True
+  res = SeksoKomp(grPersono, fsPersono)
+  if(model) :  model.add( res )
+  if res and res[0] != "green" : konfEsenco = False
+  res = NomojKomp(grPersono, fsPersono)
+  if model:
+    for linio in res:
+       model.add( linio)
+  if res and res[0][0] != "green" : konfEsenco = False
 
+  res = FaktoKomp(db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
+  if res and res[0] != "green" : konfEsenco = False
+  res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
+  if res and res[0] != "green" : konfEsenco = False
 
+  print (konfEsenco)
+  with DbTxn(_("FamilySearch tags"), db) as txn:
+    tag_esenco = db.get_tag_from_name('FS_Esenco')
+    if not konfEsenco and tag_esenco.handle in grPersono.tag_list:
+      grPersono.remove_tag(tag_esenco.handle)
+    if tag_esenco and konfEsenco and tag_esenco.handle not in grPersono.tag_list:
+      grPersono.add_tag(tag_esenco.handle)
+    db.commit_person(grPersono, txn)
