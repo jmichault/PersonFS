@@ -49,7 +49,7 @@ from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
-from gramps.gui.dialog import OptionDialog
+from gramps.gui.dialog import OptionDialog, OkDialog
 from gramps.gui.editors import EditPerson
 from gramps.gui.listmodel import ListModel, NOSORT, COLOR
 from gramps.gui.viewmanager import run_plugin
@@ -98,6 +98,122 @@ CONFIG.register("preferences.fs_sn", '')
 CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
 
+def get_fsfact(self, person, fact_tipo):
+  """
+  " Liveras la unuan familysearch fakton de la donita tipo.
+  """
+  for fact in person.facts :
+    if fact.type == fact_tipo :
+      return fact
+  return None
+
+def get_grevent(db, person, event_type):
+  """
+  " Liveras la unuan gramps eventon de la donita tipo.
+  """
+  if not person:
+    return None
+  for event_ref in person.get_event_ref_list():
+    if int(event_ref.get_role()) == EventRoleType.PRIMARY:
+      event = db.get_event_from_handle(event_ref.ref)
+      if event.get_type() == event_type:
+        return event
+  return None
+
+
+def NomojKomp(person, fsPerso ) :
+    grNomo = person.primary_name
+    fsNomo = fsPerso.akPrefNomo()
+    coloro = "orange"
+    fsPerso.konf_nomo = False
+    if (grNomo.get_primary_surname().surname == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
+      coloro = "green"
+      fsPerso.konf_nomo = True
+    res = list()
+    res.append ( ( coloro , _trans.gettext('Name')
+		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+		))
+    fsNomoj = fsPerso.names.copy()
+    fsNomoj.remove(fsNomo)
+    for grNomo in person.alternate_names :
+      fsNomo = gedcomx.Name()
+      coloro = "yellow"
+      for x in fsNomoj :
+        if (grNomo.get_primary_surname().surname == x.akSurname()) and (grNomo.first_name == x.akGiven()) :
+          fsNomo = x
+          coloro = "green"
+          fsNomoj.remove(x)
+          break
+      if coloro != "green" : res = False
+      res.append (( coloro , '  ' + _trans.gettext('Name')
+		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+		))
+    coloro = "yellow"
+    for fsNomo in fsNomoj :
+      if fsNomo == fsNomo : continue
+      res.append (( coloro , '  ' + _trans.gettext('Name')
+		, '', ''
+		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+		))
+    return res
+
+def SeksoKomp(grPersono, fsPersono ) :
+  if grPersono.get_gender() == Person.MALE :
+    grSekso = _trans.gettext("male")
+  elif grPersono.get_gender() == Person.FEMALE :
+    grSekso = _trans.gettext("female")
+  else :
+    grSekso = _trans.gettext("unknown")
+  if fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Male" :
+    fsSekso = _trans.gettext("male")
+  elif fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Female" :
+    fsSekso = _trans.gettext("female")
+  else :
+    fsSekso = _trans.gettext("unknown")
+  coloro = "orange"
+  fsPersono._konf_sekso = False
+  if (grSekso == fsSekso) :
+    coloro = "green"
+    fsPersono._konf_sekso = True
+  return ( coloro , _('Sekso:')
+		, '', grSekso
+		, '', fsSekso
+		) 
+  return
+
+def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
+  grFakto = get_grevent(db, person, EventType(grEvent))
+  titolo = str(EventType(grEvent))
+  if grFakto != None :
+    grFaktoDato = grdato_al_formal(grFakto.date)
+    if grFakto.place and grFakto.place != None :
+      place = db.get_place_from_handle(grFakto.place)
+      grFaktoLoko = place.name.value
+    else :
+      grFaktoLoko = ''
+  else :
+    grFaktoDato = ''
+    grFaktoLoko = ''
+  # FARINDAĴO : norma loknomo
+
+  fsFakto = get_fsfact (fsPerso, fsFact )
+  fsFaktoDato = ''
+  fsFaktoLoko = ''
+  if fsFakto and fsFakto.date :
+    fsFaktoDato = str(fsFakto.date)
+  if fsFakto and fsFakto.place :
+    fsFaktoLoko = fsFakto.place.original or ''
+  coloro = "orange"
+  if (grFaktoDato == fsFaktoDato) :
+    coloro = "green"
+  if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
+    return
+  return ( coloro , titolo
+		, grFaktoDato , grFaktoLoko
+		, fsFaktoDato , fsFaktoLoko
+		)
 
 
 def grdato_al_formal( dato) :
@@ -134,10 +250,10 @@ def grdato_al_formal( dato) :
   
   return res
 
-def getfsid(person) :
-  if not person :
+def getfsid(grPersono) :
+  if not grPersono :
     return ''
-  for attr in person.get_attribute_list():
+  for attr in grPersono.get_attribute_list():
     if attr.get_type() == '_FSFTID':
       return attr.get_value()
   return ''
@@ -165,11 +281,53 @@ class PersonFS(Gramplet):
   if len(lingvo) != 2:
       lingvo = 'fr'
 
+  def aki_sesio():
+    if not PersonFS.fs_Session:
+      if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
+        import locale, os
+        self.top = Gtk.Builder()
+        self.top.set_translation_domain("addon")
+        base = os.path.dirname(__file__)
+        locale.bindtextdomain("addon", base + "/locale")
+        glade_file = base + os.sep + "PersonFS.glade"
+        self.top.add_from_file(glade_file)
+        top = self.top.get_object("PersonFSPrefDialogo")
+        top.set_transient_for(self.uistate.window)
+        parent_modal = self.uistate.window.get_modal()
+        if parent_modal:
+          self.uistate.window.set_modal(False)
+        fsid = self.top.get_object("fsid_eniro")
+        fsid.set_text(PersonFS.fs_sn)
+        fspv = self.top.get_object("fspv_eniro")
+        fspv.set_text(PersonFS.fs_pasvorto)
+        top.show()
+        res = top.run()
+        print ("res = " + str(res))
+        top.hide()
+        if res == -3:
+          PersonFS.fs_sn = fsid.get_text()
+          PersonFS.fs_pasvorto = fspv.get_text()
+          CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
+          #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+          CONFIG.save()
+          #if self.vorteco >= 3:
+          #  PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          #else :
+          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+        else :
+          print("Vi devas enigi la ID kaj pasvorton")
+      else:
+        #if self.vorteco >= 3:
+        #  PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+        #else :
+        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    return PersonFS.fs_Session
+
   def _db_create_schema(self):
     # krei datumbazan tabelon
+    with DbTxn(_("FamilySearch krei"), self.dbstate.db) as txn:
     if not self.dbstate.db.dbapi.table_exists("personfs_stato"):
-      with DbTxn(_("FamilySearch krei"), self.dbstate.db) as txn:
-        self.dbstate.db.dbapi.execute('CREATE TABLE personfs_stato '
+      self.dbstate.db.dbapi.execute('CREATE TABLE personfs_stato '
                            '('
                            'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
                            'fsid CHAR(8), '
@@ -181,6 +339,10 @@ class PersonFS(Gramplet):
                            'konf_esenco CHAR(1),'
                            'konf CHAR(1) '
                            ')')
+    if not self.dbstate.db.get_tag_from_name('FS_Esenco'):
+      tag = Tag()
+      tag.set_name('FS_Esenco')
+      tag.set_color('green')
 
   def _db_commit(self,person_handle):
     with DbTxn(_("FamilySearch commit"), self.dbstate.db) as txn:
@@ -458,19 +620,18 @@ class PersonFS(Gramplet):
       PersonFS.fs_TreeSercxo._getsources = False
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
-    datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
+    r = self.fs_TreeSercxo._fs.get_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
-    if datumoj :
-      self.DatRes(datumoj)
-
-    self.Dup.show()
-    res = self.Dup.run()
-    print ("res = " + str(res))
-    self.Dup.hide()
-
+    if r.status_code == 200 :
+      self.DatRes(r.json())
+      self.Dup.show()
+      res = self.Dup.run()
+      print ("res = " + str(res))
+      self.Dup.hide()
+    elif r.status_code == 204 :
+      OkDialog(_('Neniuj verŝajnaj duplikatoj por la persono %s trovita de la retejo "FamilySearch".')% self.FSID)
     return
-
 
   def ButSercxi_clicked(self, dummy):
     if not self.Sercxi :
@@ -499,7 +660,7 @@ class PersonFS(Gramplet):
       self.top.get_object("fs_sekso_eniro").set_text('Male')
     elif person.get_gender() == Person.FEMALE :
       self.top.get_object("fs_sekso_eniro").set_text('Female')
-    grBirth = self.get_grevent(person, EventType(EventType.BIRTH))
+    grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
       self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
     else:
@@ -515,7 +676,6 @@ class PersonFS(Gramplet):
     res = self.Sercxi.run()
     print ("res = " + str(res))
     self.Sercxi.hide()
-
     return
 
   def ButLancxi_clicked(self, dummy):
@@ -548,6 +708,7 @@ class PersonFS(Gramplet):
     #tot = datumoj["results"]
     #print ("nb résultats = "+str(tot))
     self.DatRes(datumoj)
+    self.Sercxi.show()
 
   def DatRes(self,datumoj):
     for entry in datumoj["entries"] :
@@ -613,14 +774,14 @@ class PersonFS(Gramplet):
                 mother = person1
               
       fsNomo = fsPerso.akPrefNomo()
-      fsBirth = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or gedcomx.Fact()
+      fsBirth = get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or gedcomx.Fact()
       fsBirthLoko = fsBirth.place 
       #from objbrowser import browse ;browse(locals())
       if fsBirthLoko :
         fsBirth = str(fsBirth.date or '') + ' \n@ ' +fsBirthLoko.original
       else :
         fsBirth = str(fsBirth.date or '')
-      fsDeath = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' ) or gedcomx.Fact()
+      fsDeath = get_fsfact (fsPerso, 'http://gedcomx.org/Death' ) or gedcomx.Fact()
       fsDeathLoko = fsDeath.place 
       if fsDeathLoko :
         fsDeath = str(fsDeath.date or '') + ' \n@ ' +fsDeathLoko.original
@@ -645,10 +806,6 @@ class PersonFS(Gramplet):
                    + '\n'+fsPatrinoNomo.akSurname() +  ', ' + fsPatrinoNomo.akGiven()
 		, edzoj
 		) )
-    self.Sercxi.show()
-
-      
-    
     return
 
   def ButEdzoj_clicked(self, dummy):
@@ -714,23 +871,10 @@ class PersonFS(Gramplet):
     else:
       self.set_has_data(False)
 
-  def get_grevent(self, person, event_type):
-    """
-    " Liveras la unuan gramps eventon de la donita tipo.
-    """
-    if not person:
-      return None
-    for event_ref in person.get_event_ref_list():
-      if int(event_ref.get_role()) == EventRoleType.PRIMARY:
-        event = self.dbstate.db.get_event_from_handle(event_ref.ref)
-        if event.get_type() == event_type:
-          return event
-    return None
-
   def grperso_datoj (self, person) :
     if not person:
       return ''
-    grBirth = self.get_grevent(person, EventType(EventType.BIRTH))
+    grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
       if grBirth.date.modifier == Date.MOD_ABOUT :
         res = '~'
@@ -747,7 +891,7 @@ class PersonFS(Gramplet):
         res = res + val + '-'
     else :
       res = ' ....-'
-    grDeath = self.get_grevent(person, EventType(EventType.DEATH))
+    grDeath = get_grevent(self.dbstate.db, person, EventType(EventType.DEATH))
     if grDeath :
       if grDeath.date.modifier == Date.MOD_ABOUT :
         res = res + '~'
@@ -767,7 +911,7 @@ class PersonFS(Gramplet):
   def fsperso_datoj (self, fsPerso) :
     if not fsPerso:
       return ''
-    fsFakto = self.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' )
+    fsFakto = get_fsfact (fsPerso, 'http://gedcomx.org/Birth' )
     if fsFakto and fsFakto.date and fsFakto.date.formal :
       if fsFakto.date.formal.proksimuma :
         res = '~'
@@ -781,7 +925,7 @@ class PersonFS(Gramplet):
       res = res+'-'
     else :
       res = ' ....-'
-    fsFakto = self.get_fsfact (fsPerso, 'http://gedcomx.org/Death' )
+    fsFakto = get_fsfact (fsPerso, 'http://gedcomx.org/Death' )
     if fsFakto and fsFakto.date and fsFakto.date.formal:
       if fsFakto.date.formal.proksimuma:
         res = res + '~'
@@ -797,111 +941,6 @@ class PersonFS(Gramplet):
     else :
       res = res + '....'
     return res
-
-  def get_fsfact(self, person, fact_tipo):
-    """
-    " Liveras la unuan familysearch fakton de la donita tipo.
-    """
-    for fact in person.facts :
-      if fact.type == fact_tipo :
-        return fact
-    return None
-
-  def aldSeksoKomp(self, person, fsPerso ) :
-    if person.get_gender() == Person.MALE :
-      grSekso = _trans.gettext("male")
-    elif person.get_gender() == Person.FEMALE :
-      grSekso = _trans.gettext("female")
-    else :
-      grSekso = _trans.gettext("unknown")
-    if fsPerso.gender and fsPerso.gender.type == "http://gedcomx.org/Male" :
-      fsSekso = _trans.gettext("male")
-    elif fsPerso.gender and fsPerso.gender.type == "http://gedcomx.org/Female" :
-      fsSekso = _trans.gettext("female")
-    else :
-      fsSekso = _trans.gettext("unknown")
-    coloro = "orange"
-    fsPerso.konf_sekso = False
-    if (grSekso == fsSekso) :
-      coloro = "green"
-      fsPerso.konf_sekso = True
-    self.modelKomp.add( ( coloro , _('Sekso:')
-		, '', grSekso
-		, '', fsSekso
-		) )
-    return
-
-  def aldNomojKomp(self, person, fsPerso ) :
-    grNomo = person.primary_name
-    fsNomo = fsPerso.akPrefNomo()
-    coloro = "orange"
-    fsPerso.konf_nomo = False
-    if (grNomo.get_primary_surname().surname == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
-      coloro = "green"
-      fsPerso.konf_nomo = True
-    self.modelKomp.add( ( coloro , _trans.gettext('Name')
-		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
-		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-		) )
-    res = fsPerso.konf_nomo
-    fsNomoj = fsPerso.names.copy()
-    fsNomoj.remove(fsNomo)
-    for grNomo in person.alternate_names :
-      fsNomo = gedcomx.Name()
-      coloro = "yellow"
-      for x in fsNomoj :
-        if (grNomo.get_primary_surname().surname == x.akSurname()) and (grNomo.first_name == x.akGiven()) :
-          fsNomo = x
-          coloro = "green"
-          fsNomoj.remove(x)
-          break
-      if coloro != "green" : res = False
-      self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
-		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
-		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-		) )
-    coloro = "yellow"
-    for fsNomo in fsNomoj :
-      if fsNomo == fsNomo : continue
-      res = False
-      self.modelKomp.add( ( coloro , '  ' + _trans.gettext('Name')
-		, '', ''
-		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-		) )
-    return res
-
-  def aldFaktoKomp(self, person, fsPerso, grEvent , fsFact ) :
-    grFakto = self.get_grevent(person, EventType(grEvent))
-    titolo = str(EventType(grEvent))
-    if grFakto != None :
-      grFaktoDato = grdato_al_formal(grFakto.date)
-      if grFakto.place and grFakto.place != None :
-        place = self.dbstate.db.get_place_from_handle(grFakto.place)
-        grFaktoLoko = place.name.value
-      else :
-        grFaktoLoko = ''
-    else :
-      grFaktoDato = ''
-      grFaktoLoko = ''
-    # FARINDAĴO : norma loknomo
-
-    fsFakto = self.get_fsfact (fsPerso, fsFact )
-    fsFaktoDato = ''
-    fsFaktoLoko = ''
-    if fsFakto and fsFakto.date :
-      fsFaktoDato = str(fsFakto.date)
-    if fsFakto and fsFakto.place :
-      fsFaktoLoko = fsFakto.place.original or ''
-    coloro = "orange"
-    if (grFaktoDato == fsFaktoDato) :
-      coloro = "green"
-    if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
-      return
-    self.modelKomp.add( ( coloro , titolo
-		, grFaktoDato , grFaktoLoko
-		, fsFaktoDato , fsFaktoLoko
-		) )
-    return (coloro == "green")
 
   def aldAliajFaktojKomp(self, person, fsPerso ) :
     grFaktoj = person.event_ref_list
@@ -1285,15 +1324,26 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
 
+    self.db_konf_esenco = True
+    res = NomojKomp( person, fsPerso)
+    if res[0][0] != "green" : self.db_konf_esenco = False
+    for linio in res:
+       self.modelKomp.add( linio)
+    res = SeksoKomp( person, fsPerso)
+    self.modelKomp.add( res )
+    if res[0] != "green" : self.db_konf_esenco = False
 
-    fsPerso.konf = self.aldNomojKomp( person, fsPerso)
-    self.aldSeksoKomp( person, fsPerso)
+    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
+    if res[0] != "green" : self.db_konf_esenco = False
+    self.modelKomp.add(res)
 
-    fsPerso.konf_birdo =  self.aldFaktoKomp( person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth") 
-    fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism") and fsPerso.konf)
-    fsPerso.konf_morto = self.aldFaktoKomp( person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
-    fsPerso.konf = (self.aldFaktoKomp( person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial") and fsPerso.konf)
-    fsPerso.konf = (fsPerso.konf and fsPerso.konf_esenco)
+    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
+    self.modelKomp.add(res)
+    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
+    if res[0] != "green" : self.db_konf_esenco = False
+    self.modelKomp.add(res)
+    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
+    self.modelKomp.add(res)
 
     fsPerso.konf = (self.aldGepKomp( person, fsPerso) and fsPerso.konf)
 
@@ -1301,7 +1351,7 @@ class PersonFS(Gramplet):
 
     fsPerso.konf = (self.aldAliajFaktojKomp( person, fsPerso) and fsPerso.konf)
 
-    self.db_konf_esenco = (fsPerso.konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
+    self.db_konf_esenco = (fsPerso._konf_sekso and fsPerso.konf_birdo and fsPerso.konf_morto) 
     self.db_konf = fsPerso.konf
     self.db_gramps_datomod = person.change
 

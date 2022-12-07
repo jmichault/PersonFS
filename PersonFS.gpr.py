@@ -55,3 +55,17 @@ register(TOOL,
     optionclass = 'FSImportoOpcionoj',
     tool_modes = [TOOL_MODE_GUI],
 )
+
+register(TOOL,
+    id    = 'FamilySearch komparo',
+    name  = _("FamilySearch : kompari"),
+    description =  _("FamilySearch : kompari gramps personojn kun FS personojn."),
+    version = '1.0.3',
+    gramps_target_version = '5.1',
+    status = STABLE,
+    fname = 'komparo.py',
+    category = TOOL_DBPROC,
+    toolclass = 'FSKomparo',
+    optionclass = 'FSKomparoOpcionoj',
+    tool_modes = [TOOL_MODE_GUI],
+)

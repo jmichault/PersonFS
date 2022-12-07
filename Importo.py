@@ -152,7 +152,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
-    progress.set_pass(_('Konstrui FSID listo'), self.dbstate.db.get_number_of_people())
+    progress.set_pass(_('Konstrui FSID listo (1/9)'), self.dbstate.db.get_number_of_people())
     for person_handle in self.dbstate.db.get_person_handles() :
       progress.step()
       person = self.dbstate.db.get_person_from_handle(person_handle)
@@ -162,58 +162,59 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         if attr.get_type() == '_FSFTID':
           self.fs_gr[attr.get_value()] = person_handle
           break
-    if not PersonFS.fs_Session:
-      if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
-        import locale, os
-        self.top = Gtk.Builder()
-        self.top.set_translation_domain("addon")
-        base = os.path.dirname(__file__)
-        locale.bindtextdomain("addon", base + "/locale")
-        glade_file = base + os.sep + "PersonFS.glade"
-        self.top.add_from_file(glade_file)
-        top = self.top.get_object("PersonFSPrefDialogo")
-        top.set_transient_for(self.uistate.window)
-        parent_modal = self.uistate.window.get_modal()
-        if parent_modal:
-          self.uistate.window.set_modal(False)
-        fsid = self.top.get_object("fsid_eniro")
-        fsid.set_text(PersonFS.fs_sn)
-        fspv = self.top.get_object("fspv_eniro")
-        fspv.set_text(PersonFS.fs_pasvorto)
-        top.show()
-        res = top.run()
-        print ("res = " + str(res))
-        top.hide()
-        if res == -3:
-          PersonFS.fs_sn = fsid.get_text()
-          PersonFS.fs_pasvorto = fspv.get_text()
-          CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
-          #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
-          CONFIG.save()
-          if self.vorteco >= 3:
-            PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-          else :
-            PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
-        else :
-          print("Vi devas enigi la ID kaj pasvorton")
-      else:
-        if self.vorteco >= 3:
-          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-        else :
-          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    if not PersonFS.aki_sesio():
+      WarningDialog(_('Ne konekta al FamilySearch'))
+      return
+    #if not PersonFS.fs_Session:
+    #  if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
+    #    import locale, os
+    #    self.top = Gtk.Builder()
+    #    self.top.set_translation_domain("addon")
+    #    base = os.path.dirname(__file__)
+    #    locale.bindtextdomain("addon", base + "/locale")
+    #    glade_file = base + os.sep + "PersonFS.glade"
+    #    self.top.add_from_file(glade_file)
+    #    top = self.top.get_object("PersonFSPrefDialogo")
+    #    top.set_transient_for(self.uistate.window)
+    #    parent_modal = self.uistate.window.get_modal()
+    #    if parent_modal:
+    #      self.uistate.window.set_modal(False)
+    #    fsid = self.top.get_object("fsid_eniro")
+    #    fsid.set_text(PersonFS.fs_sn)
+    #    fspv = self.top.get_object("fspv_eniro")
+    #    fspv.set_text(PersonFS.fs_pasvorto)
+    #    top.show()
+    #    res = top.run()
+    #    print ("res = " + str(res))
+    #    top.hide()
+    #    if res == -3:
+    #      PersonFS.fs_sn = fsid.get_text()
+    #      PersonFS.fs_pasvorto = fspv.get_text()
+    #      CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
+    #      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+    #      CONFIG.save()
+    #      if self.vorteco >= 3:
+    #        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #      else :
+    #        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #    else :
+    #      print("Vi devas enigi la ID kaj pasvorton")
+    #  else:
+    #    if self.vorteco >= 3:
+    #      PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #    else :
+    #      PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     print("importo")
-    print(PersonFS.fs_sn)
-    print(PersonFS.fs_Session)
     if self.fs_TreeImp:
       del self.fs_TreeImp
     self.fs_TreeImp = Tree(PersonFS.fs_Session)
     # Legi la personojn en «FamilySearch».
-    progress.set_pass(_('Elŝutante personojn…'), mode= ProgressMeter.MODE_ACTIVITY)
+    progress.set_pass(_('Elŝutante personojn… (2/9)'), mode= ProgressMeter.MODE_ACTIVITY)
     print(_("Elŝutante personon…"))
     if self.FS_ID:
       self.fs_TreeImp.add_persons([self.FS_ID])
     else : return
-    progress.set_pass(_('Elŝutante ascendantojn…'),self.asc)
+    progress.set_pass(_('Elŝutante ascendantojn… (3/9)'),self.asc)
     # ascendante
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
@@ -225,7 +226,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print( _("Elŝutante %s generaciojn de ascendantojn…") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
-    progress.set_pass(_('Elŝutante posteulojn…'),self.desc)
+    progress.set_pass(_('Elŝutante posteulojn… (4/9)'),self.desc)
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.desc):
@@ -240,12 +241,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print("posteuloj elŝutantaj : devigi elŝutanto de edzoj ")
       self.edz = True
     if self.edz :
-      progress.set_pass(_('Elŝutante edzojn…'), mode= ProgressMeter.MODE_ACTIVITY)
+      progress.set_pass(_('Elŝutante edzojn… (5/9)'), mode= ProgressMeter.MODE_ACTIVITY)
       print(_("Elŝutante edzojn…"))
       todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
-    progress.set_pass(_('Elŝutante notojn…'),len(self.fs_TreeImp.persons))
+    progress.set_pass(_('Elŝutante notojn… (6/9)'),len(self.fs_TreeImp.persons))
     print(_("Elŝutante notojn…"))
     for fsPersono in self.fs_TreeImp.persons :
       progress.step()
@@ -269,18 +270,18 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     with DbTxn("FamilySearch import", self.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
-      progress.set_pass(_('Importado de lokoj…'),len(self.fs_TreeImp.places))
+      progress.set_pass(_('Importado de lokoj… (7/9)'),len(self.fs_TreeImp.places))
       print(_("Importado de lokoj…"))
       for pl in self.fs_TreeImp.places :
         progress.step()
         self.aldLoko(pl)
-      progress.set_pass(_('Importado de personoj…'),len(self.fs_TreeImp.persons))
+      progress.set_pass(_('Importado de personoj… (8/9)'),len(self.fs_TreeImp.persons))
       print(_("Importado de personoj…"))
       # importi personoj
       for fsPersono in self.fs_TreeImp.persons :
         progress.step()
         self.aldPersono(fsPersono)
-      progress.set_pass(_('Importado de familioj…'),len(self.fs_TreeImp.relationships))
+      progress.set_pass(_('Importado de familioj… (9/9)'),len(self.fs_TreeImp.relationships))
       print(_("Importado de familioj…"))
       # importi familioj
       for fsFam in self.fs_TreeImp.relationships :
