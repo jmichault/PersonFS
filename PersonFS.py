@@ -45,7 +45,6 @@ from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
 from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
-from gramps.gen.lib.date import gregorian
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
@@ -71,9 +70,9 @@ else:
 
 # lokaloj importadoj
 from constants import FACT_TAGS, FACT_TYPES
-from komparo import kompariFsGr
+import komparo
 from tree import Tree
-from utila import getfsid
+from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
 import os
@@ -99,28 +98,6 @@ CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 CONFIG.register("preferences.fs_sn", '')
 CONFIG.register("preferences.fs_pasvorto", '') #
 CONFIG.load()
-
-def get_fsfact(person, fact_tipo):
-  """
-  " Liveras la unuan familysearch fakton de la donita tipo.
-  """
-  for fact in person.facts :
-    if fact.type == fact_tipo :
-      return fact
-  return None
-
-def get_grevent(db, person, event_type):
-  """
-  " Liveras la unuan gramps eventon de la donita tipo.
-  """
-  if not person:
-    return None
-  for event_ref in person.get_event_ref_list():
-    if int(event_ref.get_role()) == EventRoleType.PRIMARY:
-      event = db.get_event_from_handle(event_ref.ref)
-      if event.get_type() == event_type:
-        return event
-  return None
 
 
 def NomojKomp(person, fsPerso ) :
@@ -161,96 +138,6 @@ def NomojKomp(person, fsPerso ) :
 		))
     return res
 
-def SeksoKomp(grPersono, fsPersono ) :
-  if grPersono.get_gender() == Person.MALE :
-    grSekso = _trans.gettext("male")
-  elif grPersono.get_gender() == Person.FEMALE :
-    grSekso = _trans.gettext("female")
-  else :
-    grSekso = _trans.gettext("unknown")
-  if fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Male" :
-    fsSekso = _trans.gettext("male")
-  elif fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Female" :
-    fsSekso = _trans.gettext("female")
-  else :
-    fsSekso = _trans.gettext("unknown")
-  coloro = "orange"
-  fsPersono._konf_sekso = False
-  if (grSekso == fsSekso) :
-    coloro = "green"
-    fsPersono._konf_sekso = True
-  return ( coloro , _('Sekso:')
-		, '', grSekso
-		, '', fsSekso
-		) 
-  return
-
-def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
-  grFakto = get_grevent(db, person, EventType(grEvent))
-  titolo = str(EventType(grEvent))
-  if grFakto != None :
-    grFaktoDato = grdato_al_formal(grFakto.date)
-    if grFakto.place and grFakto.place != None :
-      place = db.get_place_from_handle(grFakto.place)
-      grFaktoLoko = place.name.value
-    else :
-      grFaktoLoko = ''
-  else :
-    grFaktoDato = ''
-    grFaktoLoko = ''
-  # FARINDAĴO : norma loknomo
-
-  fsFakto = get_fsfact (fsPerso, fsFact )
-  fsFaktoDato = ''
-  fsFaktoLoko = ''
-  if fsFakto and fsFakto.date :
-    fsFaktoDato = str(fsFakto.date)
-  if fsFakto and fsFakto.place :
-    fsFaktoLoko = fsFakto.place.original or ''
-  coloro = "orange"
-  if (grFaktoDato == fsFaktoDato) :
-    coloro = "green"
-  if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
-    return None
-  return ( coloro , titolo
-		, grFaktoDato , grFaktoLoko
-		, fsFaktoDato , fsFaktoLoko
-		)
-
-
-def grdato_al_formal( dato) :
-  """
-  " konvertas gramps-daton al «formal» dato
-  "   «formal» dato : <https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md>
-  """
-  res=''
-  gdato = gregorian(dato)
-  if gdato.modifier == Date.MOD_ABOUT :
-    res = 'A'
-  elif gdato.modifier == Date.MOD_BEFORE:
-    res = '/'
-  if gdato.dateval[Date._POS_YR] < 0 :
-    res = res + '-'
-  else :
-    res = res + '+'
-  if gdato.dateval[Date._POS_DAY] > 0 :
-    val = "%04d-%02d-%02d" % (
-                gdato.dateval[Date._POS_YR], gdato.dateval[Date._POS_MON],
-                gdato.dateval[Date._POS_DAY])
-  elif gdato.dateval[Date._POS_MON] > 0 :
-    val = "%04d-%02d" % (
-                gdato.dateval[Date._POS_YR], gdato.dateval[Date._POS_MON])
-  elif gdato.dateval[Date._POS_YR] > 0 :
-    val = "%04d" % ( gdato.dateval[Date._POS_YR] )
-  else :
-    res = gdato.text
-    val=''
-  res = res+val
-  if gdato.modifier == Date.MOD_AFTER:
-    res = res + '/'
-  # FARINDAĴOJ : range ?  estimate ? calculate ? heure ?
-  
-  return res
 
 def db_create_schema(db):
     # krei datumbazan tabelon
@@ -1321,19 +1208,7 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
     
-    kompariFsGr(fsPerso, person, self.dbstate.db, self.modelKomp)
-
-    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BIRTH , "http://gedcomx.org/Birth")
-    if res and res[0] != "green" : self.db_konf_esenco = False
-    if res: self.modelKomp.add(res)
-
-    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-    if res: self.modelKomp.add(res)
-    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.DEATH , "http://gedcomx.org/Death")
-    if res and res[0] != "green" : self.db_konf_esenco = False
-    if res: self.modelKomp.add(res)
-    res = FaktoKomp(self.dbstate.db, person, fsPerso, EventType.BURIAL , "http://gedcomx.org/Burial")
-    if res: self.modelKomp.add(res)
+    komparo.kompariFsGr(fsPerso, person, self.dbstate.db, self.modelKomp)
 
     fsPerso.konf = (self.aldGepKomp( person, fsPerso) and fsPerso.konf)
 

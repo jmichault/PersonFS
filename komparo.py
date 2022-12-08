@@ -24,7 +24,7 @@ from gramps.gen.plug.menu import FilterOption, TextOption, NumberOption, Boolean
 from gramps.gen.db import DbTxn
 from gramps.gui.dialog import OkDialog, WarningDialog
 from gramps.gen.filters import CustomFilters, GenericFilterFactory, rules
-from gramps.gen.lib import EventType
+from gramps.gen.lib import EventType, Person
 
 
 from gramps.gen.const import GRAMPS_LOCALE as glocale
@@ -35,8 +35,8 @@ except ValueError:
 _ = _trans.gettext
 
 from tree import Tree
-from PersonFS import PersonFS, SeksoKomp, NomojKomp, FaktoKomp, db_create_schema
-from utila import getfsid
+import PersonFS
+from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 class FSKomparoOpcionoj(MenuToolOptions):
 
@@ -85,14 +85,14 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     return _("Options")
 
   def run(self):
-    if not PersonFS.aki_sesio():
+    if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
-    if not PersonFS.fs_Tree:
-      PersonFS.fs_Tree = Tree(PersonFS.fs_Session)
-      PersonFS.fs_Tree._getsources = False
+    if not PersonFS.PersonFS.fs_Tree:
+      PersonFS.PersonFS.fs_Tree = Tree(PersonFS.PersonFS.fs_Session)
+      PersonFS.PersonFS.fs_Tree._getsources = False
     self.db = self.dbstate.get_database()
-    db_create_schema(self.db)
+    PersonFS.db_create_schema(self.db)
     filter_ = self.options.menu.get_option_by_name('Person').get_filter()
     self.plist = set(filter_.apply(self.db, self.db.iter_person_handles()))
     pOrdList = list()
@@ -112,20 +112,76 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     for paro in pOrdList:
       print (paro)
       fsid = paro[2]
-      PersonFS.fs_Tree.add_persons([fsid])
-      fsPersono = PersonFS.fs_Tree._persons.get(fsid)
+      PersonFS.PersonFS.fs_Tree.add_persons([fsid])
+      fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
         continue
       grPersono = self.db.get_person_from_handle(paro[1])
       kompariFsGr(fsPersono,grPersono,self.db)
 
+def SeksoKomp(grPersono, fsPersono ) :
+  if grPersono.get_gender() == Person.MALE :
+    grSekso = _trans.gettext("male")
+  elif grPersono.get_gender() == Person.FEMALE :
+    grSekso = _trans.gettext("female")
+  else :
+    grSekso = _trans.gettext("unknown")
+  if fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Male" :
+    fsSekso = _trans.gettext("male")
+  elif fsPersono.gender and fsPersono.gender.type == "http://gedcomx.org/Female" :
+    fsSekso = _trans.gettext("female")
+  else :
+    fsSekso = _trans.gettext("unknown")
+  coloro = "orange"
+  fsPersono._konf_sekso = False
+  if (grSekso == fsSekso) :
+    coloro = "green"
+    fsPersono._konf_sekso = True
+  return ( coloro , _('Sekso:')
+		, '', grSekso
+		, '', fsSekso
+		) 
+  return
+
+def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
+  grFakto = get_grevent(db, person, EventType(grEvent))
+  titolo = str(EventType(grEvent))
+  if grFakto != None :
+    grFaktoDato = grdato_al_formal(grFakto.date)
+    if grFakto.place and grFakto.place != None :
+      place = db.get_place_from_handle(grFakto.place)
+      grFaktoLoko = place.name.value
+    else :
+      grFaktoLoko = ''
+  else :
+    grFaktoDato = ''
+    grFaktoLoko = ''
+  # FARINDAĴO : norma loknomo
+
+  fsFakto = get_fsfact (fsPerso, fsFact )
+  fsFaktoDato = ''
+  fsFaktoLoko = ''
+  if fsFakto and fsFakto.date :
+    fsFaktoDato = str(fsFakto.date)
+  if fsFakto and fsFakto.place :
+    fsFaktoLoko = fsFakto.place.original or ''
+  coloro = "orange"
+  if (grFaktoDato == fsFaktoDato) :
+    coloro = "green"
+  if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
+    return None
+  return ( coloro , titolo
+		, grFaktoDato , grFaktoLoko
+		, fsFaktoDato , fsFaktoLoko
+		)
+
 def kompariFsGr(fsPersono,grPersono,db,model=None):
   konfEsenco = True
   res = SeksoKomp(grPersono, fsPersono)
   if(model) :  model.add( res )
   if res and res[0] != "green" : konfEsenco = False
-  res = NomojKomp(grPersono, fsPersono)
+  res = PersonFS.NomojKomp(grPersono, fsPersono)
   if model:
     for linio in res:
        model.add( linio)
@@ -133,8 +189,13 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
 
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
   if res and res[0] != "green" : konfEsenco = False
+  res = FaktoKomp(db, grPersono, fsPersono, EventType.BAPTISM , "http://gedcomx.org/Baptism")
+  if res: model.add(res)
   res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
   if res and res[0] != "green" : konfEsenco = False
+  res = FaktoKomp(db, grPersono, fsPersono, EventType.BURIAL , "http://gedcomx.org/Burial")
+  if res: model.add(res)
+
 
   print (konfEsenco)
   with DbTxn(_("FamilySearch tags"), db) as txn:
