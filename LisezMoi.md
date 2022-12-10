@@ -30,18 +30,33 @@ En étant positionné sur le panneau des Individus, cliquez sur le menu déroula
 Une fois ceci fait un nouvel onglet «FS» est ajouté.
 
 ## utilisation
-Dans l'état actuel , il permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
+L'extension comporte 3 modules :
+* un module d'import
+* un gramplet de comparaison individu gramps vs individu FamilySearch. Il permet aussi de faire des recherches sur familysearch et de consulter les doublons potentiels trouvés par FamilySearch.
+* un outil de comparaison, qui va parcourir tous les individus et positionner les signets suivants : (en cours de développement)
+  * FS\_Synk : informations essentielles synchronisées (nom/prénom principal, dates de naissance et décès).
+  * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
+  * FS\_Gepatro : il y a un parent à synchroniser.
+  * FS\_Infano : il y a un enfant à synchroniser.
+  * FS\_Edzo : il y a un conjoint à synchroniser.
+  * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
+
+
+Le gramplet permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
 * nom/prénom principal
 * date et lieu de naissance
 * date et lieu de baptême
 * date et lieu de décès
 * date et lieu de d'inhumation
 * les parents (nom/prénom principal, années de naissance et de décès)
-* les évènements
+* les conjoints
+* les enfants
+* les autres évènements
 
 La première colonne permet de visualiser rapidement quelles données ne sont pas en phase :
 * vert = en phase (attention : pour les personnes seuls les identifiants familysearch sont vérifiés, pour les dates/lieux, seules les dates sont vérifiées)
-* jaune ou orange : pas en phase ou pas présent des deux cotés.
+* orange : présent des deux côtés, mais pas en phase.
+* jaune : présent d'un seul côté.
 
 Note : le lien avec _familysearch_ se fait grâce à un attribut de clé _«\_FSFTID»_ et ayant pour valeur le N° d'identification _familysearch_.  
 
@@ -66,3 +81,21 @@ Vous avez juste à renseigner :
 
 Puis cliquez sur le bouton «Importer»
 
+# méthode de travail suggérée.
+
+## Créez des filtres
+1. créez un filtre : «ascendants»
+2. créez un filtre : «ascendants avec parent non synchronisé».
+3. créez un filtre : «ascendants avec parent non synchronisé».
+
+## démarrage
+1. activez le gramplet sur la vue Individus
+2. allez sur votre individu souche, et liez-le :
+  * avec le bouton chercher, essayez de le trouver dans familysearch
+  * si vous le trouvez : utilisez le bouton Lier.
+  * si vous ne le trouvez pas : utilisez le bouton Ajouter.
+3. faites de même avec ses parents, puis les parents de ses parents …
+
+## régulièrement
+1. filtrez les «ascendants avec parent non synchronisé»
+  * synchronisez les parents
