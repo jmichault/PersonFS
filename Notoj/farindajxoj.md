@@ -15,18 +15,18 @@
   * outil de mise à jour de l'état de synchro
     * doit être interruptible.
     * ne doit pas changer la date de dernière modification de l'individu.
-  * tags à renseigner :
+  * étiquettes à renseigner :
     * FS\_Identa : informations essentielles conformes (nom/prénom principal, dates de naissance et décès).
     * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
     * FS\_Nomo : il y a un nom à synchroniser (autre que le principal).
     * FS\_Gepatro : il y a un parent à synchroniser.
     * FS\_Infano : il y a un enfant à synchroniser.
-    * FS\_Edzo : il y a un conjoint à synchroniser.
+    * FS\_Familio : il y a un conjoint à synchroniser.
     * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
     * FS\_Konf : dans le gramplet : synchro pas parfaite mais marquée conforme
     * FS\_Dup : doublon potentiel détecté par FS
-    * FS\_Gramps : changé dans gramps depuis la dernière fois que le signet FS\_Konf a été positionné, ou que tout était conforme (signet FS\_Identa et aucun autre)
-    * FS\_FS : changé dans FamilySearch depuis la dernière fois que le signet FS\_Konf a été positionné, ou que tout était conforme (signet FS\_Identa et aucun autre)
+    * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
+    * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
     * source à joindre.
     * note à joindre.
   * affichage de l'état dans le gramplet

@@ -32,6 +32,7 @@
 #      'konf CHAR(1) '					                # marqué conforme
 
 from gramps.gen.db import DbTxn
+from gramps.gen.lib import Tag
 
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 try:
@@ -39,6 +40,19 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
+
+stato_tags = (
+('FS_Identa', 'green'),
+('FS_Esenco', 'red'),
+('FS_Nomo', 'red'),
+('FS_Gepatro', 'red'),
+('FS_Familio', 'red'),
+('FS_Fakto', 'red'),
+('FS_Konf', 'green'),
+('FS_Dup', 'red'),
+('FS_Gramps', 'red'),
+('FS_FS', 'red'),
+)
 
 def create_schema(db):
   # krei datumbazan tabelon
@@ -56,12 +70,13 @@ def create_schema(db):
                          'konf_esenco CHAR(1),'
                          'konf CHAR(1) '
                          ')')
-    if not db.get_tag_from_name('FS_Esenco'):
-      tag = Tag()
-      tag.set_name('FS_Esenco')
-      tag.set_color('green')
-      db.add_tag(tag, txn)
-      db.commit_tag(tag, txn)
+    for t in stato_tags:
+      if not db.get_tag_from_name(t[0]):
+        tag = Tag()
+        tag.set_name(t[0])
+        tag.set_color(t[1])
+        db.add_tag(tag, txn)
+        db.commit_tag(tag, txn)
 
 class db_stato:
   def __init__(self, db, p_handle=None):

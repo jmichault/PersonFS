@@ -198,10 +198,8 @@ def NomojKomp(person, fsPerso ) :
     grNomo = person.primary_name
     fsNomo = fsPerso.akPrefNomo()
     coloro = "orange"
-    fsPerso.konf_nomo = False
     if (grNomo.get_primary_surname().surname == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
       coloro = "green"
-      fsPerso.konf_nomo = True
     res = list()
     res.append ( ( coloro , _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
@@ -660,40 +658,47 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   dbPersono= fs_db.db_stato(db,grPersono.handle)
   dbPersono.get()
   dbPersono.fsid = fsPersono.id
-  dbPersono.konf_esenco = True
+  konf_familio=konf_esenco=konf_nomo=konf_fakto=konf_gepatro=False
   res = SeksoKomp(grPersono, fsPersono)
   if(model) :  model.add( res )
-  if res and res[0] != "green" : dbPersono.konf_esenco = False
+  if res and res[0] != "green" : konf_esenco = True
   res = NomojKomp(grPersono, fsPersono)
-  if model:
-    for linio in res:
+  for linio in res:
+    if linio[0] != "green" : konf_nomo = True
+    if model:
        model.add( linio)
-  if res and res[0][0] != "green" : dbPersono.konf_esenco = False
+  if res and res[0][0] != "green" : konf_esenco = True
 
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
-  if res and res[0] != "green" : dbPersono.konf_esenco = False
+  if res and res[0] != "green" : konf_esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BAPTISM , "http://gedcomx.org/Baptism")
+  if res and res[0][0] != "green" : konf_fakto = True
   if model and res: model.add(res)
   res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
-  if res and res[0] != "green" : dbPersono.konf_esenco = False
+  if res and res[0] != "green" : konf_esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BURIAL , "http://gedcomx.org/Burial")
+  if res and res[0][0] != "green" : konf_fakto = True
   if model and res: model.add(res)
 
   res = aldGepKomp(db, grPersono, fsPersono)
-  if model:
-    for linio in res:
+  konf_gepatro=False
+  for linio in res:
+    if linio[0] != "green" : konf_gepatro = True
+    if model:
        model.add( linio)
 
   res = aldEdzKomp(db, grPersono, fsPersono)
-  if model:
-    for linio in res:
+  for linio in res:
+    if linio[0] != "green" : konf_familio = True
+    if model:
        model.add( linio)
   res = aldAliajFaktojKomp(db, grPersono, fsPersono)
-  if model:
-    for linio in res:
+  for linio in res:
+    if linio[0] != "green" : konf_fakto = True
+    if model:
        model.add( linio)
 
-  print (dbPersono.konf_esenco)
+  print (konf_esenco)
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id
     r = PersonFS.PersonFS.fs_Tree._fs.head_url(
@@ -701,8 +706,6 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
                 )
     fsPersono._last_modified = time.mktime(email.utils.parsedate(r.headers['Last-Modified']))
     fsPersono._etag = r.headers['Etag']
-  #dbPersono.fs_datomod = fsPersono._last_modified
-  #dbPersono.gramps_datomod = grPersono.change
   with DbTxn(_("FamilySearch tags"), db) as txn:
     # FARINDAĴOJ : «tags»
     tag_esenco = db.get_tag_from_name('FS_Esenco')

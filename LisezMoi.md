@@ -33,13 +33,17 @@ Une fois ceci fait un nouvel onglet «FS» est ajouté.
 L'extension comporte 3 modules :
 * un module d'import
 * un gramplet de comparaison individu gramps vs individu FamilySearch. Il permet aussi de faire des recherches sur familysearch et de consulter les doublons potentiels trouvés par FamilySearch.
-* un outil de comparaison, qui va parcourir tous les individus et positionner les signets suivants : (en cours de développement)
-  * FS\_Synk : informations essentielles synchronisées (nom/prénom principal, dates de naissance et décès).
+* un outil de comparaison, qui va parcourir tous les individus et positionner les étiquettes suivantes : (en cours de développement)
+  * FS\_Identa : tout les éléments comparés sont synchrones
   * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
+  * FS\_Nomo : il y a un nom (autre que le principal) à synchroniser.
   * FS\_Gepatro : il y a un parent à synchroniser.
-  * FS\_Infano : il y a un enfant à synchroniser.
-  * FS\_Edzo : il y a un conjoint à synchroniser.
+  * FS\_Familio : il y a un conjoint ou un enfant à synchroniser.
   * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
+  * FS\_Dup : doublon potentiel détecté par FS
+  * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
+  * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
+  * FS\_Konf : dans le gramplet : synchro pas parfaite mais marquée conforme
 
 
 Le gramplet permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
