@@ -122,6 +122,8 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       print (paro)
       fsid = paro[2]
       fsPersono = None
+      datemod = None
+      etag = None
       if fsid in PersonFS.PersonFS.fs_Tree._persons:
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono or not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
@@ -130,12 +132,14 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
                     mendo 
                 )
         datemod = time.mktime(email.utils.parsedate(r.headers['Last-Modified']))
-        #fsPersono._etag = r.headers['Etag']
+        etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persons([fsid])
       fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
         continue
+      fsPersono._datemod = datemod
+      fsPersono._etag = etag
       grPersono = self.db.get_person_from_handle(paro[1])
       kompariFsGr(fsPersono,grPersono,self.db)
 
@@ -153,10 +157,8 @@ def SeksoKomp(grPersono, fsPersono ) :
   else :
     fsSekso = _trans.gettext("unknown")
   coloro = "orange"
-  fsPersono._konf_sekso = False
   if (grSekso == fsSekso) :
     coloro = "green"
-    fsPersono._konf_sekso = True
   return ( coloro , _('Sekso:')
 		, '', grSekso
 		, '', fsSekso
@@ -657,48 +659,51 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   fs_db.create_schema(db)
   dbPersono= fs_db.db_stato(db,grPersono.handle)
   dbPersono.get()
+  if (model == None and hasattr(fsPersono,'_datmod')
+      and dbPersono.stat_dato > fsPersono._datmod
+      and dbPersono.stat_dato > grPersono.change):
+    return
   dbPersono.fsid = fsPersono.id
-  konf_familio=konf_esenco=konf_nomo=konf_fakto=konf_gepatro=False
+  FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=False
   res = SeksoKomp(grPersono, fsPersono)
   if(model) :  model.add( res )
-  if res and res[0] != "green" : konf_esenco = True
+  if res and res[0] != "green" : FS_Esenco = True
   res = NomojKomp(grPersono, fsPersono)
   for linio in res:
-    if linio[0] != "green" : konf_nomo = True
+    if linio[0] != "green" : FS_Nomo = True
     if model:
        model.add( linio)
-  if res and res[0][0] != "green" : konf_esenco = True
+  if res and res[0][0] != "green" : FS_Esenco = True
 
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
-  if res and res[0] != "green" : konf_esenco = True
+  if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-  if res and res[0][0] != "green" : konf_fakto = True
+  if res and res[0][0] != "green" : FS_Fakto = True
   if model and res: model.add(res)
   res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
-  if res and res[0] != "green" : konf_esenco = True
+  if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BURIAL , "http://gedcomx.org/Burial")
-  if res and res[0][0] != "green" : konf_fakto = True
+  if res and res[0][0] != "green" : FS_Fakto = True
   if model and res: model.add(res)
 
   res = aldGepKomp(db, grPersono, fsPersono)
-  konf_gepatro=False
+  FS_Gepatro=False
   for linio in res:
-    if linio[0] != "green" : konf_gepatro = True
+    if linio[0] != "green" : FS_Gepatro = True
     if model:
        model.add( linio)
 
   res = aldEdzKomp(db, grPersono, fsPersono)
   for linio in res:
-    if linio[0] != "green" : konf_familio = True
+    if linio[0] != "green" : FS_Familio = True
     if model:
        model.add( linio)
   res = aldAliajFaktojKomp(db, grPersono, fsPersono)
   for linio in res:
-    if linio[0] != "green" : konf_fakto = True
+    if linio[0] != "green" : FS_Fakto = True
     if model:
        model.add( linio)
 
-  print (konf_esenco)
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id
     r = PersonFS.PersonFS.fs_Tree._fs.head_url(
@@ -706,14 +711,20 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
                 )
     fsPersono._last_modified = time.mktime(email.utils.parsedate(r.headers['Last-Modified']))
     fsPersono._etag = r.headers['Etag']
+  FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   with DbTxn(_("FamilySearch tags"), db) as txn:
-    # FARINDAĴOJ : «tags»
-    tag_esenco = db.get_tag_from_name('FS_Esenco')
-    if not dbPersono.konf_esenco and tag_esenco.handle in grPersono.tag_list:
-      grPersono.remove_tag(tag_esenco.handle)
-    if tag_esenco and dbPersono.konf_esenco and tag_esenco.handle not in grPersono.tag_list:
-      grPersono.add_tag(tag_esenco.handle)
+    # «tags»
+    for t in fs_db.stato_tags:
+      val = locals().get(t[0])
+      if val == None : continue
+      print("tag "+t[0]+" ; val="+str(val))
+      tag_fs = db.get_tag_from_name(t[0])
+      if not val and tag_fs.handle in grPersono.tag_list:
+        grPersono.remove_tag(tag_fs.handle)
+      if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
+        grPersono.add_tag(tag_fs.handle)
     db.commit_person(grPersono, txn)
+    dbPersono.stat_dato = time.time()
     dbPersono.commit(txn)
 
   # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …
