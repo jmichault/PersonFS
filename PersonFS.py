@@ -71,7 +71,7 @@ else:
 # lokaloj importadoj
 from constants import FACT_TAGS, FACT_TYPES
 import komparo
-from tree import Tree
+import tree
 from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
@@ -83,7 +83,6 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
-#_ = glocale.translation.gettext
 
 
 #-------------------------------------------------------------------------
@@ -107,7 +106,6 @@ class PersonFS(Gramplet):
   fs_sn = CONFIG.get("preferences.fs_sn")
   fs_pasvorto = ''
   fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
-  fs_Session = None
   fs_Tree = None
   fs_TreeSercxo = None
   Sercxi = None
@@ -124,7 +122,7 @@ class PersonFS(Gramplet):
       lingvo = 'fr'
 
   def aki_sesio():
-    if not PersonFS.fs_Session:
+    if not tree._FsSeanco:
       if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
         import locale, os
         self.top = Gtk.Builder()
@@ -153,17 +151,17 @@ class PersonFS(Gramplet):
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           #if self.vorteco >= 3:
-          #  PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
           #else :
-          PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         #if self.vorteco >= 3:
-        #  PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+        #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
         #else :
-        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
-    return PersonFS.fs_Session
+        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    return tree._FsSeanco
 
 
   def init(self):
@@ -183,14 +181,14 @@ class PersonFS(Gramplet):
       self.konekti_FS()
 
   def konekti_FS(self):
-    if not PersonFS.fs_Session:
+    if not tree._FsSeanco:
       print("konekti")
-      PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-      #PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
-    if not PersonFS.fs_Session.logged:
+      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+      #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    if not tree._FsSeanco.logged :
       return
     if not PersonFS.fs_Tree:
-      PersonFS.fs_Tree = Tree(PersonFS.fs_Session)
+      PersonFS.fs_Tree = tree.Tree()
       PersonFS.fs_Tree._getsources = False
 
   def krei_gui(self):
@@ -327,7 +325,7 @@ class PersonFS(Gramplet):
     peto = {'persons' : [gedcomx.jsonigi(fsPerso)]}
     jsonpeto = json.dumps(peto)
     print(jsonpeto)
-    res = self.fs_Tree._fs.post_url( "/platform/tree/persons", jsonpeto )
+    res = tree._FsSeanco.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
       with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
         fsid = res.headers['X-Entity-Id']
@@ -408,11 +406,11 @@ class PersonFS(Gramplet):
     grNomo = person.primary_name
 
     if not PersonFS.fs_TreeSercxo:
-      PersonFS.fs_TreeSercxo = Tree(PersonFS.fs_Session)
+      PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
-    r = self.fs_TreeSercxo._fs.get_url(
+    r = tree._FsSeanco.get_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
     if r.status_code == 200 :
@@ -472,16 +470,16 @@ class PersonFS(Gramplet):
 
   def ButLancxi_clicked(self, dummy):
     if not PersonFS.fs_TreeSercxo:
-      PersonFS.fs_TreeSercxo = Tree(PersonFS.fs_Session)
+      PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
     self.modelRes.clear()
     mendo = "/platform/tree/search?"
     grNomo = self.top.get_object("fs_nomo_eniro").get_text()
     if grNomo :
-      mendo = mendo + "q.surname=\"%s\"&" % grNomo
+      mendo = mendo + "q.surname=%s&" % grNomo
     grANomo = self.top.get_object("fs_anomo_eniro").get_text()
     if grANomo :
-      mendo = mendo + "q.givenName=\"%s\"&" % grANomo
+      mendo = mendo + "q.givenName=%s&" % grANomo
     sekso = self.top.get_object("fs_sekso_eniro").get_text()
     if sekso :
       mendo = mendo + "q.sex=%s&" % sekso
@@ -490,10 +488,10 @@ class PersonFS(Gramplet):
       mendo = mendo + "q.birthLikeDate=%s&" % birdo
     loko = self.top.get_object("fs_loko_eniro").get_text()
     if loko :
-      mendo = mendo + "q.anyPlace=\"%s\"&" % loko
+      mendo = mendo + "q.anyPlace=%s&" % loko
     mendo = mendo + "offset=0&count=10"
-    datumoj = self.fs_TreeSercxo._fs.get_jsonurl(
-                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+    datumoj = tree._FsSeanco.get_jsonurl(
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json"}
                 )
     if not datumoj :
       return
@@ -684,7 +682,7 @@ class PersonFS(Gramplet):
     self.FSID = fsid
 
     # Se ĝi ne estas konektita al familysearch: nenio pli.
-    if PersonFS.fs_Session == None or not PersonFS.fs_Session.logged:
+    if tree._FsSeanco == None or not tree._FsSeanco.logged:
       return
     #
     PersonFS.FSID = fsid

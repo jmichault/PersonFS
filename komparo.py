@@ -42,8 +42,8 @@ import gedcomx
 
 import PersonFS
 import fs_db
+import tree
 from constants import FACT_TAGS, FACT_TYPES
-from tree import Tree
 from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 class FSKomparoOpcionoj(MenuToolOptions):
@@ -97,7 +97,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
     if not PersonFS.PersonFS.fs_Tree:
-      PersonFS.PersonFS.fs_Tree = Tree(PersonFS.PersonFS.fs_Session)
+      PersonFS.PersonFS.fs_Tree = tree.Tree()
       PersonFS.PersonFS.fs_Tree._getsources = False
     self.db = self.dbstate.get_database()
     # krei datumbazan tabelon
@@ -128,10 +128,10 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono or not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
         mendo = "/platform/tree/persons/"+fsid
-        r = PersonFS.PersonFS.fs_Tree._fs.head_url(
+        r = tree._FsSeanco.head_url(
                     mendo 
                 )
-        datemod = time.mktime(email.utils.parsedate(r.headers['Last-Modified']))
+        datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
         etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persons([fsid])
       fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
@@ -706,10 +706,10 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
 
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id
-    r = PersonFS.PersonFS.fs_Tree._fs.head_url(
+    r = tree._FsSeanco.head_url(
                     mendo 
                 )
-    fsPersono._last_modified = time.mktime(email.utils.parsedate(r.headers['Last-Modified']))
+    fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
     fsPersono._etag = r.headers['Etag']
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   with DbTxn(_("FamilySearch tags"), db) as txn:
@@ -724,7 +724,12 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
         grPersono.add_tag(tag_fs.handle)
     db.commit_person(grPersono, txn)
-    dbPersono.stat_dato = time.time()
+    dbPersono.stat_dato = int(time.time())
+    if FS_Identa:
+      dbPersono.konf_dato = dbPersono.stat_dato
+    dbPersono.gramps_datomod = grPersono.change
+    dbPersono.fs_datomod = fsPersono._last_modified
+    dbPersono.konf_esenco = not FS_Esenco
     dbPersono.commit(txn)
 
   # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …

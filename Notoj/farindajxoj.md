@@ -16,15 +16,9 @@
     * doit être interruptible.
     * ne doit pas changer la date de dernière modification de l'individu.
   * étiquettes à renseigner :
-    * FS\_Identa : informations essentielles conformes (nom/prénom principal, dates de naissance et décès).
-    * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
-    * FS\_Nomo : il y a un nom à synchroniser (autre que le principal).
-    * FS\_Gepatro : il y a un parent à synchroniser.
-    * FS\_Infano : il y a un enfant à synchroniser.
-    * FS\_Familio : il y a un conjoint à synchroniser.
-    * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
     * FS\_Konf : dans le gramplet : synchro pas parfaite mais marquée conforme
     * FS\_Dup : doublon potentiel détecté par FS
+	à tester avec Jean Rousseau (G4Y1-1NV)
     * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
     * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
     * source à joindre.
@@ -39,6 +33,7 @@
   * bouton vers la fiche familysearch du doublon
   * bouton vers fusion dans familysearch
 * gramplet
+  * case à cocher pour marquer la fiche comme conforme.
   * bug : parents multiples pas bien gérés
   * gérer le changement de FSID à la suite d'une fusion dans FamilySearch
   * bien définir la signification des couleurs, ex. :
@@ -65,7 +60,7 @@
           ou mettre à jour les familles quand ré-import ?
 * gramplet :
   * faire des listes déroulantes.
-  * rafraichir : supprimer aussi les mariages avant de recharger.
+  * rafraichir : supprimer aussi les mariages dans l'arbre FS avant de recharger.
   * double clic sur la ligne d'une personne --> aller dessus
   * gestion des sources
   * gestion des notes

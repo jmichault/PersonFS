@@ -101,7 +101,6 @@ class db_stato:
       sql = "UPDATE personfs_stato set fsid=?, estas_radiko=? , stat_dato=?, konf_dato=?, gramps_datomod=?, fs_datomod=?, konf_esenco=?, konf=? where p_handle=? "
       self.db.dbapi.execute(sql, [ self.fsid, int(self.estas_radiko or 0), self.stat_dato, self.konf_dato, self.gramps_datomod, self.fs_datomod, int(self.konf_esenco or 0), int(self.konf or 0), self.p_handle] )
     else :
-      self.db_handle = person_handle
       sql = "INSERT INTO personfs_stato(p_handle,fsid,estas_radiko,stat_dato,konf_dato,gramps_datomod,fs_datomod,konf_esenco,konf) VALUES (?,?,?,?,?,?,?,?,?)"
       self.db.dbapi.execute(sql, [ self.p_handle, self.fsid, int(self.estas_radiko or 0), self.stat_dato, self.konf_dato, self.gramps_datomod, self.fs_datomod, int(self.konf_esenco or 0), int(self.konf or 0) ] )
 

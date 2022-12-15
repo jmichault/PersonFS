@@ -52,7 +52,7 @@ else:
 
 from PersonFS import PersonFS, CONFIG
 from constants import FACT_TAGS
-from tree import Tree
+import tree
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -165,7 +165,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     if not PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))
       return
-    #if not PersonFS.fs_Session:
+    #if not tree._FsSeanco:
     #  if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
     #    import locale, os
     #    self.top = Gtk.Builder()
@@ -194,20 +194,20 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     #      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
     #      CONFIG.save()
     #      if self.vorteco >= 3:
-    #        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
     #      else :
-    #        PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     #    else :
     #      print("Vi devas enigi la ID kaj pasvorton")
     #  else:
     #    if self.vorteco >= 3:
-    #      PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
     #    else :
-    #      PersonFS.fs_Session = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     print("importo")
     if self.fs_TreeImp:
       del self.fs_TreeImp
-    self.fs_TreeImp = Tree(PersonFS.fs_Session)
+    self.fs_TreeImp = tree.Tree()
     # Legi la personojn en «FamilySearch».
     progress.set_pass(_('Elŝutante personojn… (2/9)'), mode= ProgressMeter.MODE_ACTIVITY)
     print(_("Elŝutante personon…"))
@@ -250,11 +250,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     print(_("Elŝutante notojn…"))
     for fsPersono in self.fs_TreeImp.persons :
       progress.step()
-      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/notes" % fsPersono.id)
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/notes" % fsPersono.id)
       gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
-      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/sources" % fsPersono.id)
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/sources" % fsPersono.id)
       gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
-      datumoj = PersonFS.fs_Session.get_jsonurl("/platform/tree/persons/%s/memories" % fsPersono.id)
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/memories" % fsPersono.id)
       gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
     #for fsFam in self.fs_TreeImp._fam.values() :
     #  fsFam.get_notes()
