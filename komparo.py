@@ -22,12 +22,15 @@
 import email.utils
 import time
 
-from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gen.plug.menu import FilterOption, TextOption, NumberOption, BooleanOption
 from gramps.gen.db import DbTxn
-from gramps.gui.dialog import OkDialog, WarningDialog
+from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.filters import CustomFilters, GenericFilterFactory, rules
-from gramps.gen.lib import EventRoleType, EventType, Person
+from gramps.gen.lib import Date, EventRoleType, EventType, Person
+
+from gramps.gui.dialog import OkDialog, WarningDialog
+from gramps.gui.plug import MenuToolOptions, PluginWindows
+from gramps.gui.utils import ProgressMeter
 
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
 
@@ -43,8 +46,8 @@ import gedcomx
 import PersonFS
 import fs_db
 import tree
+import utila
 from constants import FACT_TAGS, FACT_TYPES
-from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 class FSKomparoOpcionoj(MenuToolOptions):
 
@@ -96,31 +99,59 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
+    progress = ProgressMeter(_("FamilySearch : Komparo"), _('Starting'),
+                   can_cancel=True, parent=self.uistate.window)
+    self.uistate.set_busy_cursor(True)
+    self.dbstate.db.disable_signals()
     if not PersonFS.PersonFS.fs_Tree:
       PersonFS.PersonFS.fs_Tree = tree.Tree()
       PersonFS.PersonFS.fs_Tree._getsources = False
     self.db = self.dbstate.get_database()
     # krei datumbazan tabelon
     fs_db.create_schema(self.db)
+    # krei la ordigitan liston de personoj por procesi
     filter_ = self.options.menu.get_option_by_name('Person').get_filter()
+    tagoj = self.options.menu.get_option_by_name('gui_tagoj').get_value()
+    maks_dato = int(time.time()) - tagoj*24*3600
     self.plist = set(filter_.apply(self.db, self.db.iter_person_handles()))
     pOrdList = list()
+    progress.set_pass(_('Konstruante la ordigitan liston (1/2)'), len(self.plist))
+    print("liste filtrée : "+str(len(self.plist)))
     for handle in self.plist:
+      if progress.get_cancelled() :
+        self.uistate.set_busy_cursor(False)
+        progress.close()
+        self.dbstate.db.enable_signals()
+        self.dbstate.db.request_rebuild()
+        return
+      progress.step()
       person = self.db.get_person_from_handle(handle)
-      fsid = getfsid(person)
+      fsid = utila.getfsid(person)
       if(fsid == ''): continue
       self.db.dbapi.execute("select stat_dato from personfs_stato where p_handle=?",[handle])
       datumoj = self.db.dbapi.fetchone()
-      if datumoj and datumoj[0]:
-        pOrdList.append([datumoj[0],handle,fsid])
+      if datumoj and datumoj[0] :
+        if datumoj[0] < maks_dato :
+          pOrdList.append([datumoj[0],handle,fsid])
       else:
         pOrdList.append([0,handle,fsid])
     def akiUnua(ero):
       return ero[0]
     pOrdList.sort(key=akiUnua)
+    # procesi
+    progress.set_pass(_('Procesante la liston (2/2)'), len(pOrdList))
+    print("liste triée : "+str(len(pOrdList)))
     for paro in pOrdList:
-      print (paro)
+      if progress.get_cancelled() :
+        self.uistate.set_busy_cursor(False)
+        progress.close()
+        self.dbstate.db.enable_signals()
+        self.dbstate.db.request_rebuild()
+        return
+      progress.step()
+      grPersono = self.db.get_person_from_handle(paro[1])
       fsid = paro[2]
+      print("traitement "+grPersono.gramps_id+' '+fsid)
       fsPersono = None
       datemod = None
       etag = None
@@ -128,9 +159,13 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono or not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
         mendo = "/platform/tree/persons/"+fsid
-        r = tree._FsSeanco.head_url(
-                    mendo 
-                )
+        r = tree._FsSeanco.head_url( mendo )
+        if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+          fsid = r.headers['X-Entity-Forwarded-Id']
+          utila.ligi_gr_fs(db, grPersono, fsid)
+          fsPersono.id = fsid
+          mendo = "/platform/tree/persons/"+fsPersono.id
+          r = tree._FsSeanco.head_url( mendo )
         datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
         etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persons([fsid])
@@ -140,8 +175,11 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         continue
       fsPersono._datemod = datemod
       fsPersono._etag = etag
-      grPersono = self.db.get_person_from_handle(paro[1])
       kompariFsGr(fsPersono,grPersono,self.db)
+    self.uistate.set_busy_cursor(False)
+    progress.close()
+    self.dbstate.db.enable_signals()
+    self.dbstate.db.request_rebuild()
 
 def SeksoKomp(grPersono, fsPersono ) :
   if grPersono.get_gender() == Person.MALE :
@@ -165,10 +203,10 @@ def SeksoKomp(grPersono, fsPersono ) :
 		) 
 
 def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
-  grFakto = get_grevent(db, person, EventType(grEvent))
+  grFakto = utila.get_grevent(db, person, EventType(grEvent))
   titolo = str(EventType(grEvent))
   if grFakto != None :
-    grFaktoDato = grdato_al_formal(grFakto.date)
+    grFaktoDato = utila.grdato_al_formal(grFakto.date)
     if grFakto.place and grFakto.place != None :
       place = db.get_place_from_handle(grFakto.place)
       grFaktoLoko = place.name.value
@@ -179,7 +217,7 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
     grFaktoLoko = ''
   # FARINDAĴO : norma loknomo
 
-  fsFakto = get_fsfact (fsPerso, fsFact )
+  fsFakto = utila.get_fsfact (fsPerso, fsFact )
   fsFaktoDato = ''
   fsFaktoLoko = ''
   if fsFakto and fsFakto.date :
@@ -196,8 +234,8 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
 		, fsFaktoDato , fsFaktoLoko
 		)
 
-def NomojKomp(person, fsPerso ) :
-    grNomo = person.primary_name
+def NomojKomp(grPersono, fsPerso ) :
+    grNomo = grPersono.primary_name
     fsNomo = fsPerso.akPrefNomo()
     coloro = "orange"
     if (grNomo.get_primary_surname().surname == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
@@ -208,8 +246,8 @@ def NomojKomp(person, fsPerso ) :
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
 		))
     fsNomoj = fsPerso.names.copy()
-    fsNomoj.remove(fsNomo)
-    for grNomo in person.alternate_names :
+    if fsNomo and fsNomo in fsNomoj: fsNomoj.remove(fsNomo)
+    for grNomo in grPersono.alternate_names :
       fsNomo = gedcomx.Name()
       coloro = "yellow"
       for x in fsNomoj :
@@ -218,7 +256,6 @@ def NomojKomp(person, fsPerso ) :
           coloro = "green"
           fsNomoj.remove(x)
           break
-      if coloro != "green" : res = False
       res.append (( coloro , '  ' + _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
@@ -232,10 +269,10 @@ def NomojKomp(person, fsPerso ) :
 		))
     return res
 
-def grperso_datoj (db, person) :
-  if not person:
+def grperso_datoj (db, grPersono) :
+  if not grPersono:
     return ''
-  grBirth = get_grevent(db, person, EventType(EventType.BIRTH))
+  grBirth = utila.get_grevent(db, grPersono, EventType(EventType.BIRTH))
   if grBirth :
     if grBirth.date.modifier == Date.MOD_ABOUT :
       res = '~'
@@ -252,7 +289,7 @@ def grperso_datoj (db, person) :
       res = res + val + '-'
   else :
     res = ' ....-'
-  grDeath = get_grevent(db, person, EventType(EventType.DEATH))
+  grDeath = utila.get_grevent(db, grPersono, EventType(EventType.DEATH))
   if grDeath :
     if grDeath.date.modifier == Date.MOD_ABOUT :
       res = res + '~'
@@ -272,7 +309,7 @@ def grperso_datoj (db, person) :
 def fsperso_datoj (db, fsPerso) :
   if not fsPerso:
     return ''
-  fsFakto = get_fsfact (fsPerso, 'http://gedcomx.org/Birth' )
+  fsFakto = utila.get_fsfact (fsPerso, 'http://gedcomx.org/Birth' )
   if fsFakto and fsFakto.date and fsFakto.date.formal :
     if fsFakto.date.formal.proksimuma :
       res = '~'
@@ -286,7 +323,7 @@ def fsperso_datoj (db, fsPerso) :
     res = res+'-'
   else :
     res = ' ....-'
-  fsFakto = get_fsfact (fsPerso, 'http://gedcomx.org/Death' )
+  fsFakto = utila.get_fsfact (fsPerso, 'http://gedcomx.org/Death' )
   if fsFakto and fsFakto.date and fsFakto.date.formal:
     if fsFakto.date.formal.proksimuma:
       res = res + '~'
@@ -359,8 +396,8 @@ def aldGepKomp(db, grPersono, fsPersono ) :
     fsMother = None
     fs_father_name = ''
     fs_mother_name = ''
-  fatherFsid = getfsid(father)
-  motherFsid = getfsid(mother)
+  fatherFsid = utila.getfsid(father)
+  motherFsid = utila.getfsid(mother)
   coloro = "orange"
   if (fatherFsid == fsfather_id) :
     coloro = "green"
@@ -377,28 +414,28 @@ def aldGepKomp(db, grPersono, fsPersono ) :
 		) )
   return res
 
-def aldEdzKomp(db, person, fsPerso) :
+def aldEdzKomp(db, grPersono, fsPerso) :
   """
   " aldonas edzan komparon
   """
-  grFamilioj = person.get_family_handle_list()
+  grFamilioj = grPersono.get_family_handle_list()
   fsEdzoj = fsPerso._paroj.copy()
   fsInfanoj = fsPerso._infanojCP.copy()
   fsid = fsPerso.id
   res = list()
   
-  for family_handle in person.get_family_handle_list():
+  for family_handle in grPersono.get_family_handle_list():
     family = db.get_family_from_handle(family_handle)
     if family :
       edzo_handle = family.mother_handle
-      if edzo_handle == person.handle :
+      if edzo_handle == grPersono.handle :
         edzo_handle = family.father_handle
       if edzo_handle :
         edzo = db.get_person_from_handle(edzo_handle)
       else :
         edzo = Person()
       edzoNomo = edzo.primary_name
-      edzoFsid = getfsid(edzo)
+      edzoFsid = utila.getfsid(edzo)
       fsEdzoId = ''
       fsEdzTrio = None
       for paro in fsEdzoj :
@@ -430,7 +467,7 @@ def aldEdzKomp(db, person, fsPerso) :
           event = db.get_event_from_handle(eventref.ref)
           titolo = str(EventType(event.type))
           grFaktoPriskribo = event.description or ''
-          grFaktoDato = grdato_al_formal(event.date)
+          grFaktoDato = utila.grdato_al_formal(event.date)
           if event.place and event.place != None :
             place = db.get_place_from_handle(event.place)
             grFaktoLoko = place.name.value
@@ -488,12 +525,13 @@ def aldEdzKomp(db, person, fsPerso) :
       for child_ref in family.get_child_ref_list():
         infano = db.get_person_from_handle(child_ref.ref)
         infanoNomo = infano.primary_name
-        infanoFsid = getfsid(infano)
+        infanoFsid = utila.getfsid(infano)
         fsInfanoId = ''
         for triopo in fsInfanoj :
-          if (  (  (triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
-                  or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))
-               and triopo.child.resourceId == infanoFsid ) :
+          if ( (triopo.parent1 and triopo.parent2)
+               and  (( triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
+                     or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))
+               and (triopo.child and triopo.child.resourceId == infanoFsid) ) :
             fsInfanoId = infanoFsid
             fsInfanoj.remove(triopo)
             break
@@ -508,8 +546,9 @@ def aldEdzKomp(db, person, fsPerso) :
            ) )
       toRemove=set()
       for triopo in fsInfanoj :
-        if (  (triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
-              or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId )) :
+        if ( (triopo.parent1 and triopo.parent2)
+             and ( (triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
+                    or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))) :
             fsInfanoId = triopo.child.resourceId
             coloro = "orange"
             fsInfano = PersonFS.PersonFS.fs_Tree._persons.get(fsInfanoId)
@@ -581,7 +620,7 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       continue
     titolo = str(EventType(event.type))
     grFaktoPriskribo = event.description or ''
-    grFaktoDato = grdato_al_formal(event.date)
+    grFaktoDato = utila.grdato_al_formal(event.date)
     if event.place and event.place != None :
       place = db.get_place_from_handle(event.place)
       grFaktoLoko = place.name.value
@@ -656,7 +695,6 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
   return res
 
 def kompariFsGr(fsPersono,grPersono,db,model=None):
-  fs_db.create_schema(db)
   dbPersono= fs_db.db_stato(db,grPersono.handle)
   dbPersono.get()
   if (model == None and hasattr(fsPersono,'_datmod')
@@ -706,24 +744,38 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
 
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id
-    r = tree._FsSeanco.head_url(
-                    mendo 
-                )
-    fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+    r = tree._FsSeanco.head_url( mendo )
+    if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+      fsid = r.headers['X-Entity-Forwarded-Id']
+      utila.ligi_gr_fs(db, grPersono, fsid)
+      fsPersono.id = fsid
+      mendo = "/platform/tree/persons/"+fsPersono.id
+      r = tree._FsSeanco.head_url( mendo )
+    if 'Last-Modified' in r.headers :
+      fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
     fsPersono._etag = r.headers['Etag']
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
+  # Serĉi ĉu FamilySearch ofertas duplonojn
+  mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
+  r = tree._FsSeanco.head_url(
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+                )
+  if r.status_code == 200 :
+    FS_Dup = True
+  else :
+    FS_Dup = False
+  
   with DbTxn(_("FamilySearch tags"), db) as txn:
     # «tags»
     for t in fs_db.stato_tags:
       val = locals().get(t[0])
       if val == None : continue
-      print("tag "+t[0]+" ; val="+str(val))
       tag_fs = db.get_tag_from_name(t[0])
       if not val and tag_fs.handle in grPersono.tag_list:
         grPersono.remove_tag(tag_fs.handle)
       if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
         grPersono.add_tag(tag_fs.handle)
-    db.commit_person(grPersono, txn)
+    db.commit_person(grPersono, txn, grPersono.change)
     dbPersono.stat_dato = int(time.time())
     if FS_Identa:
       dbPersono.konf_dato = dbPersono.stat_dato

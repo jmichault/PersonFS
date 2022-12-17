@@ -15,11 +15,15 @@
             <property name="can-focus">False</property>
             <property name="layout-style">end</property>
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="yes">button</property>
+              <object class="GtkLinkButton" id="LinkoButonoDup">
+                <property name="label" translatable="yes">xxxx-xxx</property>
+                <property name="width-request">100</property>
+                <property name="height-request">30</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="relief">none</property>
+                <property name="uri">https://familysearch.org</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -28,11 +32,15 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton">
-                <property name="label" translatable="yes">button</property>
+              <object class="GtkLinkButton" id="LinkoButonoKunfando">
+                <property name="label" translatable="yes">………</property>
+                <property name="width-request">100</property>
+                <property name="height-request">30</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
+                <property name="relief">none</property>
+                <property name="uri">https://familysearch.org</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -777,7 +785,18 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkCheckButton" id="ButBaskKonf">
+                <property name="label" translatable="yes">markita kiel konforma</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">False</property>
+                <property name="draw-indicator">True</property>
+                <signal name="toggled" handler="on_ButBaskKonf_toggled" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">5</property>
+                <property name="top-attach">1</property>
+              </packing>
             </child>
             <child>
               <placeholder/>

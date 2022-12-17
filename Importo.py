@@ -143,7 +143,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     self.__get_menu_options()
     print("import ID :"+self.FS_ID)
-    # FARINDAĴO : Progresa stango
+    # Progresa stango
     progress = ProgressMeter(_("FamilySearch Importo"), _('Starting'),
                                       parent=self.uistate.window)
     self.uistate.set_busy_cursor(True)

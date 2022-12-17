@@ -44,7 +44,7 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Attribute, Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
+from gramps.gen.lib import Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
@@ -70,8 +70,10 @@ else:
 
 # lokaloj importadoj
 from constants import FACT_TAGS, FACT_TYPES
+import fs_db
 import komparo
 import tree
+import utila
 from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
@@ -224,9 +226,27 @@ class PersonFS(Gramplet):
             "on_ButLigi_clicked"      : self.ButLigi_clicked,
             "on_ButRefresxigi_clicked"      : self.ButRefresxigi_clicked,
             "on_ButImporti_clicked"      : self.ButImporti_clicked,
+            "on_ButBaskKonf_toggled"      : self.ButBaskKonf_toggled,
 	})
 
     return self.res
+
+  def ButBaskKonf_toggled(self, dummy):
+   with DbTxn(_("FamilySearch tags"), self.dbstate.db) as txn:
+    val = self.top.get_object("ButBaskKonf").get_active()
+    print ("checkbox active : "+str(val))
+    tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
+    active_handle = self.get_active('Person')
+    grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+    dbPersono= fs_db.db_stato(self.dbstate.db,grPersono.handle)
+    dbPersono.get()
+    dbPersono.konf = val
+    dbPersono.commit(txn)
+    if not val and tag_fs.handle in grPersono.tag_list:
+      grPersono.remove_tag(tag_fs.handle)
+    if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
+      grPersono.add_tag(tag_fs.handle)
+    self.dbstate.db.commit_person(grPersono, txn, grPersono.change)
 
   def ButRefresxigi_clicked(self, dummy):
     rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
@@ -327,15 +347,10 @@ class PersonFS(Gramplet):
     print(jsonpeto)
     res = tree._FsSeanco.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
-      with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
-        fsid = res.headers['X-Entity-Id']
-        attr = Attribute()
-        attr.set_type('_FSFTID')
-        attr.set_value(fsid)
-        person.add_attribute(attr)
-        self.dbstate.db.commit_person(person,txn)
-        self.FSID = fsid
-        self.ButRefresxigi_clicked(self,None)
+      fsid = res.headers['X-Entity-Id']
+      utila.ligi_gr_fs(self.dbstate.db, person, fsid)
+      self.FSID = fsid
+      self.ButRefresxigi_clicked(self,None)
     else :
       print (res.headers)
       #from objbrowser import browse ;browse(locals())
@@ -349,21 +364,8 @@ class PersonFS(Gramplet):
       fsid = model.get_value(iter_, 1)
       #print(fsid)
       active_handle = self.get_active('Person')
-      person = self.dbstate.db.get_person_from_handle(active_handle)
-      attr = None
-      with DbTxn(_("Aldoni FamilySearch ID"), self.dbstate.db) as txn:
-        for attr in person.get_attribute_list():
-          if attr.get_type() == '_FSFTID':
-            attr.set_value(fsid)
-            # FARINDAĴO : mesaĝo
-            # ou lancement du lien vers la fusion dans familysearch ?
-            break
-        if not attr :
-          attr = Attribute()
-          attr.set_type('_FSFTID')
-          attr.set_value(fsid)
-          person.add_attribute(attr)
-        self.dbstate.db.commit_person(person,txn)
+      grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+      utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
       ButRefresxigi_clicked(self,None)
       self.Sercxi.hide()
     return
@@ -381,6 +383,21 @@ class PersonFS(Gramplet):
       self.top.get_object("LinkoButonoSercxi").set_uri('https://familysearch.org/')
 
   def SerDupCxangxo(self, dummy):
+    model, iter_ = self.top.get_object("PersonFSDupRes").get_selection().get_selected()
+    if iter_ :
+      fsid = model.get_value(iter_, 1)
+      #print(fsid)
+      self.top.get_object("LinkoButonoDup").set_label(fsid)
+      lien = 'https://familysearch.org/tree/person/' + fsid
+      self.top.get_object("LinkoButonoDup").set_uri(lien)
+      self.top.get_object("LinkoButonoKunfando").set_label(self.FSID+'+'+fsid)
+      lien = 'https://familysearch.org/tree/person/merge/verify/' +self.FSID+'/'  + fsid
+      self.top.get_object("LinkoButonoKunfando").set_uri(lien)
+    else :
+      self.top.get_object("LinkoButonoDup").set_label('xxxx-xxx')
+      self.top.get_object("LinkoButonoDup").set_uri('https://familysearch.org/')
+      self.top.get_object("LinkoButonoKunfando").set_label('………')
+      self.top.get_object("LinkoButonoKunfando").set_uri('https://familysearch.org/')
     return
 
   def ButDup_clicked(self, dummy):
@@ -666,8 +683,14 @@ class PersonFS(Gramplet):
     " Komparas gramps kaj FamilySearch
     """
     self.FSID = None
-    person = self.dbstate.db.get_person_from_handle(person_handle)
-    fsid = getfsid(person)
+    grPersono = self.dbstate.db.get_person_from_handle(person_handle)
+    tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
+    if tag_fs.handle in grPersono.tag_list :
+      self.top.get_object("ButBaskKonf").set_active(True)
+    else :
+      self.top.get_object("ButBaskKonf").set_active(False)
+      
+    fsid = getfsid(grPersono)
     if fsid == '' :
       fsid = 'xxxx-xxx'
     self.top.get_object("LinkoButono").set_label(fsid)
@@ -688,12 +711,27 @@ class PersonFS(Gramplet):
     PersonFS.FSID = fsid
     # ŝarĝante individuan "FamilySearch" :
     PersonFS.fs_Tree.add_persons([fsid])
-    fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()
+    fsPerso = gedcomx.Person._indekso.get(fsid) 
+    if not fsPerso :
+      mendo = "/platform/tree/persons/"+fsid
+      r = tree._FsSeanco.head_url( mendo )
+      if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+        fsid = r.headers['X-Entity-Forwarded-Id']
+        PersonFS.FSID = fsid
+        utila.ligi_gr_fs(db, grPersono, fsid)
+        mendo = "/platform/tree/persons/"+fsid
+        r = tree._FsSeanco.head_url( mendo )
+      datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+      etag = r.headers['Etag']
+      PersonFS.fs_Tree.add_persons([fsid])
+      fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()
+
     if getfs == True :
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
     
-    komparo.kompariFsGr(fsPerso, person, self.dbstate.db, self.modelKomp)
+    fs_db.create_schema(db)
+    komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
 
 
     return

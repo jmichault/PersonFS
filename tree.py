@@ -61,9 +61,14 @@ class Tree(gedcomx.Gedcomx):
         """
         new_fids = [fid for fid in fids if fid and fid not in gedcomx.Person._indekso]
         while new_fids:
-            data = _FsSeanco.get_jsonurl(
+            if len(new_fids) ==1:
+              data = _FsSeanco.get_jsonurl(
+                "/platform/tree/persons/" + new_fids[0]
+              )
+            else:
+              data = _FsSeanco.get_jsonurl(
                 "/platform/tree/persons?pids=" + ",".join(new_fids[:MAX_PERSONS])
-            )
+              )
             if data:
               gedcomx.maljsonigi(self,data)
             new_fids = new_fids[MAX_PERSONS:]
