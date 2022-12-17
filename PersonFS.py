@@ -30,7 +30,7 @@ import json
 # GTK modules
 #
 #-------------------------------------------------------------------------
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 
 #------------------------------------------------------------------------
 #
@@ -238,14 +238,14 @@ class PersonFS(Gramplet):
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
-    dbPersono= fs_db.db_stato(self.dbstate.db,grPersono.handle)
-    dbPersono.get()
-    dbPersono.konf = val
-    dbPersono.commit(txn)
     if not val and tag_fs.handle in grPersono.tag_list:
       grPersono.remove_tag(tag_fs.handle)
     if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
       grPersono.add_tag(tag_fs.handle)
+      dbPersono= fs_db.db_stato(self.dbstate.db,grPersono.handle)
+      dbPersono.get()
+      dbPersono.konf = val
+      dbPersono.commit(txn)
     self.dbstate.db.commit_person(grPersono, txn, grPersono.change)
 
   def ButRefresxigi_clicked(self, dummy):
@@ -350,7 +350,7 @@ class PersonFS(Gramplet):
       fsid = res.headers['X-Entity-Id']
       utila.ligi_gr_fs(self.dbstate.db, person, fsid)
       self.FSID = fsid
-      self.ButRefresxigi_clicked(self,None)
+      self.ButRefresxigi_clicked(None)
     else :
       print (res.headers)
       #from objbrowser import browse ;browse(locals())
@@ -366,7 +366,7 @@ class PersonFS(Gramplet):
       active_handle = self.get_active('Person')
       grPersono = self.dbstate.db.get_person_from_handle(active_handle)
       utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
-      ButRefresxigi_clicked(self,None)
+      self.ButRefresxigi_clicked(None)
       self.Sercxi.hide()
     return
 
@@ -730,8 +730,24 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
     
-    fs_db.create_schema(db)
-    komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
+    fs_db.create_schema(self.dbstate.db)
+    kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
+    print(kompRet)
+    box1 = self.top.get_object("Box1")
+    if ('FS_Esenco' in kompRet) :
+      box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+    else:
+      box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+    box2 = self.top.get_object("Box2")
+    if ('FS_Gepatro' in kompRet) or ('FS_Familio' in kompRet) :
+      box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+    else:
+      box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+    box3 = self.top.get_object("Box3")
+    if ('FS_Fakto' in kompRet) :
+      box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+    else:
+      box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
 
 
     return

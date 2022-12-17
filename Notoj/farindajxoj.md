@@ -1,41 +1,20 @@
 
 * note : menus contextuels sur grid : voir gramplet descendants
-* note : fsid fusionné : GZKW-DLY,GJ7P-84L, fsid avec doublons : G4Y1-1NV
-        fsid George Washington : KNDX-MKG
+* note : fsid fusionné : GZKW-DLY,GJ7P-84L; fsid avec doublons : G4Y1-1NV
+        ; fsid George Washington : KNDX-MKG
+	; fsid avec parents multiples : 9CSJ-L2D
 
 # à faire pour version 1.1
 
 ## prioritaires
-* gestion de la synchronisation
-  * prendre en compte le forçage.
-  * étiquettes à renseigner :
-    * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionnée, ou que tout était conforme (étiquette FS\_Identa et aucune autre)
-    * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionnée, ou que tout était conforme (étiquette FS\_Identa et aucune autre)
-    * FS\_Konf : effacer si discordance et modification depuis la dernière fois que l'étiquette FS\_Konf a été positionnée.
-* gramplet
-  * affichage de l'état, exemple :
-    * 1e ligne = état des renseignements essentiels (nom, prénom, sexe, naissance, décès)
-    * 2e ligne = état des liens familiaux (parents, conjoints, enfants)
-    * 3e ligne = état des évènements
-    * 4e ligne = état des sources et notes
-    * 5e ligne ? état des autres renseignements (portrait, médias, …)
-  * bug : parents multiples pas bien gérés
-  * bien définir la signification des couleurs, ex. :
-    * vert : tout bon
-    * vert jaune : essentiel bon, différences non essentielles
-    * rouge : renseignement essentiel présent des 2 cotés, mais discordance sur l'essentiel
-    * orange : présent des 2 cotés, mais discordance sur l'essentiel
-    * jaune : présent que dans gramps
-    * jaune 3 : présent que dans FS.
-  * mettre la bonne couleur partout
-* import :
-  * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
-* traduction en français.
+* bug : dans la comparaison : parfois père = la personne elle-même
 ## facultatifs
+* bug : parents multiples pas bien gérés
 * priorité sur les tags ?
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 * import :
+  * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
   * cocher par défaut «Ne pas réimporter les personnes existantes»
   * option pour ne pas importer les notes
   * option pour ne pas importer les sources
@@ -45,6 +24,8 @@
           --> on n'importe pas si l'un des conjoints manque.
           ou mettre à jour les familles quand ré-import ?
 * gramplet :
+  * comparer les lieux.
+  * couleur vert jaune : essentiel bon, différences non essentielles(ex. : date de naissance OK, lieux différents)
   * création dans FS : lier aux parents et aux enfants qui existent dans FS
   * faire des listes déroulantes.
   * rafraichir : supprimer aussi les mariages dans l'arbre FS avant de recharger.

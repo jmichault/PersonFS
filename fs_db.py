@@ -56,7 +56,7 @@ stato_tags = (
 
 def create_schema(db):
   # krei datumbazan tabelon
-  with DbTxn(_("FamilySearch krei"), db) as txn:
+  with DbTxn(_("FamilySearch : krei datumbazan tabelon"), db) as txn:
     if not db.dbapi.table_exists("personfs_stato"):
       db.dbapi.execute('CREATE TABLE personfs_stato '
                          '('

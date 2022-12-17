@@ -2,10 +2,11 @@
 
 Ceci est un module pour interfacer _gramps_ avec _familysearch.com_.
 il se compose de :
-* un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_.
+* un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_. Il permet aussi de faire des recherches sur familysearch et de consulter les doublons potentiels trouvés par FamilySearch.
 * un module d'import accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «Import de données FamilySearch»
+* un module de comparaison accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «FamilySearch : comparer»
 
-Pour pouvoir utiliser le gramplet il vous faut un compte _familysearch_, celui-ci sera demandé au lancement du gramplet, ainsi que le mot de passe associé.
+Pour pouvoir utiliser le module il vous faut un compte _familysearch_, celui-ci sera demandé au lancement du gramplet, ainsi que le mot de passe associé.
 
 # installation
 ## prérequis
@@ -24,27 +25,13 @@ cd ~/.gramps/gramps51/plugins
 git clone https://github.com/jmichault/PersonFS.git
 ```
 (note : à adapter si gramps n'est pas en version 5.1)
+
 # le gramplet
 ## activation
 En étant positionné sur le panneau des Individus, cliquez sur le menu déroulant à droite des onglets (petit bouton «v») et choisissez «Ajouter un Gramplet», puis «FS».  
-Une fois ceci fait un nouvel onglet «FS» est ajouté.
+Une fois ceci fait, un nouvel onglet «FS» est ajouté.
 
 ## utilisation
-L'extension comporte 3 modules :
-* un module d'import
-* un gramplet de comparaison individu gramps vs individu FamilySearch. Il permet aussi de faire des recherches sur familysearch et de consulter les doublons potentiels trouvés par FamilySearch.
-* un outil de comparaison, qui va parcourir tous les individus et positionner les étiquettes suivantes : (en cours de développement)
-  * FS\_Identa : tout les éléments comparés sont synchrones
-  * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
-  * FS\_Nomo : il y a un nom (autre que le principal) à synchroniser.
-  * FS\_Gepatro : il y a un parent à synchroniser.
-  * FS\_Familio : il y a un conjoint ou un enfant à synchroniser.
-  * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
-  * FS\_Dup : doublon potentiel détecté par FS
-  * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
-  * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
-  * FS\_Konf : dans le gramplet : synchro pas parfaite mais marquée conforme
-
 
 Le gramplet permet de comparer la fiche de votre personne gramps avec celle de familysearch pour les informations suivantes :  
 * nom/prénom principal
@@ -59,8 +46,10 @@ Le gramplet permet de comparer la fiche de votre personne gramps avec celle de f
 
 La première colonne permet de visualiser rapidement quelles données ne sont pas en phase :
 * vert = en phase (attention : pour les personnes seuls les identifiants familysearch sont vérifiés, pour les dates/lieux, seules les dates sont vérifiées)
+* rouge : renseignement essentiel discordant. (renseignements essentiels = nom/prénom principal, sexe, dates de naissance et de décès)
 * orange : présent des deux côtés, mais pas en phase.
-* jaune : présent d'un seul côté.
+* jaune : présent que dans gramps.
+* jaune sombre : présent que dans FamilySearch.
 
 Note : le lien avec _familysearch_ se fait grâce à un attribut de clé _«\_FSFTID»_ et ayant pour valeur le N° d'identification _familysearch_.  
 
@@ -86,12 +75,25 @@ Vous avez juste à renseigner :
 
 Puis cliquez sur le bouton «Importer»
 
+# le module de comparaison
+* cet outil va parcourir tous les individus et positionner les étiquettes suivantes :
+  * FS\_Identa : tous les éléments comparés sont synchrones
+  * FS\_Esenco : il y a une information essentielle à synchroniser (nom/prénom principal, dates de naissance et décès).
+  * FS\_Nomo : il y a un nom (autre que le principal) à synchroniser.
+  * FS\_Gepatro : il y a un parent à synchroniser.
+  * FS\_Familio : il y a un conjoint ou un enfant à synchroniser.
+  * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
+  * FS\_Dup : doublon potentiel détecté par FS
+  * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
+  * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
+* de plus l'étiquette FS\_Konf peut être positionnée depuis le gramplet : synchro pas parfaite mais marquée conforme.
+
+
 # méthode de travail suggérée.
 
 ## Créez des filtres
 1. créez un filtre : «ascendants»
 2. créez un filtre : «ascendants avec parent non synchronisé».
-3. créez un filtre : «ascendants avec parent non synchronisé».
 
 ## démarrage
 1. activez le gramplet sur la vue Individus
@@ -104,3 +106,4 @@ Puis cliquez sur le bouton «Importer»
 ## régulièrement
 1. filtrez les «ascendants avec parent non synchronisé»
   * synchronisez les parents
+
