@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-12 17:32+0100\n"
-"PO-Revision-Date: 2022-11-12 17:34+0100\n"
+"POT-Creation-Date: 2022-12-17 22:29+0100\n"
+"PO-Revision-Date: 2022-12-17 23:01+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -18,95 +18,269 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 2.4.2\n"
 
-#: Importo.py:64
+#: fs_db.py:59
+msgid "FamilySearch : krei datumbazan tabelon"
+msgstr "FamilySearch : création de la base de données"
+
+#: Importo.py:77
 msgid "Kromprogramoj"
 msgstr "Extensions"
 
-#: Importo.py:71 Importo.py:121
+#: Importo.py:84 Importo.py:135
 msgid "FamilySearch Importo Opcionoj"
 msgstr "Options d'import FamilySearch"
 
-#: Importo.py:72
+#: Importo.py:85
 msgid "FamilySearch ID"
 msgstr "ID FamilySearch"
 
-#: Importo.py:73
+#: Importo.py:86
 msgid "identiga numero por esti prenita de FamilySearch retejo"
 msgstr "numéro d'identification à récupérer sur le site Web de FamilySearch"
 
-#: Importo.py:75
+#: Importo.py:88
 msgid "Nombro ascentontaj"
 msgstr "Nombre d'ascendances"
 
-#: Importo.py:76
+#: Importo.py:89
 msgid "Nombro de generacioj por supreniri"
 msgstr "Nombre de générations d'ascendants à charger"
 
-#: Importo.py:78
+#: Importo.py:91
 msgid "Nombro descendontaj"
 msgstr "Nombre de descendances"
 
-#: Importo.py:79
+#: Importo.py:92
 msgid "Nombro de generacioj descendontaj"
 msgstr "Nombre de générations de descendants à charger"
 
-#: Importo.py:81
+#: Importo.py:94
 msgid "Ne reimporti ekzistantajn personojn"
 msgstr "Ne pas réimporter les personnes existantes"
 
-#: Importo.py:82
+#: Importo.py:95
 msgid "Importi nur neekzistantajn personojn"
 msgstr "Importer seulement les personnes qui n'existent pas dans gramps, ceux qui existent ne seront pas modifiés"
 
-#: Importo.py:84
+#: Importo.py:97
 msgid "Aldoni geedzoj"
 msgstr "Ajouter les conjoints"
 
-#: Importo.py:85
+#: Importo.py:98
 msgid "Aldoni informojn pri geedzoj"
 msgstr "Ajouter les informations concernant les conjoints"
 
-#: Importo.py:87
+#: Importo.py:100
 msgid "Vorteco"
 msgstr "Verbosité"
 
-#: Importo.py:88
+#: Importo.py:101
 msgid "Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"
 msgstr "Niveau de verbosité de 0 (minimal) à 3 (très verbeux)"
 
-#: Importo.py:92
+#: Importo.py:105
 msgid "Menuo Aldonita"
 msgstr "Menu ajouté"
 
-#: Importo.py:115
+#: Importo.py:129
 msgid "FamilySearch Import Tool"
 msgstr "Outil d'import FamilySearch"
 
-#: Importo.py:137
+#: Importo.py:147
+msgid "FamilySearch Importo"
+msgstr "Import FamilySearch"
+
+#: Importo.py:147 komparo.py:102
+msgid "Starting"
+msgstr ""
+
+#: Importo.py:155
+msgid "Konstrui FSID listo (1/9)"
+msgstr "Construire la liste (1/9)"
+
+#: Importo.py:161
 msgid "«FamilySearch» ekzistanta ID"
 msgstr "ID «FamilySearch» existant"
 
-#: Importo.py:198
+#: Importo.py:166
+msgid "Ne konekta al FamilySearch"
+msgstr "Pas connecté à FamilySearch"
+
+#: Importo.py:212
+msgid "Elŝutante personojn… (2/9)"
+msgstr "Téléchargement des personnes… (2/9)"
+
+#: Importo.py:213
+msgid "Elŝutante personon…"
+msgstr "Téléchargement des personnes…"
+
+#: Importo.py:217
+msgid "Elŝutante ascendantojn… (3/9)"
+msgstr "Téléchargement des ascendants… (3/9)"
+
+#: Importo.py:226
 #, python-format
-msgid "Downloading %s. of generations of ancestors..."
-msgstr "Chargement de %s générations d'ancêtres…"
+msgid "Elŝutante %s generaciojn de ascendantojn…"
+msgstr "Téléchargement de %s générations d'ascendants…"
 
-#: Importo.py:207
+#: Importo.py:229
+msgid "Elŝutante posteulojn… (4/9)"
+msgstr "Téléchargement des descendants… (4/9)"
+
+#: Importo.py:237
 #, python-format
-msgid "Downloading %s. of generations of descendants..."
-msgstr "Chargement de %s générations de descendants…"
+msgid "Elŝutante %s generaciojn de posteulojn…"
+msgstr "Téléchargement de %s générations de descendants…"
 
-#: Importo.py:211
-msgid "Downloading spouses and marriage information..."
-msgstr "Chargement des conjoints et des mariages…"
+#: Importo.py:244
+msgid "Elŝutante edzojn… (5/9)"
+msgstr "Téléchargement des époux… (5/9)"
 
-#: Importo.py:357
+#: Importo.py:245
+msgid "Elŝutante edzojn…"
+msgstr "Téléchargement des époux…"
+
+#: Importo.py:249
+msgid "Elŝutante notojn… (6/9)"
+msgstr "Téléchargement des notes… (6/9)"
+
+#: Importo.py:250
+msgid "Elŝutante notojn…"
+msgstr "Téléchargement des notes…"
+
+#: Importo.py:267
+msgid "Importado…"
+msgstr "Import…"
+
+#: Importo.py:273
+msgid "Importado de lokoj… (7/9)"
+msgstr "Import des lieux… (7/9)"
+
+#: Importo.py:274
+msgid "Importado de lokoj…"
+msgstr "Import des lieux…"
+
+#: Importo.py:278
+msgid "Importado de personoj… (8/9)"
+msgstr "Import des personnes… (8/9)"
+
+#: Importo.py:279
+msgid "Importado de personoj…"
+msgstr "Import des personnes…"
+
+#: Importo.py:284
+msgid "Importado de familioj… (9/9)"
+msgstr "Import des familles… (9/9)"
+
+#: Importo.py:285
+msgid "Importado de familioj…"
+msgstr "Import des familles…"
+
+#: Importo.py:422
 msgid "sengepatra familio ???"
+msgstr "Famille sans parents ???"
+
+#: komparo.py:62
+msgid "FamilySearch Komparo Opcionoj"
+msgstr "Options de la comparaison FamilySearch"
+
+#: komparo.py:63
+msgid "Nombro tagoj"
+msgstr "Nombre de jours"
+
+#: komparo.py:64
+msgid "Nombro da tagoj inter du komparoj"
+msgstr "Nombre de jours entre deux comparaisons"
+
+#: komparo.py:67
+msgid "Devigi komparo"
+msgstr "Forcer la comparaison"
+
+#: komparo.py:68
+msgid "Kompari sendepende de la nombro da tagoj."
+msgstr "Comparer sans tenir compte du nombre de jours"
+
+#: komparo.py:72
+msgid "Person Filter"
+msgstr "Filtre des personnes"
+
+#: komparo.py:79
+#, python-format
+msgid "All %s"
 msgstr ""
 
-#: Importo.py:451
-msgid "ID ne trovita."
-msgstr "ID pas trouvé."
+#: komparo.py:79
+msgid "Persons"
+msgstr ""
+
+#: komparo.py:93
+msgid "FamilySearch Komparo"
+msgstr "Comparaison FamilySearch"
+
+#: komparo.py:96
+msgid "Options"
+msgstr ""
+
+#: komparo.py:100
+msgid "Ne konektita al FamilySearch"
+msgstr "Pas connecté à FamilySearch"
+
+#: komparo.py:102
+msgid "FamilySearch : Komparo"
+msgstr "FamilySearch : Comparaison"
+
+#: komparo.py:119
+msgid "Konstruante la ordigitan liston (1/2)"
+msgstr "Construction de la liste triée (1/2)"
+
+#: komparo.py:143
+msgid "Procesante la liston (2/2)"
+msgstr "Traitement de la liste (2/2)"
+
+#: komparo.py:175
+#, python-format
+msgid "FS ID %s ne trovita"
+msgstr "ID FS %s pas trouvé"
+
+#: komparo.py:187 komparo.py:193
+msgid "male"
+msgstr ""
+
+#: komparo.py:189 komparo.py:195
+msgid "female"
+msgstr ""
+
+#: komparo.py:191 komparo.py:197
+msgid "unknown"
+msgstr ""
+
+#: komparo.py:201
+msgid "Sekso:"
+msgstr "Sexe :"
+
+#: komparo.py:252 komparo.py:267 komparo.py:274
+msgid "Name"
+msgstr ""
+
+#: komparo.py:416
+msgid "Father"
+msgstr ""
+
+#: komparo.py:427
+msgid "Mother"
+msgstr ""
+
+#: komparo.py:472 komparo.py:593
+msgid "Spouse"
+msgstr ""
+
+#: komparo.py:559 komparo.py:575 komparo.py:607 komparo.py:621
+msgid "Child"
+msgstr ""
+
+#: komparo.py:800 PersonFS.py:235
+msgid "FamilySearch tags"
+msgstr ""
 
 #: PersonFS.gpr.py:30
 msgid "PersonFS"
@@ -128,111 +302,88 @@ msgstr "Import de données FamilySearch"
 msgid "FamilySearch."
 msgstr ""
 
-#: PersonFS.py:163
-msgid "FamilySearch krei"
-msgstr ""
+#: PersonFS.gpr.py:61
+msgid "FamilySearch : kompari"
+msgstr "FamilySearch : comparer"
 
-#: PersonFS.py:178
-msgid "FamilySearch commit"
-msgstr ""
+#: PersonFS.gpr.py:62
+msgid "FamilySearch : kompari gramps personojn kun FS personojn."
+msgstr "FamilySearch : comparer les personnes de gramps avec celles de FamilySearch."
 
-#: PersonFS.py:247
+#: PersonFS.py:211
 msgid "Coloro"
 msgstr "Couleur"
 
-#: PersonFS.py:248
+#: PersonFS.py:212
 msgid "Propreco"
 msgstr "Propriété"
 
-#: PersonFS.py:249
+#: PersonFS.py:213
 msgid "Dato"
 msgstr "Date"
 
-#: PersonFS.py:250
+#: PersonFS.py:214
 msgid "Gramps Valoro"
 msgstr "Valeur"
 
-#: PersonFS.py:251
+#: PersonFS.py:215
 msgid "FS Dato"
 msgstr "Date FS"
 
-#: PersonFS.py:252
+#: PersonFS.py:216
 msgid "FS Valoro"
 msgstr "valeur FS"
 
-#: PersonFS.py:341 PersonFS.py:363
-msgid "Aldoni FamilySearch ID"
-msgstr "Ajouter l'ID FamilySearch"
-
-#: PersonFS.py:402
+#: PersonFS.py:412 PersonFS.py:452
 msgid "score"
 msgstr ""
 
-#: PersonFS.py:403
+#: PersonFS.py:413 PersonFS.py:453
 msgid "FS Id"
 msgstr "ID FS"
 
-#: PersonFS.py:404
+#: PersonFS.py:414 PersonFS.py:454
 msgid "Nomo, antaŭnomo"
 msgstr "Nom, prénom"
 
-#: PersonFS.py:405
+#: PersonFS.py:415 PersonFS.py:455
 msgid "Birth"
 msgstr ""
 
-#: PersonFS.py:406
+#: PersonFS.py:416 PersonFS.py:456
 msgid "Death"
 msgstr ""
 
-#: PersonFS.py:407
+#: PersonFS.py:417 PersonFS.py:457
 msgid "Parents"
 msgstr ""
 
-#: PersonFS.py:408
+#: PersonFS.py:418 PersonFS.py:458
 msgid "Spouses"
 msgstr ""
 
-#: PersonFS.py:743 PersonFS.py:749
-msgid "male"
+#: PersonFS.py:440
+#, python-format
+msgid "Neniuj verŝajnaj duplikatoj por la persono %s trovita de la retejo \"FamilySearch\"."
+msgstr "Pas de doublons probables trouvés pour la personne %s par le site \"FamilySearch\"."
+
+#: utila.py:79
+msgid "Aldoni FamilySearch ID"
+msgstr "Ajouter l'ID FamilySearch"
+
+#: PersonFS.glade:19 PersonFS.glade:237 PersonFS.glade:737
+msgid "xxxx-xxx"
 msgstr ""
 
-#: PersonFS.py:745 PersonFS.py:751
-msgid "female"
+#: PersonFS.glade:36
+msgid "………"
 msgstr ""
 
-#: PersonFS.py:747 PersonFS.py:753
-msgid "unknown"
-msgstr ""
-
-#: PersonFS.py:759
-msgid "Sekso:"
-msgstr "Sexe :"
-
-#: PersonFS.py:773 PersonFS.py:790 PersonFS.py:797
-msgid "Name"
-msgstr ""
-
-#: PersonFS.py:957
-msgid "Father"
-msgstr ""
-
-#: PersonFS.py:964
-msgid "Mother"
-msgstr ""
-
-#: PersonFS.py:1009 PersonFS.py:1128
-msgid "Spouse"
-msgstr ""
-
-#: PersonFS.py:1095 PersonFS.py:1110 PersonFS.py:1142 PersonFS.py:1156
-msgid "Child"
-msgstr ""
-
-#: PersonFS.glade:56
+#: PersonFS.glade:128
 msgid "PersonFS Preferoj"
 msgstr "Préférences pour PersonFS"
 
-#: PersonFS.glade:82
+#: PersonFS.glade:154
 msgid ""
 "Alklakante la Apliki-Butonon, mi konsentas\n"
 "PersonFS ŝatus scii viajn bazajn FamilySearch-profilinformojn kaj alirdatenojn pri viaj prapatroj de la FamilySearch genealogia arbo.\n"
@@ -242,77 +393,107 @@ msgstr ""
 "PersonFS aimerait connaître les informations de base de votre profil FamilySearch et accéder aux données sur vos ancêtres à partir de l'arbre généalogique FamilySearch.\n"
 "PersonFS utilisera ces informations conformément à leurs conditions d'utilisation et politiques de confidentialité respectives.\n"
 
-#: PersonFS.glade:99
+#: PersonFS.glade:171
 msgid "FamilySearch identeco :"
 msgstr "Compte FamilySearch :"
 
-#: PersonFS.glade:122
+#: PersonFS.glade:194
 msgid "FamilySearch pasvorto :"
 msgstr "Mot de passe FamilySearch"
 
-#: PersonFS.glade:165 PersonFS.glade:665
-msgid "xxxx-xxx"
-msgstr ""
-
-#: PersonFS.glade:182
+#: PersonFS.glade:254
 msgid "Ligi"
 msgstr "Lier"
 
-#: PersonFS.glade:218
+#: PersonFS.glade:290
 msgid "Nomo :"
 msgstr "Nom :"
 
-#: PersonFS.glade:239
+#: PersonFS.glade:311
 msgid "Antaŭnomo :"
 msgstr "Prénom :"
 
-#: PersonFS.glade:260
+#: PersonFS.glade:332
 msgid "Sekso :"
 msgstr "Sexe :"
 
-#: PersonFS.glade:281
+#: PersonFS.glade:353
 msgid "Birdo :"
 msgstr "Naissance :"
 
-#: PersonFS.glade:302
+#: PersonFS.glade:374
 msgid "Loko :"
 msgstr "Lieu :"
 
-#: PersonFS.glade:321
+#: PersonFS.glade:393
 msgid "Lanĉi"
 msgstr "Exécuter"
 
-#: PersonFS.glade:417
+#: PersonFS.glade:489
 msgid "Aldoni mian personon al FamilySearch"
 msgstr "Ajouter mon individu à FamilySearch"
 
-#: PersonFS.glade:474
+#: PersonFS.glade:546
 msgid "Gramps Individuo/FamilySearch Individuo"
 msgstr "Individu Gramps/individu FamilySearch"
 
-#: PersonFS.glade:564
+#: PersonFS.glade:636
 msgid "Serĉi"
 msgstr "Chercher"
 
-#: PersonFS.glade:589
+#: PersonFS.glade:661
 msgid "Ŝarĝi edzojn kaj infanojn"
 msgstr "Charger conjoints et enfants"
 
-#: PersonFS.glade:593
+#: PersonFS.glade:665
 msgid "Ŝarĝi detalojn de ĉiuj geedzoj kaj infanoj"
 msgstr "Charger les détails de tous les conjoints et enfants"
 
-#: PersonFS.glade:614
+#: PersonFS.glade:686
 msgid "refreŝigi"
 msgstr "rafraîchir"
 
-#: PersonFS.glade:638
+#: PersonFS.glade:710
 msgid "importi"
 msgstr "importer"
 
-#: PersonFS.glade:682
+#: PersonFS.glade:754
 msgid "FamilySearch Identiga N° :"
 msgstr "N° d'identification FamilySearch :"
+
+#: PersonFS.glade:776
+msgid "Vidi FS duplikatojn"
+msgstr "Voir les doublons FS"
+
+#: PersonFS.glade:789
+msgid "markita kiel konforma"
+msgstr "marqué comme synchrone"
+
+#: PersonFS.glade:813
+msgid "Statuso de esencaj informoj (precipa nomo/antaŭnomo, sekso, datoj de naskiĝo kaj morto)"
+msgstr "Statut des informations vitales (prénom/prénom, sexe, dates de naissance et de décès)"
+
+#: PersonFS.glade:832
+msgid "Statuso de familiaj ligoj (gepatroj, geedzoj, infanoj)"
+msgstr "Statut des liens familiaux (parents, conjoint, enfants)"
+
+#: PersonFS.glade:851
+msgid "Statuso de eventoj"
+msgstr "Statut des évènements"
+
+#, python-format
+#~ msgid "Downloading %s. of generations of ancestors..."
+#~ msgstr "Chargement de %s générations d'ancêtres…"
+
+#, python-format
+#~ msgid "Downloading %s. of generations of descendants..."
+#~ msgstr "Chargement de %s générations de descendants…"
+
+#~ msgid "Downloading spouses and marriage information..."
+#~ msgstr "Chargement des conjoints et des mariages…"
+
+#~ msgid "ID ne trovita."
+#~ msgstr "ID pas trouvé."
 
 #~ msgid "Aldonu geedzoj"
 #~ msgstr "Ajoutez les conjoints"

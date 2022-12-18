@@ -23,6 +23,7 @@
 " «FamilySearch» importo.
 """
 #import cProfile
+import json
 
 
 from gi.repository import Gtk
@@ -31,17 +32,27 @@ from gramps.gen.db import DbTxn
 from gramps.gen.config import config
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 from gramps.gen.lib import Attribute, ChildRef, Citation, Date, Event, EventRef, EventType, EventRoleType, Family, Media, Name, NameType, Note
-from gramps.gen.lib import Person, Place, PlaceName, PlaceRef, PlaceType, Source, StyledText, StyledTextTag, StyledTextTagType
+from gramps.gen.lib import Person, Place, PlaceName, PlaceRef, PlaceType, Source, SrcAttribute, StyledText, StyledTextTag, StyledTextTagType
 from gramps.gen.plug.menu import StringOption, PersonOption, BooleanOption, NumberOption, FilterOption, MediaOption
 from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
+from gramps.gui.utils import ProgressMeter
 from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT, TOKENS
 
+# gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
+import importlib
+gedcomx_spec = importlib.util.find_spec("gedcomx")
+if gedcomx_spec and gedcomx_spec.loader:
+  import gedcomx
+else:
+  print ('gedcomx ne trovita')
+  import pip
+  pip.main(['install', '--user', 'gedcomx-v1'])
+  import gedcomx
 
 from PersonFS import PersonFS, CONFIG
-from fslib.session import Session
-from fslib.constants import FACT_TAGS
-from fslib.tree import Tree, Name as fsName, Note as fsNote, Indi, Fact
+from constants import FACT_TAGS
+import tree
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -80,9 +91,9 @@ class FSImportoOpcionoj(MenuToolOptions):
     self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
     self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
     menu.add_option(category_name, "gui_desc", self.__gui_desc)
-    self.__gui_edz = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
-    self.__gui_edz.set_help(_("Importi nur neekzistantajn personojn"))
-    menu.add_option(category_name, "gui_nereimporti", self.__gui_edz)
+    self.__gui_nereimporti = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
+    self.__gui_nereimporti.set_help(_("Importi nur neekzistantajn personojn"))
+    menu.add_option(category_name, "gui_nereimporti", self.__gui_nereimporti)
     self.__gui_edz = BooleanOption(_("Aldoni geedzoj"), False)
     self.__gui_edz.set_help(_("Aldoni informojn pri geedzoj"))
     menu.add_option(category_name, "gui_edz", self.__gui_edz)
@@ -108,6 +119,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     " 
     """
+    self.uistate = user.uistate
     PluginWindows.ToolManagedWindowBatch.__init__(self, dbstate, user, options_class, name, callback)
 
   def get_title(self):
@@ -131,11 +143,18 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     self.__get_menu_options()
     print("import ID :"+self.FS_ID)
-    # FARINDAĴO : Progresa stango
+    # Progresa stango
+    progress = ProgressMeter(_("FamilySearch Importo"), _('Starting'),
+                                      parent=self.uistate.window)
+    self.uistate.set_busy_cursor(True)
+    self.dbstate.db.disable_signals()
+    cnt=0
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
+    progress.set_pass(_('Konstrui FSID listo (1/9)'), self.dbstate.db.get_number_of_people())
     for person_handle in self.dbstate.db.get_person_handles() :
+      progress.step()
       person = self.dbstate.db.get_person_from_handle(person_handle)
       for attr in person.get_attribute_list():
         if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
@@ -143,106 +162,138 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         if attr.get_type() == '_FSFTID':
           self.fs_gr[attr.get_value()] = person_handle
           break
-    if not PersonFS.fs_Session:
-      if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
-        import locale, os
-        self.top = Gtk.Builder()
-        self.top.set_translation_domain("addon")
-        base = os.path.dirname(__file__)
-        locale.bindtextdomain("addon", base + "/locale")
-        glade_file = base + os.sep + "PersonFS.glade"
-        self.top.add_from_file(glade_file)
-        top = self.top.get_object("PersonFSPrefDialogo")
-        top.set_transient_for(self.uistate.window)
-        parent_modal = self.uistate.window.get_modal()
-        if parent_modal:
-          self.uistate.window.set_modal(False)
-        fsid = self.top.get_object("fsid_eniro")
-        fsid.set_text(PersonFS.fs_sn)
-        fspv = self.top.get_object("fspv_eniro")
-        fspv.set_text(PersonFS.fs_pasvorto)
-        top.show()
-        res = top.run()
-        print ("res = " + str(res))
-        top.hide()
-        if res == -3:
-          PersonFS.fs_sn = fsid.get_text()
-          PersonFS.fs_pasvorto = fspv.get_text()
-          CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
-          #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
-          CONFIG.save()
-          if vorteco >= 3:
-            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-          else :
-            PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
-        else :
-          print("Vi devas enigi la ID kaj pasvorton")
-      else:
-        if vorteco >= 3:
-          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-        else :
-          PersonFS.fs_Session = Session(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
-    print("import")
-    print(PersonFS.fs_sn)
-    print(PersonFS.fs_Session)
-    if not self.fs_TreeImp :
-      self.fs_TreeImp = Tree(PersonFS.fs_Session)
-    else:
-      self.fs_TreeImp.__init__(PersonFS.fs_Session)
+    if not PersonFS.aki_sesio():
+      WarningDialog(_('Ne konekta al FamilySearch'))
+      return
+    #if not tree._FsSeanco:
+    #  if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
+    #    import locale, os
+    #    self.top = Gtk.Builder()
+    #    self.top.set_translation_domain("addon")
+    #    base = os.path.dirname(__file__)
+    #    locale.bindtextdomain("addon", base + "/locale")
+    #    glade_file = base + os.sep + "PersonFS.glade"
+    #    self.top.add_from_file(glade_file)
+    #    top = self.top.get_object("PersonFSPrefDialogo")
+    #    top.set_transient_for(self.uistate.window)
+    #    parent_modal = self.uistate.window.get_modal()
+    #    if parent_modal:
+    #      self.uistate.window.set_modal(False)
+    #    fsid = self.top.get_object("fsid_eniro")
+    #    fsid.set_text(PersonFS.fs_sn)
+    #    fspv = self.top.get_object("fspv_eniro")
+    #    fspv.set_text(PersonFS.fs_pasvorto)
+    #    top.show()
+    #    res = top.run()
+    #    print ("res = " + str(res))
+    #    top.hide()
+    #    if res == -3:
+    #      PersonFS.fs_sn = fsid.get_text()
+    #      PersonFS.fs_pasvorto = fspv.get_text()
+    #      CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
+    #      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+    #      CONFIG.save()
+    #      if self.vorteco >= 3:
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #      else :
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #    else :
+    #      print("Vi devas enigi la ID kaj pasvorton")
+    #  else:
+    #    if self.vorteco >= 3:
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #    else :
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    print("importo")
+    if self.fs_TreeImp:
+      del self.fs_TreeImp
+    self.fs_TreeImp = tree.Tree()
     # Legi la personojn en «FamilySearch».
+    progress.set_pass(_('Elŝutante personojn… (2/9)'), mode= ProgressMeter.MODE_ACTIVITY)
     print(_("Elŝutante personon…"))
     if self.FS_ID:
-      self.fs_TreeImp.add_indis([self.FS_ID])
+      self.fs_TreeImp.add_persons([self.FS_ID])
     else : return
+    progress.set_pass(_('Elŝutante ascendantojn… (3/9)'),self.asc)
     # ascendante
-    todo = set(self.fs_TreeImp.indi.keys())
+    todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.asc):
+      progress.step()
       if not todo:
         break
       done |= todo
-      print( _("Downloading %s. of generations of ancestors...") % (i + 1))
+      print( _("Elŝutante %s generaciojn de ascendantojn…") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
-    todo = set(self.fs_TreeImp.indi.keys())
+    progress.set_pass(_('Elŝutante posteulojn… (4/9)'),self.desc)
+    todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.desc):
+      progress.step()
       if not todo:
         break
       done |= todo
-      print( _("Downloading %s. of generations of descendants...") % (i + 1))
+      print( _("Elŝutante %s generaciojn de posteulojn…") % (i + 1))
       todo = self.fs_TreeImp.add_children(todo) - done
     # edzoj
+    if self.desc and not self.edz:
+      print("posteuloj elŝutantaj : devigi elŝutanto de edzoj ")
+      self.edz = True
     if self.edz :
-      print(_("Downloading spouses and marriage information..."))
-      todo = set(self.fs_TreeImp.indi.keys())
+      progress.set_pass(_('Elŝutante edzojn… (5/9)'), mode= ProgressMeter.MODE_ACTIVITY)
+      print(_("Elŝutante edzojn…"))
+      todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj
+    progress.set_pass(_('Elŝutante notojn… (6/9)'),len(self.fs_TreeImp.persons))
     print(_("Elŝutante notojn…"))
-    for fsPerso in self.fs_TreeImp.indi.values() :
-      fsPerso.get_notes()
-    print(_("Elŝutante notojn…"))
-    for fsFam in self.fs_TreeImp.fam.values() :
-      fsFam.get_notes()
+    for fsPersono in self.fs_TreeImp.persons :
+      progress.step()
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/notes" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/sources" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/memories" % fsPersono.id)
+      gedcomx.maljsonigi(self.fs_TreeImp,datumoj)
+    #for fsFam in self.fs_TreeImp._fam.values() :
+    #  fsFam.get_notes()
+    if self.vorteco >= 3:
+      rezulto = gedcomx.jsonigi(self.fs_TreeImp)
+      f = open('importo.out.json','w')
+      json.dump(rezulto,f,indent=2)
+      f.close()
+
     print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
     with DbTxn("FamilySearch import", self.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
+      progress.set_pass(_('Importado de lokoj… (7/9)'),len(self.fs_TreeImp.places))
       print(_("Importado de lokoj…"))
-      for id,pl in self.fs_TreeImp.places.items() :
-        self.aldLoko(id,pl)
+      for pl in self.fs_TreeImp.places :
+        progress.step()
+        self.aldLoko(pl)
+      progress.set_pass(_('Importado de personoj… (8/9)'),len(self.fs_TreeImp.persons))
       print(_("Importado de personoj…"))
       # importi personoj
-      for id in self.fs_TreeImp.indi.keys() :
-        self.aldPersono(id)
+      for fsPersono in self.fs_TreeImp.persons :
+        progress.step()
+        self.aldPersono(fsPersono)
+      progress.set_pass(_('Importado de familioj… (9/9)'),len(self.fs_TreeImp.relationships))
       print(_("Importado de familioj…"))
       # importi familioj
-      for fsFam in self.fs_TreeImp.fam.values() :
-        self.aldFamilio(fsFam)
+      for fsFam in self.fs_TreeImp.relationships :
+        progress.step()
+        if fsFam.type == 'http://gedcomx.org/Couple':
+          self.aldFamilio(fsFam)
+      self.txn = None
     print("import fini.")
-    self.txn = None
+    self.uistate.set_busy_cursor(False)
+    progress.close()
+    self.dbstate.db.enable_signals()
+    self.dbstate.db.request_rebuild()
 
   def akiriLoko(self, nomo, parent):
     # sercxi por loko kun cî nomo
@@ -281,20 +332,22 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       place.add_placeref(placeref)
     place.set_type(place_type)
     self.dbstate.db.add_place(place, self.txn)
+    self.dbstate.db.commit_place(place, self.txn)
     return place
 
 
 
-  def aldLoko(self, id, pl):
-    nomo = pl[2][0]["value"]
-    pl[2][0]["handle"] = None
+  def aldLoko(self, pl):
+    # FARINDAĴO : Elekti nomo
+    nomo = next(iter(pl.names))
+    pl._handle = None
     # sercxi por loko kun cî nomo
     grLoko = self.akiriLoko(nomo, None)
     if grLoko:
-      pl[2][0]["handle"] = grLoko.handle
+      pl._handle = grLoko.handle
       return
     
-    partoj = nomo.split(', ')
+    partoj = nomo.value.split(', ')
     if len(partoj) <1:
       return
 
@@ -302,28 +355,28 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     lando = partoj.pop(len(partoj)-1)
     grLando = self.kreiLoko(lando, None)
     if grLando:
-      pl[2][0]["handle"] = grLando.handle
+      pl._handle = grLando.handle
     if len(partoj) <1:
       return
 
     regiono = partoj.pop(len(partoj)-1)
     grRegiono = self.kreiLoko(regiono, grLando)
     if grRegiono:
-      pl[2][0]["handle"] = grRegiono.handle
+      pl._handle = grRegiono.handle
     if len(partoj) <1:
       return
 
     fako = partoj.pop(len(partoj)-1)
     grFako = self.kreiLoko(fako, grRegiono)
     if grFako:
-      pl[2][0]["handle"] = grFako.handle
+      pl._handle = grFako.handle
     if len(partoj) <1:
       return
 
     municipo = partoj.pop(len(partoj)-1)
     grMunicipo = self.kreiLoko(municipo, grFako)
     if grMunicipo:
-      pl[2][0]["handle"] = grMunicipo.handle
+      pl._handle = grMunicipo.handle
     if len(partoj) <1:
       pn = PlaceName()
       pn.set_value(nomo)
@@ -333,7 +386,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
     lokloko = ", ".join(partoj)
     grLoko = self.kreiLoko(lokloko, grMunicipo)
-    pl[2][0]["handle"] = grLoko.handle
+    pl_handle = grLoko.handle
     pn = PlaceName()
     pn.set_value(nomo)
     grLoko.add_alternative_name(pn)
@@ -342,8 +395,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldFamilio(self,fsFam):
     familio = None
-    grPatroHandle = self.fs_gr.get(fsFam.husb_fid)
-    grPatrinoHandle = self.fs_gr.get(fsFam.wife_fid) 
+    grPatroHandle = self.fs_gr.get(fsFam.person1.resourceId)
+    grPatrinoHandle = self.fs_gr.get(fsFam.person2.resourceId) 
     if grPatroHandle :
       grPatro = self.dbstate.db.get_person_from_handle(grPatroHandle)
       if grPatrinoHandle :
@@ -368,10 +421,16 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     else:
       print(_('sengepatra familio ???'))
       return
+    if not grPatro and fsFam.person1.resourceId: return
+    if not grPatrino and fsFam.person2.resourceId: return
     if not familio :
       familio = Family()
       familio.set_father_handle(grPatroHandle)
       familio.set_mother_handle(grPatrinoHandle)
+      attr = Attribute()
+      attr.set_type('_FSFTID')
+      attr.set_value(fsFam.id)
+      familio.add_attribute(attr)
       self.dbstate.db.add_family(familio, self.txn)
       self.dbstate.db.commit_family(familio, self.txn)
       if grPatro:
@@ -397,8 +456,13 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       
     self.dbstate.db.commit_family(familio,self.txn)
 
-    for c in fsFam.chil_fid:
-      infanoHandle = self.fs_gr.get(c)
+    for cp in self.fs_TreeImp.childAndParentsRelationships :
+      if not cp.parent1 and fsFam.person1 : continue
+      if not cp.parent2 and fsFam.person2 : continue
+      if cp.parent1 and (not fsFam.person1 or cp.parent1.resourceId != fsFam.person1.resourceId) : continue
+      if cp.parent2 and (not fsFam.person2 or cp.parent2.resourceId != fsFam.person2.resourceId) : continue
+      infanoHandle = self.fs_gr.get(cp.child.resourceId)
+      if not infanoHandle: continue
       found = False
       for cr in familio.get_child_ref_list() :
         if cr.get_reference_handle() == infanoHandle:
@@ -417,7 +481,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       noto = self.aldNoto(fsNoto,familio.note_list)
       familio.add_note(noto.handle)
     # fontoj
-    for fsFonto,quote in fsFam.sources :
+    for fsFonto in fsFam.sources :
       c = self.aldFonto(fsFonto,familio,familio.citation_list)
       #familio.add_citation(c.handle)
     # FARINDAĴOJ : FS ID
@@ -425,25 +489,49 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     return
 
   def aldFonto(self, fsFonto, obj, EkzCit):
+    # akiri SourceDescription
+    sourceDescription = gedcomx.SourceDescription._indekso[fsFonto.descriptionId]
     # sercxi ekzistantan
     trovita = False
-    for s in self.dbstate.db.iter_sources():
-      if s.abbrev == "FamilySearch " + fsFonto.fid :
+    print("aldFonto sercxi : "+sourceDescription.id)
+    #for s in self.dbstate.db.iter_sources():
+    for sh in self.dbstate.db.get_source_handles() :
+      s = self.dbstate.db.get_source_from_handle(sh)
+      if s.abbrev == "FamilySearch " + sourceDescription.id :
         trovita = True
         break
+      for attr in s.get_attribute_list():
+        if attr.get_type() == '_FSFTID' and attr.get_value() == sourceDescription.id :
+          trovita = True
+      if trovita: break
     if not trovita :
+      print("aldFonto : "+sourceDescription.id)
       s = Source()
-      if fsFonto.title:
-        s.set_title(fsFonto.title)
-      if fsFonto.citation:
-        s.set_author(fsFonto.citation)
-      if fsFonto.url:
-        s.set_publication_info(fsFonto.url)
+      if len(sourceDescription.descriptions):
+        description = next(iter(sourceDescription.descriptions))
+        if description and description.value:
+          s.set_description(description.value)
+      if len(sourceDescription.titles):
+        title = next(iter(sourceDescription.titles))
+        if title and title.value:
+          s.set_title(title.value)
+      # FARINDAĴO : Elekti aŭtoro de SourceDescriptionId
+      if len(sourceDescription.authors):
+        s.set_author(next(iter(sourceDescription.authors)))
+      #if len(sourceDescription.links) and 'source-reference' in sourceDescription.links:
+      #  link = sourceDescription.links['source-reference']
+      #  s.set_publication_info(link.href)
+      if sourceDescription.about:
+        s.set_publication_info(sourceDescription.about)
       # FS ID
-      s.abbrev = "FamilySearch " + fsFonto.fid
+      s.abbrev = "FamilySearch " + sourceDescription.id
+      attr = SrcAttribute()
+      attr.set_type('_FSFTID')
+      attr.set_value(sourceDescription.id)
+      s.add_attribute(attr)
       self.dbstate.db.add_source(s,self.txn)
       self.dbstate.db.commit_source(s,self.txn)
-    # sercxi ekzistantan
+    # sercxi ekzistantan citaĵon
     for ch in obj.citation_list :
       c = self.dbstate.db.get_citation_from_handle(ch)
       if c.get_reference_handle() == s.handle :
@@ -456,37 +544,15 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     
     return citation
 
-  def aldPersono(self,fsid):
+  def aldPersono(self,fsPersono):
+    fsid = fsPersono.id
     grPersonoHandle = self.fs_gr.get(fsid)
-    fsPerso = self.fs_TreeImp.indi.get(fsid)
-    if not fsPerso :
-      print(_("ID ne trovita."))
-      return
     if not grPersonoHandle:
       grPerson = Person()
-      nomo = Name()
-      nomo.set_type(NameType(NameType.BIRTH))
-      nomo.set_first_name(fsPerso.name.given)
-      s = nomo.get_primary_surname()
-      s.set_surname(fsPerso.name.surname)
-      # noto al nomo
-      if fsPerso.name.note:
-        noto = self.aldNoto(fsPerso.name.note,nomo.note_list)
-        nomo.add_note(noto.handle)
-      grPerson.set_primary_name(nomo)
-      # aliaj nomoj
-      for fsNomo in fsPerso.married :
-        self.aldNomo( fsNomo, NameType.MARRIED, grPerson)
-      for fsNomo in fsPerso.aka :
-        self.aldNomo( fsNomo, NameType.AKA, grPerson)
-      for fsNomo in fsPerso.birthnames :
-        self.aldNomo( fsNomo, NameType.BIRTH, grPerson)
-      for fsNomo in fsPerso.nicknames :
-        # FARINDAĴO : administri moknomojn ĝuste
-        self.aldNomo( fsNomo, NameType.CUSTOM, grPerson)
-      if fsPerso.gender == "http://gedcomx.org/Male" :
+      self.aldNomoj( fsPersono, grPerson)
+      if fsPersono.gender.type == "http://gedcomx.org/Male" :
         grPerson.set_gender(Person.MALE)
-      elif fsPerso.gender == "http://gedcomx.org/Female" :
+      elif fsPersono.gender.type == "http://gedcomx.org/Female" :
         grPerson.set_gender(Person.FEMALE)
       else :
         grPerson.set_gender(Person.UNKNOWN)
@@ -504,7 +570,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       grPerson = self.dbstate.db.get_person_from_handle(grPersonoHandle)
 
     # faktoj
-    for fsFakto in fsPerso.facts:
+    for fsFakto in fsPersono.facts:
       event = self.aldFakto(fsFakto,grPerson)
       found = False
       for er in grPerson.get_event_ref_list():
@@ -521,15 +587,17 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         grPerson.set_birth_ref(er)
       elif event.type == EventType.DEATH :
         grPerson.set_death_ref(er)
+      self.dbstate.db.commit_person(grPerson,self.txn)
     # notoj
-    for fsNoto in fsPerso.notes :
+    for fsNoto in fsPersono.notes :
       noto = self.aldNoto(fsNoto,grPerson.note_list)
       grPerson.add_note(noto.handle)
     # fontoj
-    for fsFonto,quote in fsPerso.sources :
+    for fsFonto in fsPersono.sources :
       c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
+      self.dbstate.db.commit_person(grPerson,self.txn)
     # FARINDAĴOJ : memoroj
-    for fsMemoro in fsPerso.memories :
+    #for fsMemoro in fsPersono.memories :
       #print("memorie :")
       #print(fsMemoro)
       #m = Media()
@@ -542,20 +610,36 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       #self.dbstate.db.add_citation(citation,self.txn)
       #self.dbstate.db.commit_citation(citation,self.txn)
       #grPerson.add_citation(citation.handle)
-      continue
+      #continue
       
     self.dbstate.db.commit_person(grPerson,self.txn)
 
-  def aldNomo(self, fsNomo, type, grPerson):
+  def aldNomoj(self, fsPersono, grPerson):
+    for fsNomo in fsPersono.names :
       nomo = Name()
-      nomo.set_type(NameType(type))
-      nomo.set_first_name(fsNomo.given)
+      if fsNomo.type == 'http://gedcomx.org/MarriedName' :
+        nomo.set_type(NameType(NameType.MARRIED))
+      elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
+        nomo.set_type(NameType(NameType.AKA))
+      elif fsNomo.type == 'http://gedcomx.org/BirthName' :
+        nomo.set_type(NameType(NameType.BIRTH))
+      #elif fsNomo.type == 'http://gedcomx.org/NickName' :
+      #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
+      #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
+      #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
+      else :
+        # FARINDAĴO : administri moknomojn ĝuste
+        nomo.set_type(NameType(NameType.CUSTOM))
+      nomo.set_first_name(fsNomo.akGiven())
       s = nomo.get_primary_surname()
-      s.set_surname(fsNomo.surname)
-      if fsNomo.note:
-        noto = self.aldNoto(fsNomo.note,nomo.note_list)
+      s.set_surname(fsNomo.akSurname())
+      for fsNoto in fsNomo.notes :
+        noto = self.aldNoto(fsNoto,nomo.note_list)
         nomo.add_note(noto.handle)
-      grPerson.add_alternate_name(nomo)
+      if fsNomo.preferred :
+        grPerson.set_primary_name(nomo)
+      else:
+        grPerson.add_alternate_name(nomo)
 
   def aldNoto(self,fsNoto,EkzNotoj):
     # sercxi ekzistantan
@@ -573,7 +657,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     titolo = StyledText(fsNoto.subject, tags)
     note.set_format(Note.FORMATTED)
     note.set_styledtext(titolo)
-    note.append("\n\n"+fsNoto.text)
+    note.append("\n\n"+(fsNoto.text or ''))
     #note_type = NoteType()
     #note_type.set((note_type, note_cust))
     self.dbstate.db.add_note(note, self.txn)
@@ -581,47 +665,49 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     return note
     
   def aldFakto(self, fsFakto, obj):
-    gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+    if fsFakto.type[:6] == 'data:,':
+      gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+    else:
+      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
     evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
     fsFaktoLoko = fsFakto.place or ''
-    if fsFakto.map:
-      grLokoHandle = fsFakto.map[2][0]["handle"]
-    else: grLokoHandle = None
+    grLokoHandle = None
     fsFaktoPriskribo = fsFakto.value or ''
     fsFaktoDato = fsFakto.date or ''
     if fsFakto.date:
       grDate = Date()
       grDate.set_calendar(Date.CAL_GREGORIAN)
-      if fsFakto.date[0] == 'A' :
-        grDate.set_modifier(Date.MOD_ABOUT)
-      elif fsFakto.date[0] == '/' :
-        grDate.set_modifier(Date.MOD_BEFORE)
-      posSigno = fsFakto.date.find('+')
-      posMinus = fsFakto.date.find('-')
-      if posMinus >= 0 and (posSigno <0 or posSigno > posMinus) :
-        posSigno = posMinus
-      if len(fsFakto.date) >= posSigno+5 :
-        jaro = int(fsFakto.date[posSigno+0:posSigno+5])
-      else: jaro=0
-      if len(fsFakto.date) >= posSigno+8 :
-        monato = int(fsFakto.date[posSigno+6:posSigno+8])
-      else: monato=0
-      if len(fsFakto.date) >= posSigno+11 :
-        tago = int(fsFakto.date[posSigno+9:posSigno+11])
-      else: tago=0
-      # FARINDAĴO : kompleksaj datoj, datoj post …
-      #if tago and monato and jaro :
-      #  grDate.set_yr_mon_day(jaro, monato, tago)
-      #else :
-      #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
-      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date[posSigno:],newyear=Date.NEWYEAR_JAN1)
+      if fsFakto.date.formal :
+        if fsFakto.date.formal.proksimuma :
+          grDate.set_modifier(Date.MOD_ABOUT)
+        if fsFakto.date.formal.gamo :
+          if fsFakto.date.formal.finalaDato :
+            grDate.set_modifier(Date.MOD_BEFORE)
+          elif fsFakto.date.formal.finalaDato :
+            grDate.set_modifier(Date.MOD_AFTER)
+        if fsFakto.date.formal.unuaDato:
+          jaro = fsFakto.date.formal.unuaDato.jaro
+          monato = fsFakto.date.formal.unuaDato.monato
+          tago = fsFakto.date.formal.unuaDato.tago
+        else :
+          jaro = fsFakto.date.formal.finalaDato.jaro
+          monato = fsFakto.date.formal.finalaDato.monato
+          tago = fsFakto.date.formal.finalaDato.tago
+        # FARINDAĴO : kompleksaj datoj, dato gamo
+        #if tago and monato and jaro :
+        #  grDate.set_yr_mon_day(jaro, monato, tago)
+        #else :
+        #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
+      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original or '',newyear=Date.NEWYEAR_JAN1)
     else : grDate = None
 
     # serĉi ekzistanta
     for fakto in obj.event_ref_list :
       e = self.dbstate.db.get_event_from_handle(fakto.ref)
       if ( e.type.value == evtType or e.type.string == gedTag) :
-        if (     ( e.get_date_object() == grDate or ( e.get_date_object().is_empty() and not grDate))
+        if ( e.get_date_object() == grDate ):
+          return e
+        elif ( ( e.get_date_object().is_empty() and not grDate)
              and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
              and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
            ) :
@@ -634,10 +720,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       event.set_date_object( grDate )
     event.set_description(fsFaktoPriskribo)
     # noto
-    if fsFakto.note:
-      noto = self.aldNoto(fsFakto.note,event.note_list)
+    for fsNoto in fsFakto.notes:
+      noto = self.aldNoto(fsNoto,event.note_list)
       event.add_note(noto.handle)
     self.dbstate.db.add_event(event, self.txn)
+    self.dbstate.db.commit_event(event, self.txn)
     return event
 
   def __get_menu_options(self):
@@ -647,4 +734,5 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.desc = menu.get_option_by_name('gui_desc').get_value()
     self.edz = menu.get_option_by_name('gui_edz').get_value()
     self.nereimporti = menu.get_option_by_name('gui_nereimporti').get_value()
+    self.vorteco = menu.get_option_by_name('gui_vort').get_value()
 
