@@ -162,13 +162,15 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       if not fsPersono or not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
         mendo = "/platform/tree/persons/"+fsid
         r = tree._FsSeanco.head_url( mendo )
-        if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+        while r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
           fsid = r.headers['X-Entity-Forwarded-Id']
           utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
           mendo = "/platform/tree/persons/"+fsid
           r = tree._FsSeanco.head_url( mendo )
-        datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-        etag = r.headers['Etag']
+        if 'Last-Modified' in r.headers :
+          datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+        if 'Etag' in r.headers :
+          etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persons([fsid])
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
