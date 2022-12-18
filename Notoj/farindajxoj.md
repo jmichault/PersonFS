@@ -12,7 +12,7 @@
 	lié à la gestion des familles uniparentales ?
 * bug import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
 ## facultatifs
-* gedcomx : erreur «maljsonigi:nekonata ero: Person:discussion-references», ex. : G776-3G8
+* gedcomx : erreur «maljsonigi:nekonata ero: Person:discussion-references», ex. : G776-3G8, I5132 2454-BH7
 * bug : parents multiples pas bien gérés
 * priorité sur les tags ?
 * exécution de la synchro en arrière-plan ?

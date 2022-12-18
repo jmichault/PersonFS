@@ -344,7 +344,6 @@ class PersonFS(Gramplet):
     # FARINDAĴOJ : fontoj, …
     peto = {'persons' : [gedcomx.jsonigi(fsPerso)]}
     jsonpeto = json.dumps(peto)
-    print(jsonpeto)
     res = tree._FsSeanco.post_url( "/platform/tree/persons", jsonpeto )
     if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
       fsid = res.headers['X-Entity-Id']
@@ -353,9 +352,7 @@ class PersonFS(Gramplet):
       self.ButRefresxigi_clicked(None)
     else :
       print (res.headers)
-      #from objbrowser import browse ;browse(locals())
     #  FARINDAĴO 
-    
     return
 
   def ButLigi_clicked(self, dummy):
