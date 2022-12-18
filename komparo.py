@@ -768,7 +768,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id
     r = tree._FsSeanco.head_url( mendo )
-    if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+    while r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
       fsid = r.headers['X-Entity-Forwarded-Id']
       utila.ligi_gr_fs(db, grPersono, fsid)
       fsPersono.id = fsid
@@ -776,7 +776,8 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       r = tree._FsSeanco.head_url( mendo )
     if 'Last-Modified' in r.headers :
       fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-    fsPersono._etag = r.headers['Etag']
+    if 'Etag' in r.headers :
+      fsPersono._etag = r.headers['Etag']
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   # Serĉi ĉu FamilySearch ofertas duplonojn
   mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
