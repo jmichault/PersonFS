@@ -69,7 +69,7 @@ Vous avez juste à renseigner :
 * l'identifiant FamilySearch de départ
 * le nombre de générations d'ascendants à charger.
 * le nombre de générations descendantes.
-* décochez «Ne pas réimporter les personnes existantes» si vous voulez protéger vos individus existants.
+* cochez «Ne pas réimporter les personnes existantes» si vous voulez protéger vos individus existants.
 * cochez «Ajouter les conjoints» si vous voulez charger aussi les conjoints de toutes les personnes.
   (note : si vous chargez des générations descendantes, les conjoints seront chargés)
 
@@ -87,6 +87,7 @@ Puis cliquez sur le bouton «Importer»
   * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
   * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
 * de plus l'étiquette FS\_Konf peut être positionnée depuis le gramplet : synchro pas parfaite mais marquée conforme.
+* l'outil peut être interrompu en cours de traitement.
 
 
 # méthode de travail suggérée.

@@ -83,9 +83,11 @@ class Tree(gedcomx.Gedcomx):
         rels = set()
         for fid in fids & self._persons.keys():
           for paro in self._persons[fid]._gepatroj :
-            rels |= {paro.person1.resourceId , paro.person2.resourceId }
+            if paro.person1 : rels.add(paro.person1.resourceId)
+            if paro.person2 : rels.add(paro.person2.resourceId)
           for cp in self._persons[fid]._gepatrojCP :
-            rels |= {cp.parent1.resourceId , cp.parent2.resourceId }
+            if cp.parent1 : rels.add(cp.parent1.resourceId)
+            if cp.parent2 : rels.add(cp.parent2.resourceId)
         rels.difference_update(fids)
         self.add_persons(rels)
         return set(filter(None, rels))

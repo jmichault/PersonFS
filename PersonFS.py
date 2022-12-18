@@ -185,8 +185,8 @@ class PersonFS(Gramplet):
   def konekti_FS(self):
     if not tree._FsSeanco:
       print("konekti")
-      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-      #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+      #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     if not tree._FsSeanco.logged :
       return
     if not PersonFS.fs_Tree:
@@ -682,10 +682,11 @@ class PersonFS(Gramplet):
     """
     " Komparas gramps kaj FamilySearch
     """
+    fs_db.create_schema(self.dbstate.db)
     self.FSID = None
     grPersono = self.dbstate.db.get_person_from_handle(person_handle)
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
-    if tag_fs.handle in grPersono.tag_list :
+    if tag_fs and tag_fs.handle in grPersono.tag_list :
       self.top.get_object("ButBaskKonf").set_active(True)
     else :
       self.top.get_object("ButBaskKonf").set_active(False)
@@ -730,9 +731,7 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
     
-    fs_db.create_schema(self.dbstate.db)
     kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
-    print(kompRet)
     box1 = self.top.get_object("Box1")
     if ('FS_Esenco' in kompRet) :
       box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))

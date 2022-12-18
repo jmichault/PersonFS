@@ -49,6 +49,7 @@ import tree
 import utila
 from constants import FACT_TAGS, FACT_TYPES
 
+#from objbrowser import browse ;browse(locals())
 class FSKomparoOpcionoj(MenuToolOptions):
 
   def __init__(self, name, person_id=None, dbstate=None):
@@ -163,14 +164,13 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         r = tree._FsSeanco.head_url( mendo )
         if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
           fsid = r.headers['X-Entity-Forwarded-Id']
-          utila.ligi_gr_fs(db, grPersono, fsid)
-          fsPersono.id = fsid
-          mendo = "/platform/tree/persons/"+fsPersono.id
+          utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
+          mendo = "/platform/tree/persons/"+fsid
           r = tree._FsSeanco.head_url( mendo )
         datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
         etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persons([fsid])
-      fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
+        fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
         continue
@@ -369,11 +369,15 @@ def aldGepKomp(db, grPersono, fsPersono ) :
       mother = db.get_person_from_handle(handle)
       mother_name = name_displayer.display(mother)
 
+  # FARINDAĴO : uzi _gepatrojCP
+  # FARINDAĴO : multoblaj gepatroj
+  #if len(fsPersono._gepatrojCP) > 0 :
   if len(fsPersono._gepatroj) > 0 :
     parents_ids = set()
     for paro in fsPersono._gepatroj:
       parents_ids.add(paro.person1.resourceId)
       parents_ids.add(paro.person2.resourceId)
+    parents_ids.remove(fsPersono.id)
     PersonFS.PersonFS.fs_Tree.add_persons(parents_ids)
     fsfather_id = ''
     fsFather = None
@@ -596,8 +600,9 @@ def aldEdzKomp(db, grPersono, fsPerso) :
            ) )
     toRemove=set()
     for triopo in fsInfanoj :
-      if (  (triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
-              or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId )) :
+      if ( (triopo.parent1 and triopo.parent2)
+             and ( (triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
+                    or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))) :
         fsInfanoId = triopo.child.resourceId
         fsInfano = PersonFS.PersonFS.fs_Tree._persons.get(fsInfanoId)
         if fsInfano :
