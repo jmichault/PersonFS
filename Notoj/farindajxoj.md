@@ -4,14 +4,19 @@
         ; fsid George Washington : KNDX-MKG
 	; fsid avec parents multiples : 9CSJ-L2D
 
-# à faire pour version 1.1
+# à faire pour version 1.2
 
 ## prioritaires
 * bug import : certains enfants ne sont pas liés à leurs parents
 	G6WN-K13 pas lié à G8CN-WV7
 	lié à la gestion des familles uniparentales ?
 * bug import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
+* gramplet :
+  * copie de données gramps vers FS 
+  * copie de données FS vers gramps 
+* gestion des relevés (= «records» FS)
 ## facultatifs
+* détection de la présence de documents à joindre
 * gedcomx : erreur «maljsonigi:nekonata ero: Person:discussion-references», ex. : G776-3G8, I5132 2454-BH7
 * bug : parents multiples pas bien gérés
 * priorité sur les tags ?
@@ -54,12 +59,6 @@
     * source à joindre.
     * note à joindre.
 
-# à faire pour version 1.2
-
-* gramplet :
-  * copie de données gramps vers FS 
-  * copie de données FS vers gramps 
-* gestion des relevés (= «records» FS)
 
 # à faire pour version 2
 
