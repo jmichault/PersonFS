@@ -43,12 +43,12 @@ _ = _trans.gettext
 
 stato_tags = (
 ('FS_Identa', 'green'),
+('FS_Konf', 'green'),
 ('FS_Esenco', 'red'),
 ('FS_Nomo', 'red'),
 ('FS_Gepatro', 'red'),
 ('FS_Familio', 'red'),
 ('FS_Fakto', 'red'),
-('FS_Konf', 'green'),
 ('FS_Dup', 'red'),
 ('FS_Gramps', 'red'),
 ('FS_FS', 'red'),

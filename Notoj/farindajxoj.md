@@ -7,10 +7,13 @@
 # à faire pour version 1.2
 
 ## prioritaires
+* bogue : transformation date vers formal : gérer les dates républicaines (voir Darpheuil Jeanne)
+* bogue gramplet : rafraichir ne recharge pas la personne
 * bug import : certains enfants ne sont pas liés à leurs parents
 	G6WN-K13 pas lié à G8CN-WV7
 	lié à la gestion des familles uniparentales ?
 * bug import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
+* bogue comparaison : la liste des filtres est celle du démarrage de gramps.
 * gramplet :
   * copie de données gramps vers FS 
   * copie de données FS vers gramps 

@@ -379,7 +379,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       pl._handle = grMunicipo.handle
     if len(partoj) <1:
       pn = PlaceName()
-      pn.set_value(nomo)
+      pn.set_value(nomo.value)
       grMunicipo.add_alternative_name(pn)
       self.dbstate.db.commit_place(grMunicipo, self.txn)
       return
@@ -388,7 +388,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     grLoko = self.kreiLoko(lokloko, grMunicipo)
     pl_handle = grLoko.handle
     pn = PlaceName()
-    pn.set_value(nomo)
+    pn.set_value(nomo.value)
     grLoko.add_alternative_name(pn)
     self.dbstate.db.commit_place(grLoko, self.txn)
 
