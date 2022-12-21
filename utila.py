@@ -40,6 +40,24 @@ def grdato_al_formal( dato) :
   res = res+val
   if gdato.modifier == Date.MOD_AFTER:
     res = res + '/'
+  if gdato.modifier == Date.MOD_RANGE:
+    res = res + '/'
+    if gdato.dateval[Date._POS_RYR] < 0 :
+      res = res + '-'
+    else :
+      res = res + '+'
+    if gdato.dateval[Date._POS_RDAY] > 0 :
+      val = "%04d-%02d-%02d" % (
+                gdato.dateval[Date._POS_RYR], gdato.dateval[Date._POS_RMON],
+                gdato.dateval[Date._POS_RDAY])
+    elif gdato.dateval[Date._POS_RMON] > 0 :
+      val = "%04d-%02d" % (
+                gdato.dateval[Date._POS_RYR], gdato.dateval[Date._POS_RMON])
+    elif gdato.dateval[Date._POS_RYR] > 0 :
+      val = "%04d" % ( gdato.dateval[Date._POS_RYR] )
+    else:
+      val = ''
+    res = res+val
   # FARINDAĴOJ : range ?  estimate ? calculate ? heure ?
   
   return res
