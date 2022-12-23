@@ -255,10 +255,10 @@ class PersonFS(Gramplet):
                 (_('Gramps Valoro'), 4, 200),
                 (_('FS Dato'), 5, 120),
                 (_('FS Valoro'), 6, 200),
-                (_('S'), 7, 20, TOGGLE,True),
-                (_('xTipo'), NOSORT, 1),
-                (_('xGr'), NOSORT, 1),
-                (_('xFs'), NOSORT, 1),
+                ('', 7, 10, TOGGLE,True),
+                (_('xTipo'), NOSORT, 0),
+                (_('xGr'), NOSORT, 0),
+                (_('xFs'), NOSORT, 0),
              ]
     self.modelKomp = ListModel(self.propKomp, titles
                  ,event_func=self.cb_double_click
@@ -307,6 +307,8 @@ class PersonFS(Gramplet):
     f.close()
 
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,True)
@@ -464,6 +466,8 @@ class PersonFS(Gramplet):
     if not PersonFS.fs_TreeSercxo:
       PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
+    self.modelRes.cid=None
+    self.modelRes.model.set_sort_column_id(-2,0)
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
     r = tree._FsSeanco.get_url(
@@ -528,6 +532,8 @@ class PersonFS(Gramplet):
     if not PersonFS.fs_TreeSercxo:
       PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
+    self.modelRes.cid=None
+    self.modelRes.model.set_sort_column_id(-2,0)
     self.modelRes.clear()
     mendo = "/platform/tree/search?"
     grNomo = self.top.get_object("fs_nomo_eniro").get_text()
@@ -656,6 +662,8 @@ class PersonFS(Gramplet):
 
   def ButEdzoj_clicked(self, dummy):
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,True)
@@ -710,6 +718,8 @@ class PersonFS(Gramplet):
 
   def main(self):
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,False)

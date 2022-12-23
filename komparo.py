@@ -741,7 +741,7 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
     res.append( [ koloro , titolo
 		, '' , ''
-		, fsFaktoDato , fsValoro, False, None, fsFakto.id
+		, fsFaktoDato , fsValoro
         , False, 'fakto', None  ,fsFakto.id
 		] )
   return res
