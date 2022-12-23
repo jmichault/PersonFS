@@ -203,12 +203,15 @@ def SeksoKomp(grPersono, fsPersono ) :
   return ( koloro , _('Sekso:')
 		, '', grSekso
 		, '', fsSekso
+        , False, 'sekso', None, None
 		) 
 
 def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
   grFakto = utila.get_grevent(db, person, EventType(grEvent))
+  grFakto_handle = None
   titolo = str(EventType(grEvent))
   if grFakto != None :
+    grFakto_handle = grFakto.handle
     grFaktoDato = utila.grdato_al_formal(grFakto.date)
     if grFakto.place and grFakto.place != None :
       place = db.get_place_from_handle(grFakto.place)
@@ -221,6 +224,10 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
   # FARINDAĴO : norma loknomo
 
   fsFakto = utila.get_fsfact (fsPerso, fsFact )
+  if fsFakto:
+    fsFakto_id = fsFakto.id
+  else :
+    fsFakto_id = None
   fsFaktoDato = ''
   fsFaktoLoko = ''
   if fsFakto and fsFakto.date :
@@ -242,6 +249,7 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
   return ( koloro , titolo
 		, grFaktoDato , grFaktoLoko
 		, fsFaktoDato , fsFaktoLoko
+        , False, 'fakto', grFakto_handle, fsFakto_id
 		)
 
 def NomojKomp(grPersono, fsPerso ) :
@@ -254,6 +262,7 @@ def NomojKomp(grPersono, fsPerso ) :
     res.append ( ( koloro , _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+        , False, 'nomo', str(grNomo), fsNomo.id
 		))
     fsNomoj = fsPerso.names.copy()
     if fsNomo and fsNomo in fsNomoj: fsNomoj.remove(fsNomo)
@@ -269,6 +278,7 @@ def NomojKomp(grPersono, fsPerso ) :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+        , False, 'nomo', str(grNomo), fsNomo.id
 		))
     koloro = "yellow3"
     for fsNomo in fsNomoj :
@@ -276,6 +286,7 @@ def NomojKomp(grPersono, fsPerso ) :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', ''
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
+        , False, 'nomo', None, fsNomo.id
 		))
     return res
 
@@ -356,19 +367,21 @@ def aldGepKomp(db, grPersono, fsPersono ) :
   """
   family_handle = grPersono.get_main_parents_family_handle()
   father = None
+  father_handle = None
   father_name = ''
   mother = None
+  mother_handle = None
   mother_name = ''
   res = list()
   if family_handle:
     family = db.get_family_from_handle(family_handle)
-    handle = family.get_father_handle()
-    if handle:
-      father = db.get_person_from_handle(handle)
+    father_handle = family.get_father_handle()
+    if father_handle:
+      father = db.get_person_from_handle(father_handle)
       father_name = name_displayer.display(father)
-    handle = family.get_mother_handle()
-    if handle:
-      mother = db.get_person_from_handle(handle)
+    mother_handle = family.get_mother_handle()
+    if mother_handle:
+      mother = db.get_person_from_handle(mother_handle)
       mother_name = name_displayer.display(mother)
 
   # FARINDAĴO : uzi _gepatrojCP
@@ -422,6 +435,7 @@ def aldGepKomp(db, grPersono, fsPersono ) :
   res.append ( ( koloro , _trans.gettext('Father')
 		, grperso_datoj(db, father) , ' ' + father_name + ' [' + fatherFsid  + ']'
 		, fsperso_datoj(db, fsFather) , fs_father_name + ' [' + fsfather_id + ']'
+        , False, 'patro', father_handle ,fatherFsid
 		) )
   koloro = "orange"
   if (motherFsid == fsmother_id) :
@@ -433,6 +447,7 @@ def aldGepKomp(db, grPersono, fsPersono ) :
   res.append( ( koloro , _trans.gettext('Mother')
 		, grperso_datoj(db, mother) , ' ' + mother_name + ' [' + motherFsid + ']'
 		, fsperso_datoj(db, fsMother) , fs_mother_name + ' [' + fsmother_id + ']'
+        , False, 'patrino', mother_handle ,motherFsid
 		) )
   return res
 
@@ -461,23 +476,26 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       fsEdzoId = ''
       fsEdzTrio = None
       for paro in fsEdzoj :
-        if paro.person1.resourceId == edzoFsid :
+        if (paro.person1.resourceId == edzoFsid
+            or paro.person1.resourceId== '' and edzoFsid == '') :
           fsEdzoId = edzoFsid
           fsEdzoj.remove(paro)
           break
-        elif paro.person2.resourceId == edzoFsid :
+        elif (paro.person2.resourceId == edzoFsid 
+            or paro.person2.resourceId== '' and edzoFsid == '') :
           fsEdzoId = edzoFsid
           fsEdzoj.remove(paro)
           break
       
       koloro = "yellow"
-      if fsEdzoId != '' and edzoFsid == fsEdzoId :
+      if edzoFsid == fsEdzoId :
         koloro = "green"
       fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId) or gedcomx.Person()
       fsNomo = fsEdzo.akPrefNomo()
       res.append( ( koloro , _trans.gettext('Spouse')
                 , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
 		  , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
+          , False, 'edzo', grPersono.handle ,fsEdzoId
            ) )
       # familiaj eventoj (edziĝo, …)
       fsFamilio = None
@@ -523,6 +541,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           res.append( ( koloro , ' '+titolo
   		  , grFaktoDato , grValoro
   		  , fsFaktoDato , fsValoro
+          , False, 'edzoFakto', eventref.ref ,fsFakto.id
   		  ) )
       koloro = "yellow3"
       for fsFakto in fsFaktoj :
@@ -540,9 +559,10 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         else :
           fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
         res.append( ( koloro , ' '+titolo
-		, '' , ''
-		, fsFaktoDato , fsValoro
-		) )
+		  , '' , ''
+		  , fsFaktoDato , fsValoro
+          , False, 'edzoFakto', None ,fsFakto.id
+		 ) )
         
       for child_ref in family.get_child_ref_list():
         infano = db.get_person_from_handle(child_ref.ref)
@@ -550,10 +570,12 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         infanoFsid = utila.getfsid(infano)
         fsInfanoId = ''
         for triopo in fsInfanoj :
-          if ( (triopo.parent1 and triopo.parent2)
-               and  (( triopo.parent1.resourceId == fsid and triopo.parent2.resourceId == fsEdzoId )
-                     or  (triopo.parent2.resourceId == fsid and triopo.parent1.resourceId == fsEdzoId ))
-               and (triopo.child and triopo.child.resourceId == infanoFsid) ) :
+          if ( ((triopo.parent1 and triopo.parent1.resourceId == fsid)
+                 and ( (triopo.parent2 and triopo.parent2.resourceId == fsEdzoId)
+                    or (not triopo.parent2 and fsEdzoId=='')))
+             or((triopo.parent2 and triopo.parent2.resourceId == fsid)
+                 and ( (triopo.parent1 and triopo.parent1.resourceId == fsEdzoId)
+                    or (not triopo.parent1 and fsEdzoId==''))) ) :
             fsInfanoId = infanoFsid
             fsInfanoj.remove(triopo)
             break
@@ -565,6 +587,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , grperso_datoj(db, infano) , infanoNomo.get_primary_surname().surname + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
+          , False, 'infano', child_ref.ref  ,fsInfanoId
            ) )
       toRemove=set()
       for triopo in fsInfanoj :
@@ -581,6 +604,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
             res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
+                , False, 'infano', None  ,fsInfanoId
                ) )
             toRemove.add(triopo)
       for triopo in toRemove :
@@ -599,6 +623,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
     res.append( ( koloro , _trans.gettext('Spouse')
                 , '', ''
 		  , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
+                , False, 'edzo', None  ,fsEdzoId
            ) )
     toRemove=set()
     for triopo in fsInfanoj :
@@ -614,6 +639,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
+                , False, 'infano', None  ,fsInfanoId
               ) )
         toRemove.add(triopo)
     for triopo in toRemove :
@@ -628,6 +654,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
     res.append( ( koloro ,_trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
+                , False, 'infano', None  ,fsInfanoId
            ) )
   return res
 
@@ -683,10 +710,11 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       fsValoro = fsFaktoPriskribo
     else :
       fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
-    res.append( ( koloro , titolo
+    res.append( [ koloro , titolo
 		, grFaktoDato , grValoro
 		, fsFaktoDato , fsValoro
-		) )
+        , False, 'fakto', grFakto.ref  ,fsFakto.id
+		] )
   koloro = "yellow3"
   for fsFakto in fsFaktoj :
     if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
@@ -711,10 +739,11 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       fsValoro = fsFaktoPriskribo
     else :
       fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
-    res.append( ( koloro , titolo
+    res.append( [ koloro , titolo
 		, '' , ''
-		, fsFaktoDato , fsValoro
-		) )
+		, fsFaktoDato , fsValoro, False, None, fsFakto.id
+        , False, 'fakto', None  ,fsFakto.id
+		] )
   return res
 
 def kompariFsGr(fsPersono,grPersono,db,model=None):
@@ -725,7 +754,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       and dbPersono.stat_dato > grPersono.change):
     return
   dbPersono.fsid = fsPersono.id
-  FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=False
+  FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=FS_Dup=FS_Dok=False
   res = SeksoKomp(grPersono, fsPersono)
   if(model) :  model.add( res )
   if res and res[0] != "green" : FS_Esenco = True
@@ -788,8 +817,19 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
                 )
   if r.status_code == 200 :
     FS_Dup = True
-  else :
-    FS_Dup = False
+  # Serĉi ĉu FamilySearch ofertas dokumentoj
+  mendo = "/service/tree/tree-data/record-matches/"+fsPersono.id
+  r = tree._FsSeanco.get_url( mendo ,{"Accept": "application/json,*/*"})
+  if r.status_code == 200 :
+    try:
+      j = r.json()
+      if ( 'data' in j
+          and 'matches' in j['data'] 
+          and len(j['data']['matches']) >= 1 ) :
+        FS_Dok = True
+    except Exception as e:
+      self.write_log("WARNING: corrupted file from %s, error: %s" % (mendo, e))
+      print(r.content)
   dbPersono.stat_dato = int(time.time())
   if ( FS_Identa 
        and ( not dbPersono.konf_dato 

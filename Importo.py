@@ -490,10 +490,10 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldFonto(self, fsFonto, obj, EkzCit):
     # akiri SourceDescription
-    sourceDescription = gedcomx.SourceDescription._indekso[fsFonto.descriptionId]
+    sourceDescription = gedcomx.SourceDescription._indekso.get(fsFonto.descriptionId)
+    if not sourceDescription : return
     # sercxi ekzistantan
     trovita = False
-    print("aldFonto sercxi : "+sourceDescription.id)
     #for s in self.dbstate.db.iter_sources():
     for sh in self.dbstate.db.get_source_handles() :
       s = self.dbstate.db.get_source_from_handle(sh)
@@ -505,7 +505,6 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
           trovita = True
       if trovita: break
     if not trovita :
-      print("aldFonto : "+sourceDescription.id)
       s = Source()
       if len(sourceDescription.descriptions):
         description = next(iter(sourceDescription.descriptions))

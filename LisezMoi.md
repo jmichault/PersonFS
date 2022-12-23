@@ -94,7 +94,6 @@ Puis cliquez sur le bouton «Importer»
 
 ## Créez des filtres
 1. créez un filtre : «ascendants»
-2. créez un filtre : «ascendants avec parent non synchronisé».
 
 ## démarrage
 1. activez le gramplet sur la vue Individus
@@ -105,6 +104,8 @@ Puis cliquez sur le bouton «Importer»
 3. faites de même avec ses parents, puis les parents de ses parents …
 
 ## régulièrement
-1. filtrez les «ascendants avec parent non synchronisé»
+1. filtrez les «ascendants» avec l'étiquette FS_Gepatro
   * synchronisez les parents
-
+2. filtrez les «ascendants» avec l'étiquette FS_Familio
+  * synchronisez les enfants
+3. procédez de même avec les étiquettes FS_Esenco, FS_Fakto, FS_Nomo

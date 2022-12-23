@@ -1,27 +1,37 @@
 
 * note : menus contextuels sur grid : voir gramplet descendants
-* note : fsid fusionné : GZKW-DLY,GJ7P-84L; fsid avec doublons : G4Y1-1NV
+* note : fsid fusionné : GZKW-DLY,GJ7P-84L;
         ; fsid George Washington : KNDX-MKG
 	; fsid avec parents multiples : 9CSJ-L2D
 
 # à faire pour version 1.2
 
 ## prioritaires
-* bogue : transformation date vers formal : gérer les dates républicaines (voir Darpheuil Jeanne)
-* bogue gramplet : rafraichir ne recharge pas la personne
-* bug import : certains enfants ne sont pas liés à leurs parents
-	G6WN-K13 pas lié à G8CN-WV7
-	lié à la gestion des familles uniparentales ?
-* bug import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
-* bogue comparaison : la liste des filtres est celle du démarrage de gramps.
 * gramplet :
   * copie de données gramps vers FS 
   * copie de données FS vers gramps 
+* bogue import : évènements de type «Birth%20Registration».
+	ex. : g4yn-cnj
+	de type «http://familysearch.org/v1/LifeSketch»
+	ex. : g6sp-cnb
+* bogue comparaison : les mariages ne s'affichent plus
+* bogue comparaison : brillot,jean I2179 GX3T-PJ3 marqué rouge
+* bogue : transformation date vers formal : gérer les dates républicaines (voir Darpheuil Jeanne)
+* bogue gramplet : rafraichir ne recharge pas la personne familysearch.
+* bogue comparaison famille : si famille sans père, les deux familles ne sont pas mis en face.
+* bogue import : certains enfants ne sont pas liés à leurs parents
+	G6WN-K13 pas lié à G8CN-WV7
+	lié à la gestion des familles uniparentales ?
+* bogue import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
+* bogue comparaison : la liste des filtres est celle du démarrage de gramps.
 * gestion des relevés (= «records» FS)
 ## facultatifs
 * détection de la présence de documents à joindre
+	https://www.familysearch.org/service/tree/tree-data/record-matches/GDP3-S55/all?hintsOnLiving=true
+	https://www.familysearch.org/service/tree/tree-data/record-matches/GDP3-S55
 * gedcomx : erreur «maljsonigi:nekonata ero: Person:discussion-references», ex. : G776-3G8, I5132 2454-BH7
-* bug : parents multiples pas bien gérés
+* gedcomx : erreur «maljsonigi:nekonata ero: Person:fields»
+* bogue : parents multiples pas bien gérés
 * priorité sur les tags ?
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
@@ -53,6 +63,7 @@
   * recherche accessible depuis le menu
   * recherche : charger les suivants
   * dates : supprimer le + et les autres caractères incorrects
+  * avertissement si on clique lier alors que déjà lié.
 * gérer les langues
 * identifier et gérer les pré-requis (requests, gedcomx-v1)
 * synchro :
@@ -61,6 +72,8 @@
   * étiquettes à renseigner :
     * source à joindre.
     * note à joindre.
+* ne pas se connecter à FamilySearch avant l'ouverture de la BD
+* éviter la double comparaison à l'ouverture de gramps
 
 
 # à faire pour version 2
@@ -68,20 +81,17 @@
 * gestion pointue des lieux dans l'import , dans le gramplet, dans gedcomx-v1 ?
 * gestion des «memories»
 * module de liaison automatique.
-* modulede détection de doublons dans gramps d'après le FSID
-* dans la recherche :
-  * lien vers écran de fusion
+* module de détection de doublons dans gramps d'après le FSID
 * dans le gramplet :
   * lier un enfant ou conjoint gramps avec un enfant ou conjoint FS
 * dans l'import :
   * gestion des «attribution»
-  * charger les ID des familles
+  * charger les ID des lieux , sources , Relationship,ChildAndParentsRelationship ?
 * gestion des nicknames à voir
 * gestion des sources dans le gramplet
 * chargement du portrait FS vers gramps
 * chargement des images FS vers gramps
 * chargement des images gramps vers FS
-* barres de progression
 * création de personne FS : gérer tous les noms, les sources, …
 * copies de données FS vers gramps dans le gramplet
 * copies de données gramps vers FS dans le gramplet

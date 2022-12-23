@@ -50,7 +50,7 @@ from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
 from gramps.gui.dialog import OptionDialog, OkDialog
 from gramps.gui.editors import EditPerson
-from gramps.gui.listmodel import ListModel, NOSORT, COLOR
+from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
 from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
@@ -193,6 +193,47 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree = tree.Tree()
       PersonFS.fs_Tree._getsources = False
 
+  def cb_double_click(self, treeview):
+    (model, iter_) = treeview.get_selection().get_selected()
+    if not iter_:
+      return
+    print("type="+str(model.get_value(iter_, 7)))
+    print("gr="+str(model.get_value(iter_, 8)))
+    print("fs="+str(model.get_value(iter_, 9)))
+
+    #try:
+    #  handle = model.get_value(iter_, 4)
+    #  person = self.dbstate.db.get_person_from_handle(handle)
+    #  EditPerson(self.dbstate, self.uistate, [], person)
+    #except WindowActiveError:
+    #  pass
+
+  def copy_al_FS(self, treeview):
+    print("copy_al_FS")
+    model = self.modelKomp.model
+    iter_ = model.get_iter_first()
+    while iter_ is not None:
+      if model.get_value(iter_, 6) : 
+        print("type="+str(model.get_value(iter_, 7)))
+        print("gr="+str(model.get_value(iter_, 8)))
+        print("fs="+str(model.get_value(iter_, 9)))
+      iter_ =  model.iter_next(iter_)
+    
+    # FARINDAĴO
+    #model = treeview.get_model()
+
+  def cb_right_click(self, treeview, event):
+    menu = Gtk.Menu()
+    menu.set_reserve_toggle_size(False)
+    item  = Gtk.MenuItem(label=_('Kopii elekton de gramps al FS'))
+    item.set_sensitive(1)
+    item.connect("activate",lambda obj: self.copy_al_FS(treeview))
+    item.show()
+    menu.append(item)
+    self.menu = menu
+    self.menu.popup(None, None, None, None, event.button, event.time)
+
+
   def krei_gui(self):
     """
     " kreas GUI interfacon.
@@ -214,8 +255,14 @@ class PersonFS(Gramplet):
                 (_('Gramps Valoro'), 4, 200),
                 (_('FS Dato'), 5, 120),
                 (_('FS Valoro'), 6, 200),
+                (_('S'), 7, 20, TOGGLE,True),
+                (_('xTipo'), NOSORT, 1),
+                (_('xGr'), NOSORT, 1),
+                (_('xFs'), NOSORT, 1),
              ]
-    self.modelKomp = ListModel(self.propKomp, titles)
+    self.modelKomp = ListModel(self.propKomp, titles
+                 ,event_func=self.cb_double_click
+                 ,right_click=self.cb_right_click)
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
@@ -234,7 +281,6 @@ class PersonFS(Gramplet):
   def ButBaskKonf_toggled(self, dummy):
    with DbTxn(_("FamilySearch tags"), self.dbstate.db) as txn:
     val = self.top.get_object("ButBaskKonf").get_active()
-    print ("checkbox active : "+str(val))
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
@@ -249,13 +295,9 @@ class PersonFS(Gramplet):
     self.dbstate.db.commit_person(grPersono, txn, grPersono.change)
 
   def ButRefresxigi_clicked(self, dummy):
-    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
-    f = open('arbo1.out.json','w')
-    json.dump(rezulto,f,indent=2)
-    f.close()
     if self.FSID :
       try:
-        PersonFS.fs_Tree._persons.pop(self.FSID)
+        gedcomx.Person._indekso.pop(self.FSID)
       except:
         pass
       PersonFS.fs_Tree.add_persons([self.FSID])

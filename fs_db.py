@@ -50,8 +50,9 @@ stato_tags = (
 ('FS_Familio', 'red'),
 ('FS_Fakto', 'red'),
 ('FS_Dup', 'red'),
-('FS_Gramps', 'red'),
-('FS_FS', 'red'),
+('FS_Dok', 'red'),
+('FS_Gramps', 'yellow'),
+('FS_FS', 'yellow'),
 )
 
 def create_schema(db):
