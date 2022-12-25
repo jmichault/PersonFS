@@ -442,6 +442,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       pl._handle = grLoko.handle
       return
     
+    # FARINDAĴO : Elekti nomo
+    if pl and len(pl.names) :
+      nomo = next(iter(pl.names))
+    elif pl :
+      nomo = pl.original
     partoj = nomo.value.split(', ')
     if len(partoj) <1:
       return
@@ -665,7 +670,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
     # faktoj
     for fsFakto in fsPersono.facts:
-      event = self.aldFakto(fsFakto,grPerson)
+      event = aldFakto(self.dbstate.db, self.txn, fsFakto,grPerson)
       found = False
       for er in grPerson.get_event_ref_list():
         if er.ref == event.handle:
