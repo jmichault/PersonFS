@@ -14,11 +14,12 @@
 	ex. : g4yn-cnj
 	de type «http://familysearch.org/v1/LifeSketch»
 	ex. : g6sp-cnb
+* bogue gramplet : parfois le 2e enfant a le fsid du précédent.
 * bogue comparaison : les mariages ne s'affichent plus
 * bogue comparaison : brillot,jean I2179 GX3T-PJ3 marqué rouge
 * bogue : transformation date vers formal : gérer les dates républicaines (voir Darpheuil Jeanne)
 * bogue gramplet : rafraichir ne recharge pas la personne familysearch.
-* bogue comparaison famille : si famille sans père, les deux familles ne sont pas mis en face.
+* bogue comparaison famille : si famille sans père, les deux familles ne sont pas mises en face.
 * bogue import : certains enfants ne sont pas liés à leurs parents
 	G6WN-K13 pas lié à G8CN-WV7
 	lié à la gestion des familles uniparentales ?

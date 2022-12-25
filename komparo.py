@@ -21,6 +21,7 @@
 
 import email.utils
 import time
+from urllib.parse import unquote
 
 from gramps.gen.plug.menu import FilterOption, TextOption, NumberOption, BooleanOption
 from gramps.gen.db import DbTxn
@@ -682,12 +683,14 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     else :
       grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
     koloro="yellow"
+    fsFakto_id = None
     fsFaktoDato = ''
     fsFaktoLoko = ''
     fsFaktoPriskribo = ''
     for fsFakto in fsFaktoj :
+      fsFakto_id = fsFakto.id
       if fsFakto.type[:6] == 'data:,':
-        gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+        gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
       else:
         gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
       if not gedTag :
@@ -713,14 +716,14 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     res.append( [ koloro , titolo
 		, grFaktoDato , grValoro
 		, fsFaktoDato , fsValoro
-        , False, 'fakto', grFakto.ref  ,fsFakto.id
+        , False, 'fakto', grFakto.ref  ,fsFakto_id
 		] )
   koloro = "yellow3"
   for fsFakto in fsFaktoj :
     if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
       continue
     if fsFakto.type[:6] == 'data:,':
-      gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
+      gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
     else:
       gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
     evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 

@@ -44,12 +44,12 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
+from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
 from gramps.gui.dialog import OptionDialog, OkDialog
-from gramps.gui.editors import EditPerson
+from gramps.gui.editors import EditPerson, EditEvent
 from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
 from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
@@ -74,6 +74,7 @@ import fs_db
 import komparo
 import tree
 import utila
+import Importo
 from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
@@ -193,41 +194,133 @@ class PersonFS(Gramplet):
       PersonFS.fs_Tree = tree.Tree()
       PersonFS.fs_Tree._getsources = False
 
-  def cb_double_click(self, treeview):
+  def l_duobla_klako(self, treeview):
     (model, iter_) = treeview.get_selection().get_selected()
     if not iter_:
       return
-    print("type="+str(model.get_value(iter_, 7)))
-    print("gr="+str(model.get_value(iter_, 8)))
-    print("fs="+str(model.get_value(iter_, 9)))
+    tipo=model.get_value(iter_, 7)
+    handle = model.get_value(iter_, 8)
+    if ( handle
+         and ( tipo == 'infano' or tipo == 'patro'
+            or tipo == 'patrino' or tipo == 'edzo')) :
+      self.uistate.set_active(handle, 'Person')
+    elif ( handle and tipo == 'fakto') :
+      event = self.dbstate.db.get_event_from_handle(handle)
+      try:
+        EditEvent(self.dbstate, self.uistate, [], event)
+      except WindowActiveError:
+        pass
 
-    #try:
-    #  handle = model.get_value(iter_, 4)
-    #  person = self.dbstate.db.get_person_from_handle(handle)
-    #  EditPerson(self.dbstate, self.uistate, [], person)
-    #except WindowActiveError:
-    #  pass
+
 
   def copy_al_FS(self, treeview):
     print("copy_al_FS")
     model = self.modelKomp.model
     iter_ = model.get_iter_first()
+    fsP = gedcomx.Person()
     while iter_ is not None:
       if model.get_value(iter_, 6) : 
         print("type="+str(model.get_value(iter_, 7)))
         print("gr="+str(model.get_value(iter_, 8)))
         print("fs="+str(model.get_value(iter_, 9)))
+        if model.get_value(iter_, 7) == 'fakto' :
+          event = self.dbstate.db.get_event_from_handle(model.get_value(iter_, 8))
+          titolo = str(EventType(event.type))
+          grFaktoPriskribo = event.description or ''
+          grFaktoDato = grdato_al_formal(event.date)
+          if event.place and event.place != None :
+            place = self.dbstate.db.get_place_from_handle(event.place)
+            grFaktoLoko = place.name.value
+          else :
+            grFaktoLoko = ''
+          # FARINDAĴO : norma loknomo
+          if grFaktoLoko == '' :
+            grValoro = grFaktoPriskribo
+          else :
+            grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+          grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+          fsFakto = gedcomx.Fact()
+          tipo = FACT_TYPES.get(grTag)
+          if tipo[:5] == 'http:' :
+            fsFakto.type = tipo
+          else :
+            fsFakto.type = 'data:,'+tipo
+          fsFakto.value = grFaktoPriskribo
+          if grFaktoDato :
+            fsFakto.date = gedcomx.Date()
+            fsFakto.date.original = str (event.date)
+            fsFakto.date.formal = gedcomx.DateFormal(grFaktoDato)
+          if grFaktoLoko :
+            fsFakto.place = gedcomx.PlaceReference()
+            fsFakto.place.original = grFaktoLoko
+          fsP.facts.add(fsFakto)
+      # FARINDAĴO : edzoj, gepatroj, infanoj,…
       iter_ =  model.iter_next(iter_)
+    peto = {'persons' : [gedcomx.jsonigi(fsP)]}
+    jsonpeto = json.dumps(peto)
+    res = tree._FsSeanco.post_url( "/platform/tree/persons/"+self.FSID, jsonpeto )
+    if res.status_code == 201:
+      print("ĝisdatigo sukceso")
+      self.ButRefresxigi_clicked(None)
+    else :
+      print("ĝisdatigo malsukceso")
+      print(" jsonpeto = "+jsonpeto)
+      print(" res.status_code="+str(res.status_code))
+      print (res.headers)
+      print (res.text)
     
-    # FARINDAĴO
-    #model = treeview.get_model()
+  def copy_al_gramps(self, treeview):
+    print("copy_al_gramps")
+    model = self.modelKomp.model
+    iter_ = model.get_iter_first()
+    active_handle = self.get_active('Person')
+    grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+    fsPersono = gedcomx.Person._indekso.get(self.FSID) 
+    with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
+      while iter_ is not None:
+        if model.get_value(iter_, 6) : 
+          print("type="+str(model.get_value(iter_, 7)))
+          print("gr="+str(model.get_value(iter_, 8)))
+          print("fs="+str(model.get_value(iter_, 9)))
+          # FARINDAĴO : aliaj tipoj
+          if model.get_value(iter_, 7) == 'fakto' :
+            fsFakto_id = model.get_value(iter_, 9)
+            if fsPersono.facts:
+              for fsFakto in fsPersono.facts :
+                if fsFakto.id == fsFakto_id : break
+              if fsFakto.id == fsFakto_id :
+                print("importas fakto "+fsFakto_id)
+                event = Importo.aldFakto(self.dbstate.db,txn,fsFakto,grPersono)
+                found = False
+                for er in grPersono.get_event_ref_list():
+                  if er.ref == event.handle:
+                    found = True
+                    break
+                if not found:
+                  er = EventRef()
+                  er.set_role(EventRoleType.PRIMARY)
+                  er.set_reference_handle(event.get_handle())
+                  self.dbstate.db.commit_event(event, txn)
+                  grPersono.add_event_ref(er)
+                if event.type == EventType.BIRTH :
+                  grPersono.set_birth_ref(er)
+                elif event.type == EventType.DEATH :
+                  grPersono.set_death_ref(er)
+        iter_ =  model.iter_next(iter_)
+      self.dbstate.db.commit_person(grPersono,txn)
+    self.ButRefresxigi_clicked(None)
 
-  def cb_right_click(self, treeview, event):
+  def l_dekstra_klako(self, treeview, event):
     menu = Gtk.Menu()
     menu.set_reserve_toggle_size(False)
     item  = Gtk.MenuItem(label=_('Kopii elekton de gramps al FS'))
     item.set_sensitive(1)
     item.connect("activate",lambda obj: self.copy_al_FS(treeview))
+    item.show()
+    menu.append(item)
+    item  = Gtk.MenuItem(label=_('Kopii elekton de FS al gramps'))
+    item.set_sensitive(1)
+    item.connect("activate",lambda obj: self.copy_al_gramps(treeview))
     item.show()
     menu.append(item)
     self.menu = menu
@@ -252,17 +345,17 @@ class PersonFS(Gramplet):
                 (_('Coloro'), 1, 20,COLOR),
 		( _('Propreco'), 2, 100),
 		( _('Dato'), 3, 120),
-                (_('Gramps Valoro'), 4, 200),
+                (_('Gramps Valoro'), 4, 300),
                 (_('FS Dato'), 5, 120),
-                (_('FS Valoro'), 6, 200),
-                ('', 7, 10, TOGGLE,True),
+                (_('FS Valoro'), 6, 300),
+                ('x', 7, 20, TOGGLE,True),
                 (_('xTipo'), NOSORT, 0),
                 (_('xGr'), NOSORT, 0),
                 (_('xFs'), NOSORT, 0),
              ]
     self.modelKomp = ListModel(self.propKomp, titles
-                 ,event_func=self.cb_double_click
-                 ,right_click=self.cb_right_click)
+                 ,event_func=self.l_duobla_klako
+                 ,right_click=self.l_dekstra_klako)
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,

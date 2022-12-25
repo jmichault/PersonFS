@@ -24,6 +24,7 @@
 """
 #import cProfile
 import json
+from urllib.parse import unquote
 
 
 from gi.repository import Gtk
@@ -50,7 +51,7 @@ else:
   pip.main(['install', '--user', 'gedcomx-v1'])
   import gedcomx
 
-from PersonFS import PersonFS, CONFIG
+import PersonFS
 from constants import FACT_TAGS
 import tree
 
@@ -64,6 +65,113 @@ _ = _trans.gettext
 vorteco = 0
 
 #from objbrowser import browse ;browse(locals())
+
+def akiriLoko(db, nomo, fsLoko=None, parent=None):
+  # FARINDAĴO : Elekti nomo
+  if fsLoko and len(fsLoko.names) :
+    nomo = next(iter(fsLoko.names))
+  elif fsLoko :
+    nomo = fsLoko.original
+  # sercxi por loko kun cî nomo
+  for handle in db.get_place_handles():
+    place = db.get_place_from_handle(handle)
+    if place.name.value == nomo :
+      return place
+    for name in place.get_alternative_names():
+      if name.value == nomo :
+        return place
+  return None
+
+def aldNoto(db, txn, fsNoto,EkzNotoj):
+  # sercxi ekzistantan
+  for nh in EkzNotoj:
+    n = db.get_note_from_handle(nh)
+    for t in n.text.get_tags():
+      if t.name == "fs_sn" :
+        titolo = n.get()[t.ranges[0][0]:t.ranges[0][1]]
+        if titolo == fsNoto.subject:
+          return n
+  note = Note()
+  tags = [  StyledTextTag("fs_sn", fsNoto.id,[(0, len(fsNoto.subject))])
+          , StyledTextTag(StyledTextTagType.BOLD, True,[(0, len(fsNoto.subject))])
+          , StyledTextTag(StyledTextTagType.FONTSIZE, 16,[(0, len(fsNoto.subject))])  ]
+  titolo = StyledText(fsNoto.subject, tags)
+  note.set_format(Note.FORMATTED)
+  note.set_styledtext(titolo)
+  note.append("\n\n"+(fsNoto.text or ''))
+  #note_type = NoteType()
+  #note_type.set((note_type, note_cust))
+  db.add_note(note, txn)
+  db.commit_note(note, txn)
+  return note
+  
+def aldFakto(db, txn, fsFakto, obj):
+  if fsFakto.type[:6] == 'data:,':
+    gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
+  else:
+    gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+  evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
+  fsFaktoLoko = fsFakto.place or ''
+  grLokoHandle = None
+  if fsFaktoLoko  != '':
+    grLoko = akiriLoko(db, None, fsFakto.place)
+    if grLoko:
+      grLokoHandle = grLoko.handle
+  fsFaktoPriskribo = fsFakto.value or ''
+  fsFaktoDato = fsFakto.date or ''
+  if fsFakto.date:
+    grDate = Date()
+    grDate.set_calendar(Date.CAL_GREGORIAN)
+    if fsFakto.date.formal :
+      if fsFakto.date.formal.proksimuma :
+        grDate.set_modifier(Date.MOD_ABOUT)
+      if fsFakto.date.formal.gamo :
+        if fsFakto.date.formal.finalaDato :
+          grDate.set_modifier(Date.MOD_BEFORE)
+        elif fsFakto.date.formal.finalaDato :
+          grDate.set_modifier(Date.MOD_AFTER)
+      if fsFakto.date.formal.unuaDato:
+        jaro = fsFakto.date.formal.unuaDato.jaro
+        monato = fsFakto.date.formal.unuaDato.monato
+        tago = fsFakto.date.formal.unuaDato.tago
+      else :
+        jaro = fsFakto.date.formal.finalaDato.jaro
+        monato = fsFakto.date.formal.finalaDato.monato
+        tago = fsFakto.date.formal.finalaDato.tago
+      # FARINDAĴO : kompleksaj datoj, dato gamo
+      #if tago and monato and jaro :
+      #  grDate.set_yr_mon_day(jaro, monato, tago)
+      #else :
+      #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
+    grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original or '',newyear=Date.NEWYEAR_JAN1)
+  else : grDate = None
+
+  # serĉi ekzistanta
+  for fakto in obj.event_ref_list :
+    e = db.get_event_from_handle(fakto.ref)
+    if ( e.type.value == evtType or e.type.string == gedTag) :
+      if ( e.get_date_object() == grDate ):
+        return e
+      elif ( ( e.get_date_object().is_empty() and not grDate)
+           and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
+           and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
+         ) :
+        return e
+  event = Event()
+  event.set_type( evtType )
+  if grLokoHandle:
+    event.set_place_handle( grLokoHandle )
+  if grDate :
+    event.set_date_object( grDate )
+  event.set_description(fsFaktoPriskribo)
+  # noto
+  for fsNoto in fsFakto.notes:
+    noto = aldNoto(db, txn, fsNoto,event.note_list)
+    event.add_note(noto.handle)
+  db.add_event(event, txn)
+  db.commit_event(event, txn)
+  return event
+
 
 class FSImportoOpcionoj(MenuToolOptions):
   """
@@ -105,8 +213,8 @@ class FSImportoOpcionoj(MenuToolOptions):
       print(_("Menuo Aldonita"))
   def load_previous_values(self):
     MenuToolOptions.load_previous_values(self)
-    if PersonFS.FSID :
-      self.handler.options_dict['FS_ID'] = PersonFS.FSID
+    if PersonFS.PersonFS.FSID :
+      self.handler.options_dict['FS_ID'] = PersonFS.PersonFS.FSID
     return
 
 class FSImporto(PluginWindows.ToolManagedWindowBatch):
@@ -162,17 +270,17 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         if attr.get_type() == '_FSFTID':
           self.fs_gr[attr.get_value()] = person_handle
           break
-    if not PersonFS.aki_sesio():
+    if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))
       return
     #if not tree._FsSeanco:
-    #  if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
+    #  if PersonFS.PersonFS.fs_sn == '' or PersonFS.PersonFS.fs_pasvorto == '':
     #    import locale, os
     #    self.top = Gtk.Builder()
     #    self.top.set_translation_domain("addon")
     #    base = os.path.dirname(__file__)
     #    locale.bindtextdomain("addon", base + "/locale")
-    #    glade_file = base + os.sep + "PersonFS.glade"
+    #    glade_file = base + os.sep + "PersonFS.PersonFS.glade"
     #    self.top.add_from_file(glade_file)
     #    top = self.top.get_object("PersonFSPrefDialogo")
     #    top.set_transient_for(self.uistate.window)
@@ -180,30 +288,30 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     #    if parent_modal:
     #      self.uistate.window.set_modal(False)
     #    fsid = self.top.get_object("fsid_eniro")
-    #    fsid.set_text(PersonFS.fs_sn)
+    #    fsid.set_text(PersonFS.PersonFS.fs_sn)
     #    fspv = self.top.get_object("fspv_eniro")
-    #    fspv.set_text(PersonFS.fs_pasvorto)
+    #    fspv.set_text(PersonFS.PersonFS.fs_pasvorto)
     #    top.show()
     #    res = top.run()
     #    print ("res = " + str(res))
     #    top.hide()
     #    if res == -3:
-    #      PersonFS.fs_sn = fsid.get_text()
-    #      PersonFS.fs_pasvorto = fspv.get_text()
-    #      CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
-    #      #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
-    #      CONFIG.save()
+    #      PersonFS.PersonFS.fs_sn = fsid.get_text()
+    #      PersonFS.PersonFS.fs_pasvorto = fspv.get_text()
+    #      PersonFS.CONFIG.set("preferences.fs_sn", PersonFS.PersonFS.fs_sn)
+    #      #PersonFS.CONFIG.set("preferences.fs_pasvorto", PersonFS.PersonFS.fs_pasvorto) #
+    #      PersonFS.CONFIG.save()
     #      if self.vorteco >= 3:
-    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.PersonFS.fs_sn, PersonFS.PersonFS.fs_pasvorto, True, False, 2)
     #      else :
-    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #        tree._FsSeanco = gedcomx.FsSession(PersonFS.PersonFS.fs_sn, PersonFS.PersonFS.fs_pasvorto, False, False, 2)
     #    else :
     #      print("Vi devas enigi la ID kaj pasvorton")
     #  else:
     #    if self.vorteco >= 3:
-    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.PersonFS.fs_sn, PersonFS.PersonFS.fs_pasvorto, True, False, 2)
     #    else :
-    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+    #      tree._FsSeanco = gedcomx.FsSession(PersonFS.PersonFS.fs_sn, PersonFS.PersonFS.fs_pasvorto, False, False, 2)
     print("importo")
     if self.fs_TreeImp:
       del self.fs_TreeImp
@@ -295,19 +403,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     self.dbstate.db.enable_signals()
     self.dbstate.db.request_rebuild()
 
-  def akiriLoko(self, nomo, parent):
-    # sercxi por loko kun cî nomo
-    for handle in self.db.get_place_handles():
-      place = self.db.get_place_from_handle(handle)
-      if place.name.value == nomo :
-        return place
-      for name in place.get_alternative_names():
-        if name.value == nomo :
-          return place
-    return None
-
   def kreiLoko(self, nomo, parent):
-    place = self.akiriLoko(nomo, parent)
+    place = akiriLoko(self.dbstate.db, nomo, parent=parent)
     if place:
       return place
     place = Place()
@@ -338,11 +435,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
 
   def aldLoko(self, pl):
-    # FARINDAĴO : Elekti nomo
-    nomo = next(iter(pl.names))
     pl._handle = None
     # sercxi por loko kun cî nomo
-    grLoko = self.akiriLoko(nomo, None)
+    grLoko = akiriLoko(self.dbstate.db, None, pl)
     if grLoko:
       pl._handle = grLoko.handle
       return
@@ -441,7 +536,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.commit_person(grPatrino, self.txn)
     # familiaj faktoj
     for fsFakto in fsFam.facts:
-      event = self.aldFakto(fsFakto,familio)
+      event = aldFakto(self.dbstate.db, self.txn, fsFakto,familio)
       found = False
       for er in familio.get_event_ref_list():
         if er.ref == event.handle:
@@ -478,7 +573,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.commit_person(infano, self.txn)
     # notoj
     for fsNoto in fsFam.notes :
-      noto = self.aldNoto(fsNoto,familio.note_list)
+      noto = aldNoto(self.dbstate.db, self.txn, fsNoto,familio.note_list)
       familio.add_note(noto.handle)
     # fontoj
     for fsFonto in fsFam.sources :
@@ -589,7 +684,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       self.dbstate.db.commit_person(grPerson,self.txn)
     # notoj
     for fsNoto in fsPersono.notes :
-      noto = self.aldNoto(fsNoto,grPerson.note_list)
+      noto = aldNoto(self.dbstate.db, self.txn, fsNoto,grPerson.note_list)
       grPerson.add_note(noto.handle)
     # fontoj
     for fsFonto in fsPersono.sources :
@@ -633,98 +728,13 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       s = nomo.get_primary_surname()
       s.set_surname(fsNomo.akSurname())
       for fsNoto in fsNomo.notes :
-        noto = self.aldNoto(fsNoto,nomo.note_list)
+        noto = aldNoto(self.dbstate.db, self.txn, fsNoto,nomo.note_list)
         nomo.add_note(noto.handle)
       if fsNomo.preferred :
         grPerson.set_primary_name(nomo)
       else:
         grPerson.add_alternate_name(nomo)
 
-  def aldNoto(self,fsNoto,EkzNotoj):
-    # sercxi ekzistantan
-    for nh in EkzNotoj:
-      n = self.dbstate.db.get_note_from_handle(nh)
-      for t in n.text.get_tags():
-        if t.name == "fs_sn" :
-          titolo = n.get()[t.ranges[0][0]:t.ranges[0][1]]
-          if titolo == fsNoto.subject:
-            return n
-    note = Note()
-    tags = [  StyledTextTag("fs_sn", fsNoto.id,[(0, len(fsNoto.subject))])
-            , StyledTextTag(StyledTextTagType.BOLD, True,[(0, len(fsNoto.subject))])
-            , StyledTextTag(StyledTextTagType.FONTSIZE, 16,[(0, len(fsNoto.subject))])  ]
-    titolo = StyledText(fsNoto.subject, tags)
-    note.set_format(Note.FORMATTED)
-    note.set_styledtext(titolo)
-    note.append("\n\n"+(fsNoto.text or ''))
-    #note_type = NoteType()
-    #note_type.set((note_type, note_cust))
-    self.dbstate.db.add_note(note, self.txn)
-    self.dbstate.db.commit_note(note, self.txn)
-    return note
-    
-  def aldFakto(self, fsFakto, obj):
-    if fsFakto.type[:6] == 'data:,':
-      gedTag = FACT_TAGS.get(fsFakto.type[6:]) or fsFakto.type[6:]
-    else:
-      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-    evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
-    fsFaktoLoko = fsFakto.place or ''
-    grLokoHandle = None
-    fsFaktoPriskribo = fsFakto.value or ''
-    fsFaktoDato = fsFakto.date or ''
-    if fsFakto.date:
-      grDate = Date()
-      grDate.set_calendar(Date.CAL_GREGORIAN)
-      if fsFakto.date.formal :
-        if fsFakto.date.formal.proksimuma :
-          grDate.set_modifier(Date.MOD_ABOUT)
-        if fsFakto.date.formal.gamo :
-          if fsFakto.date.formal.finalaDato :
-            grDate.set_modifier(Date.MOD_BEFORE)
-          elif fsFakto.date.formal.finalaDato :
-            grDate.set_modifier(Date.MOD_AFTER)
-        if fsFakto.date.formal.unuaDato:
-          jaro = fsFakto.date.formal.unuaDato.jaro
-          monato = fsFakto.date.formal.unuaDato.monato
-          tago = fsFakto.date.formal.unuaDato.tago
-        else :
-          jaro = fsFakto.date.formal.finalaDato.jaro
-          monato = fsFakto.date.formal.finalaDato.monato
-          tago = fsFakto.date.formal.finalaDato.tago
-        # FARINDAĴO : kompleksaj datoj, dato gamo
-        #if tago and monato and jaro :
-        #  grDate.set_yr_mon_day(jaro, monato, tago)
-        #else :
-        #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
-      grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original or '',newyear=Date.NEWYEAR_JAN1)
-    else : grDate = None
-
-    # serĉi ekzistanta
-    for fakto in obj.event_ref_list :
-      e = self.dbstate.db.get_event_from_handle(fakto.ref)
-      if ( e.type.value == evtType or e.type.string == gedTag) :
-        if ( e.get_date_object() == grDate ):
-          return e
-        elif ( ( e.get_date_object().is_empty() and not grDate)
-             and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
-             and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
-           ) :
-          return e
-    event = Event()
-    event.set_type( evtType )
-    if grLokoHandle:
-      event.set_place_handle( grLokoHandle )
-    if grDate :
-      event.set_date_object( grDate )
-    event.set_description(fsFaktoPriskribo)
-    # noto
-    for fsNoto in fsFakto.notes:
-      noto = self.aldNoto(fsNoto,event.note_list)
-      event.add_note(noto.handle)
-    self.dbstate.db.add_event(event, self.txn)
-    self.dbstate.db.commit_event(event, self.txn)
-    return event
 
   def __get_menu_options(self):
     menu = self.options.menu
