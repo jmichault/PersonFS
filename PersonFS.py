@@ -127,20 +127,20 @@ class PersonFS(Gramplet):
     if not tree._FsSeanco:
       if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
         import locale, os
-        self.top = Gtk.Builder()
-        self.top.set_translation_domain("addon")
+        gtk = Gtk.Builder()
+        gtk.set_translation_domain("addon")
         base = os.path.dirname(__file__)
         locale.bindtextdomain("addon", base + "/locale")
         glade_file = base + os.sep + "PersonFS.glade"
-        self.top.add_from_file(glade_file)
-        top = self.top.get_object("PersonFSPrefDialogo")
+        gtk.add_from_file(glade_file)
+        top = gtk.get_object("PersonFSPrefDialogo")
         top.set_transient_for(self.uistate.window)
         parent_modal = self.uistate.window.get_modal()
         if parent_modal:
           self.uistate.window.set_modal(False)
-        fsid = self.top.get_object("fsid_eniro")
+        fsid = gtk.get_object("fsid_eniro")
         fsid.set_text(PersonFS.fs_sn)
-        fspv = self.top.get_object("fspv_eniro")
+        fspv = gtk.get_object("fspv_eniro")
         fspv.set_text(PersonFS.fs_pasvorto)
         top.show()
         res = top.run()
