@@ -33,8 +33,6 @@ from gramps.gui.dialog import OkDialog, WarningDialog
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gui.utils import ProgressMeter
 
-from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
-
 from gramps.gen.const import GRAMPS_LOCALE as glocale
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -48,7 +46,7 @@ import PersonFS
 import fs_db
 import tree
 import utila
-from constants import FACT_TAGS, FACT_TYPES
+from constants import GEDCOMX_GRAMPS_FAKTOJ
 
 #from objbrowser import browse ;browse(locals())
 class FSKomparoOpcionoj(MenuToolOptions):
@@ -204,7 +202,7 @@ def SeksoKomp(grPersono, fsPersono ) :
   return ( koloro , _('Sekso:')
 		, '', grSekso
 		, '', fsSekso
-        , False, 'sekso', None, None
+        , None, 'sekso', None, None
 		) 
 
 def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
@@ -243,9 +241,9 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
     koloro = "green"
   if grFaktoDato == '' and grFaktoLoko == '' and fsFaktoDato == '' and fsFaktoLoko == '' :
     return None
-  if fsFaktoDato == '' :
+  if fsFaktoDato == '' and grFaktoDato != '':
     koloro = "yellow"
-  if grFaktoDato == '' :
+  if grFaktoDato == '' and fsFaktoDato != '':
     koloro = "yellow3"
   return ( koloro , titolo
 		, grFaktoDato , grFaktoLoko
@@ -476,15 +474,18 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       edzoFsid = utila.getfsid(edzo)
       fsEdzoId = ''
       fsEdzTrio = None
+      fsParo = None
       for paro in fsEdzoj :
         if (paro.person1.resourceId == edzoFsid
             or paro.person1.resourceId== '' and edzoFsid == '') :
           fsEdzoId = edzoFsid
+          fsParo = paro
           fsEdzoj.remove(paro)
           break
         elif (paro.person2.resourceId == edzoFsid 
             or paro.person2.resourceId== '' and edzoFsid == '') :
           fsEdzoId = edzoFsid
+          fsParo = paro
           fsEdzoj.remove(paro)
           break
       
@@ -496,14 +497,12 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       res.append( ( koloro , _trans.gettext('Spouse')
                 , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
 		  , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
-          , False, 'edzo', grPersono.handle ,fsEdzoId
+          , False, 'edzo', edzo_handle ,fsEdzoId
            ) )
       # familiaj eventoj (edziĝo, …)
-      fsFamilio = None
       fsFaktoj = set()
-      if fsEdzTrio :
-        fsFamilio = self.fs_Tree._fam[(fsEdzTrio[0], fsEdzTrio[1])]
-        fsFaktoj = fsFamilio.facts.copy()
+      if fsParo :
+        fsFaktoj = fsParo.facts.copy()
         for eventref in family.get_event_ref_list() :
           event = db.get_event_from_handle(eventref.ref)
           titolo = str(EventType(event.type))
@@ -523,16 +522,24 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           fsFaktoDato = ''
           fsFaktoLoko = ''
           fsFaktoPriskribo = ''
+          fsFakto_id = None
           for fsFakto in fsFaktoj :
-            gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-            grTag = FAMILYCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+            gedTag = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
+            if not gedTag:
+              if fsFakto.type[:6] == 'data:,':
+                gedTag = unquote(fsFakto.type[6:])
+              else:
+                gedTag = fsFakto.type
+            grTag = int(event.type) or event.type
             if gedTag != grTag :
               continue
             fsFaktoDato = str(fsFakto.date or '')
             if (fsFaktoDato == grFaktoDato) :
               koloro = "green"
-            fsFaktoLoko = fsFakto.place.original or ''
+            if fsFakto.place:
+              fsFaktoLoko = fsFakto.place.original or ''
             fsFaktoPriskribo = fsFakto.value or ''
+            fsFakto_id = fsFakto.id
             fsFaktoj.remove(fsFakto)
             break
           if fsFaktoLoko == '' :
@@ -542,18 +549,20 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           res.append( ( koloro , ' '+titolo
   		  , grFaktoDato , grValoro
   		  , fsFaktoDato , fsValoro
-          , False, 'edzoFakto', eventref.ref ,fsFakto.id
+          , False, 'edzoFakto', eventref.ref ,fsFakto_id
   		  ) )
       koloro = "yellow3"
       for fsFakto in fsFaktoj :
-        gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-        evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 
+        evtType = GEDCOMX_GRAMPS_FAKTOJ.get(fsFakto.type)
         if evtType :
           titolo = str(EventType(evtType))
+        elif fsFakto.type[:6] == 'data:,':
+          titolo = unquote(fsFakto.type[6:])
         else :
-          titolo = gedTag
+          titolo = fsFakto.type
         fsFaktoDato = str(fsFakto.date or '')
-        fsFaktoLoko = fsFakto.place.original or ''
+        if fsFakto.place:
+          fsFaktoLoko = fsFakto.place.original or ''
         fsFaktoPriskribo = fsFakto.value or ''
         if fsFaktoLoko == '' :
           fsValoro = fsFaktoPriskribo
@@ -689,13 +698,15 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     fsFaktoPriskribo = ''
     for fsFakto in fsFaktoj :
       fsFakto_id = fsFakto.id
-      if fsFakto.type[:6] == 'data:,':
-        gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
-      else:
-        gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
+      gedTag = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
+      if not gedTag:
+        if fsFakto.type[:6] == 'data:,':
+          gedTag = unquote(fsFakto.type[6:])
+        else:
+          gedTag = fsFakto.type
       if not gedTag :
         continue
-      grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
+      grTag = int(event.type) or event.type
       if gedTag != grTag :
         continue
       if fsFakto and fsFakto.date :
@@ -722,15 +733,18 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
   for fsFakto in fsFaktoj :
     if fsFakto.type == "http://gedcomx.org/Birth" or fsFakto.type == "http://gedcomx.org/Baptism" or fsFakto.type == "http://gedcomx.org/Death" or fsFakto.type == "http://gedcomx.org/Burial" :
       continue
-    if fsFakto.type[:6] == 'data:,':
-      gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
-    else:
-      gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-    evtType = GED_TO_GRAMPS_EVENT.get(gedTag) 
-    if evtType :
-      titolo = str(EventType(evtType))
+    gedTag = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
+    if not gedTag:
+      if fsFakto.type[:6] == 'data:,':
+        gedTag = unquote(fsFakto.type[6:])
+      else:
+        gedTag = fsFakto.type
+    if gedTag :
+      titolo = str(EventType(gedTag))
+    elif fsFakto.type[:6] == 'data:,':
+      titolo = unquote(fsFakto.type[6:])
     else :
-      titolo = gedTag
+      titolo = fsFakto.type
     if hasattr(fsFakto,"date"):
       fsFaktoDato = str(fsFakto.date or '')
     else : fsFaktoDato = ""
@@ -773,13 +787,13 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BAPTISM , "http://gedcomx.org/Baptism")
   if model and res: model.add(res)
-  if res and res[0][0] != "green" : FS_Fakto = True
+  if res and res[0] != "green" : FS_Fakto = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
   if model and res: model.add(res)
   if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BURIAL , "http://gedcomx.org/Burial")
   if model and res: model.add(res)
-  if res and res[0][0] != "green" : FS_Fakto = True
+  if res and res[0] != "green" : FS_Fakto = True
 
   res = aldGepKomp(db, grPersono, fsPersono)
   FS_Gepatro=False

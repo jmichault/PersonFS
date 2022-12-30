@@ -7,33 +7,22 @@
 # à faire pour version 1.2
 
 ## prioritaires
-* gramplet :
-  * copie de données gramps vers FS 
-  * copie de données FS vers gramps 
-* bogue import : évènements de type «Birth%20Registration».
-	ex. : g4yn-cnj
-	de type «http://familysearch.org/v1/LifeSketch»
-	ex. : g6sp-cnb
-* bogue gramplet : parfois le 2e enfant a le fsid du précédent.
-* bogue comparaison : les mariages ne s'affichent plus
-* bogue comparaison : brillot,jean I2179 GX3T-PJ3 marqué rouge
-* bogue : transformation date vers formal : gérer les dates républicaines (voir Darpheuil Jeanne)
-* bogue gramplet : rafraichir ne recharge pas la personne familysearch.
+* bogue import depuis gramplet : ramène sur l'individu souche.
+* bogue import : pays créé avec libellé de la commune
+* copie vers familysearch : transférer version longue des noms de lieu.
 * bogue comparaison famille : si famille sans père, les deux familles ne sont pas mises en face.
 * bogue import : certains enfants ne sont pas liés à leurs parents
 	G6WN-K13 pas lié à G8CN-WV7
 	lié à la gestion des familles uniparentales ?
-* bogue import : ne charge pas parents de Carbonel, Irma Césarie Eugénie - G4YX-XMV, après import de G4YX-9D1 sur 4+4 générations
+## facultatifs
+* comparaison : gérer le drapeau «vivant» sur familysearch.
+* bogue gramplet : rafraichir ne supprime pas les évènements supprimés dans familysearch.
 * bogue comparaison : la liste des filtres est celle du démarrage de gramps.
 * gestion des relevés (= «records» FS)
-## facultatifs
-* détection de la présence de documents à joindre
-	https://www.familysearch.org/service/tree/tree-data/record-matches/GDP3-S55/all?hintsOnLiving=true
-	https://www.familysearch.org/service/tree/tree-data/record-matches/GDP3-S55
 * gedcomx : erreur «maljsonigi:nekonata ero: Person:discussion-references», ex. : G776-3G8, I5132 2454-BH7
 * gedcomx : erreur «maljsonigi:nekonata ero: Person:fields»
+* gedcomx : erreur «maljsonigi:nekonata ero: Person:Principal», ex. : LR2N-SRM
 * bogue : parents multiples pas bien gérés
-* priorité sur les tags ?
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 * import :
@@ -47,24 +36,23 @@
           --> on n'importe pas si l'un des conjoints manque.
           ou mettre à jour les familles quand ré-import ?
 * gramplet :
+  * rafraichir : ne recharger la personne que si elle a été modifiée.
+  * copie des noms, sexe, conjoints, enfants
   * comparer les lieux.
-  * couleur vert jaune : essentiel bon, différences non essentielles(ex. : date de naissance OK, lieux différents)
   * création dans FS : lier aux parents et aux enfants qui existent dans FS
   * faire des listes déroulantes.
   * rafraichir : supprimer aussi les mariages dans l'arbre FS avant de recharger.
-  * double clic sur la ligne d'une personne --> aller dessus
   * gestion des sources
   * gestion des notes
 * recherche :
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné
-  * double clic sur une ligne --> ouverture familysearch ?
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné
+	ou afficher un avertissement.
   * plus de critères (au moins décès : lieu de décès, lieu général)
-  * recherche accessible depuis le menu
+  * recherche accessible depuis le menu ?
   * recherche : charger les suivants
-  * dates : supprimer le + et les autres caractères incorrects
-  * avertissement si on clique lier alors que déjà lié.
+  * dates : supprimer le A et les autres caractères non gérés.
 * gérer les langues
 * identifier et gérer les pré-requis (requests, gedcomx-v1)
 * synchro :
@@ -83,19 +71,17 @@
 * gestion des «memories»
 * module de liaison automatique.
 * module de détection de doublons dans gramps d'après le FSID
-* dans le gramplet :
+* gramplet :
   * lier un enfant ou conjoint gramps avec un enfant ou conjoint FS
+  * gestion des sources
 * dans l'import :
   * gestion des «attribution»
   * charger les ID des lieux , sources , Relationship,ChildAndParentsRelationship ?
 * gestion des nicknames à voir
-* gestion des sources dans le gramplet
 * chargement du portrait FS vers gramps
 * chargement des images FS vers gramps
 * chargement des images gramps vers FS
 * création de personne FS : gérer tous les noms, les sources, …
-* copies de données FS vers gramps dans le gramplet
-* copies de données gramps vers FS dans le gramplet
 * effacement de données FS dans le gramplet
 * effacement de données gramps dans le gramplet
 

@@ -24,6 +24,7 @@ fs Gramplet.
 """
 
 import json
+import email.utils
 
 #-------------------------------------------------------------------------
 #
@@ -55,8 +56,6 @@ from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
-from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
-
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
 import importlib
 gedcomx_spec = importlib.util.find_spec("gedcomx")
@@ -69,7 +68,7 @@ else:
   import gedcomx
 
 # lokaloj importadoj
-from constants import FACT_TAGS, FACT_TYPES
+from constants import GRAMPS_GEDCOMX_FAKTOJ
 import fs_db
 import komparo
 import tree
@@ -87,6 +86,7 @@ except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
 
+#from objbrowser import browse ;browse(locals())
 
 #-------------------------------------------------------------------------
 #
@@ -154,16 +154,16 @@ class PersonFS(Gramplet):
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           #if self.vorteco >= 3:
-          #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
           #else :
-          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+          #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         #if self.vorteco >= 3:
-        #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
         #else :
-        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+        #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     return tree._FsSeanco
 
 
@@ -213,8 +213,8 @@ class PersonFS(Gramplet):
 
 
 
-  def copy_al_FS(self, treeview):
-    print("copy_al_FS")
+  def kopii_al_FS(self, treeview):
+    print("kopii_al_FS")
     model = self.modelKomp.model
     iter_ = model.get_iter_first()
     fsP = gedcomx.Person()
@@ -223,8 +223,9 @@ class PersonFS(Gramplet):
         print("type="+str(model.get_value(iter_, 7)))
         print("gr="+str(model.get_value(iter_, 8)))
         print("fs="+str(model.get_value(iter_, 9)))
-        if model.get_value(iter_, 7) == 'fakto' :
-          event = self.dbstate.db.get_event_from_handle(model.get_value(iter_, 8))
+        if model.get_value(iter_, 7) == 'fakto' and model.get_value(iter_, 8) :
+          grHandle = model.get_value(iter_, 8)
+          event = self.dbstate.db.get_event_from_handle(grHandle)
           titolo = str(EventType(event.type))
           grFaktoPriskribo = event.description or ''
           grFaktoDato = grdato_al_formal(event.date)
@@ -238,10 +239,13 @@ class PersonFS(Gramplet):
             grValoro = grFaktoPriskribo
           else :
             grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
-          grTag = PERSONALCONSTANTEVENTS.get(int(event.type), "").strip() or event.type
           fsFakto = gedcomx.Fact()
-          tipo = FACT_TYPES.get(grTag)
-          if tipo[:5] == 'http:' :
+          grTag = int(event.type)
+          if grTag:
+            tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or str(event.type)
+          else :
+            tipo = str(event.type)
+          if tipo[:6] == 'http:/' or tipo[:6] == 'data:,' :
             fsFakto.type = tipo
           else :
             fsFakto.type = 'data:,'+tipo
@@ -269,8 +273,8 @@ class PersonFS(Gramplet):
       print (res.headers)
       print (res.text)
     
-  def copy_al_gramps(self, treeview):
-    print("copy_al_gramps")
+  def kopii_al_gramps(self, treeview):
+    print("kopii_al_gramps")
     model = self.modelKomp.model
     iter_ = model.get_iter_first()
     active_handle = self.get_active('Person')
@@ -315,12 +319,12 @@ class PersonFS(Gramplet):
     menu.set_reserve_toggle_size(False)
     item  = Gtk.MenuItem(label=_('Kopii elekton de gramps al FS'))
     item.set_sensitive(1)
-    item.connect("activate",lambda obj: self.copy_al_FS(treeview))
+    item.connect("activate",lambda obj: self.kopii_al_FS(treeview))
     item.show()
     menu.append(item)
     item  = Gtk.MenuItem(label=_('Kopii elekton de FS al gramps'))
     item.set_sensitive(1)
-    item.connect("activate",lambda obj: self.copy_al_gramps(treeview))
+    item.connect("activate",lambda obj: self.kopii_al_gramps(treeview))
     item.show()
     menu.append(item)
     self.menu = menu
@@ -342,7 +346,7 @@ class PersonFS(Gramplet):
     self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
     titles = [  
-                (_('Coloro'), 1, 20,COLOR),
+                (_('Koloro'), 1, 20,COLOR),
 		( _('Propreco'), 2, 100),
 		( _('Dato'), 3, 120),
                 (_('Gramps Valoro'), 4, 300),
@@ -389,10 +393,6 @@ class PersonFS(Gramplet):
 
   def ButRefresxigi_clicked(self, dummy):
     if self.FSID :
-      try:
-        gedcomx.Person._indekso.pop(self.FSID)
-      except:
-        pass
       PersonFS.fs_Tree.add_persons([self.FSID])
     rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
     f = open('arbo2.out.json','w')
@@ -474,7 +474,7 @@ class PersonFS(Gramplet):
     #  fsFakto = gedcomx.Fact()
     #  fsFakto.date = gedcomx.Date()
     #  fsFakto.date.original = grFaktoDato
-    #  fsFakto.type = FACT_TYPES.get(grTag)
+    #  fsFakto.type = GRAMPS_GEDCOMX_FAKTOJ.get(grTag)
     #  fsFakto.place = grFaktoLoko
     #  fsFakto.value = grFaktoPriskribo
     #  fsPerso.facts.add(fsFakto)
@@ -721,7 +721,6 @@ class PersonFS(Gramplet):
       fsNomo = fsPerso.akPrefNomo()
       fsBirth = get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or gedcomx.Fact()
       fsBirthLoko = fsBirth.place 
-      #from objbrowser import browse ;browse(locals())
       if fsBirthLoko :
         fsBirth = str(fsBirth.date or '') + ' \n@ ' +fsBirthLoko.original
       else :
@@ -732,7 +731,6 @@ class PersonFS(Gramplet):
         fsDeath = str(fsDeath.date or '') + ' \n@ ' +fsDeathLoko.original
       else :
         fsDeath = str(fsDeath.date or '')
-      #from objbrowser import browse ;browse(locals())
       if father :
         fsPatroNomo = father.akPrefNomo()
       else:

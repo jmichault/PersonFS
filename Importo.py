@@ -38,7 +38,6 @@ from gramps.gen.plug.menu import StringOption, PersonOption, BooleanOption, Numb
 from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gui.utils import ProgressMeter
-from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT, TOKENS
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
 import importlib
@@ -52,7 +51,7 @@ else:
   import gedcomx
 
 import PersonFS
-from constants import FACT_TAGS
+from constants import GEDCOMX_GRAMPS_FAKTOJ
 import tree
 
 try:
@@ -65,6 +64,98 @@ _ = _trans.gettext
 vorteco = 0
 
 #from objbrowser import browse ;browse(locals())
+
+def kreiLoko(db, txn, nomo, parent):
+  place = akiriLoko(db, nomo, parent=parent)
+  if place:
+    return place
+  place = Place()
+  place_name = PlaceName()
+  place_name.set_value( nomo )
+  place.set_name(place_name)
+  place.set_title(nomo)
+  place_type = None
+  if not parent:
+    place_type = PlaceType(1)
+  else:
+    if parent.place_type == PlaceType(1):
+      place_type = PlaceType(9)
+    elif parent.place_type == PlaceType(9):
+      place_type = PlaceType(10)
+    elif parent.place_type == PlaceType(10):
+      place_type = PlaceType(14)
+    elif parent.place_type == PlaceType(14):
+      place_type = PlaceType(20)
+    placeref = PlaceRef()
+    placeref.ref = parent.handle
+    place.add_placeref(placeref)
+  place.set_type(place_type)
+  db.add_place(place, txn)
+  db.commit_place(place, txn)
+  return place
+
+
+
+def aldLoko(db, txn, pl):
+  if not hasattr(pl,'_handle') :
+    pl._handle = None
+  if pl._handle : return
+  # sercxi por loko kun cî nomo
+  grLoko = akiriLoko(db, None, pl)
+  if grLoko:
+    pl._handle = grLoko.handle
+    return
+  
+  # FARINDAĴO : Elekti nomo
+  if pl and len(pl.names) :
+    nomo = next(iter(pl.names)).value
+  elif pl :
+    nomo = pl.original
+  partoj = nomo.split(', ')
+  if len(partoj) <1:
+    return
+
+  # FARINDAĴOJ : administri naciajn apartaĵojn, aŭ uzi geonames ?
+  lando = partoj.pop(len(partoj)-1)
+  grLando = kreiLoko(db, txn, lando, None)
+  if grLando:
+    pl._handle = grLando.handle
+  if len(partoj) <1:
+    return
+
+  regiono = partoj.pop(len(partoj)-1)
+  grRegiono = kreiLoko(db, txn, regiono, grLando)
+  if grRegiono:
+    pl._handle = grRegiono.handle
+  if len(partoj) <1:
+    return
+
+  fako = partoj.pop(len(partoj)-1)
+  grFako = kreiLoko(db, txn, fako, grRegiono)
+  if grFako:
+    pl._handle = grFako.handle
+  if len(partoj) <1:
+    return
+
+  municipo = partoj.pop(len(partoj)-1)
+  grMunicipo = kreiLoko(db, txn, municipo, grFako)
+  if grMunicipo:
+    pl._handle = grMunicipo.handle
+  if len(partoj) <1:
+    pn = PlaceName()
+    pn.set_value(nomo)
+    grMunicipo.add_alternative_name(pn)
+    db.commit_place(grMunicipo, txn)
+    return
+
+  lokloko = ", ".join(partoj)
+  grLoko = kreiLoko(db, txn, lokloko, grMunicipo)
+  pl_handle = grLoko.handle
+  pn = PlaceName()
+  pn.set_value(nomo)
+  grLoko.add_alternative_name(pn)
+  db.commit_place(grLoko, txn)
+
 
 def akiriLoko(db, nomo, fsLoko=None, parent=None):
   # FARINDAĴO : Elekti nomo
@@ -106,17 +197,22 @@ def aldNoto(db, txn, fsNoto,EkzNotoj):
   return note
   
 def aldFakto(db, txn, fsFakto, obj):
-  if fsFakto.type[:6] == 'data:,':
-    gedTag = FACT_TAGS.get(unquote(fsFakto.type[6:])) or unquote(fsFakto.type[6:])
-  else:
-    gedTag = FACT_TAGS.get(fsFakto.type) or fsFakto.type
-  evtType = GED_TO_GRAMPS_EVENT.get(gedTag) or gedTag
+  evtType = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
+  if not evtType:
+    if fsFakto.type[:6] == 'data:,':
+      evtType = unquote(fsFakto.type[6:])
+    else:
+      evtType = fsFakto.type
   fsFaktoLoko = fsFakto.place or ''
   grLokoHandle = None
   if fsFaktoLoko  != '':
     grLoko = akiriLoko(db, None, fsFakto.place)
     if grLoko:
       grLokoHandle = grLoko.handle
+    else :
+      aldLoko(db, txn, fsFakto.place)
+      grLokoHandle = fsFakto.place._handle
+      
   fsFaktoPriskribo = fsFakto.value or ''
   fsFaktoDato = fsFakto.date or ''
   if fsFakto.date:
@@ -149,7 +245,7 @@ def aldFakto(db, txn, fsFakto, obj):
   # serĉi ekzistanta
   for fakto in obj.event_ref_list :
     e = db.get_event_from_handle(fakto.ref)
-    if ( e.type.value == evtType or e.type.string == gedTag) :
+    if ( e.type.value == evtType ) :
       if ( e.get_date_object() == grDate ):
         return e
       elif ( ( e.get_date_object().is_empty() and not grDate)
@@ -382,7 +478,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print(_("Importado de lokoj…"))
       for pl in self.fs_TreeImp.places :
         progress.step()
-        self.aldLoko(pl)
+        aldLoko(self.dbstate.db, txn, pl)
       progress.set_pass(_('Importado de personoj… (8/9)'),len(self.fs_TreeImp.persons))
       print(_("Importado de personoj…"))
       # importi personoj
@@ -402,96 +498,6 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     progress.close()
     self.dbstate.db.enable_signals()
     self.dbstate.db.request_rebuild()
-
-  def kreiLoko(self, nomo, parent):
-    place = akiriLoko(self.dbstate.db, nomo, parent=parent)
-    if place:
-      return place
-    place = Place()
-    place_name = PlaceName()
-    place_name.set_value( nomo )
-    place.set_name(place_name)
-    place.set_title(nomo)
-    place_type = None
-    if not parent:
-      place_type = PlaceType(1)
-    else:
-      if parent.place_type == PlaceType(1):
-        place_type = PlaceType(9)
-      elif parent.place_type == PlaceType(9):
-        place_type = PlaceType(10)
-      elif parent.place_type == PlaceType(10):
-        place_type = PlaceType(14)
-      elif parent.place_type == PlaceType(14):
-        place_type = PlaceType(20)
-      placeref = PlaceRef()
-      placeref.ref = parent.handle
-      place.add_placeref(placeref)
-    place.set_type(place_type)
-    self.dbstate.db.add_place(place, self.txn)
-    self.dbstate.db.commit_place(place, self.txn)
-    return place
-
-
-
-  def aldLoko(self, pl):
-    pl._handle = None
-    # sercxi por loko kun cî nomo
-    grLoko = akiriLoko(self.dbstate.db, None, pl)
-    if grLoko:
-      pl._handle = grLoko.handle
-      return
-    
-    # FARINDAĴO : Elekti nomo
-    if pl and len(pl.names) :
-      nomo = next(iter(pl.names))
-    elif pl :
-      nomo = pl.original
-    partoj = nomo.value.split(', ')
-    if len(partoj) <1:
-      return
-
-    # FARINDAĴOJ : administri naciajn apartaĵojn, aŭ uzi geonames ?
-    lando = partoj.pop(len(partoj)-1)
-    grLando = self.kreiLoko(lando, None)
-    if grLando:
-      pl._handle = grLando.handle
-    if len(partoj) <1:
-      return
-
-    regiono = partoj.pop(len(partoj)-1)
-    grRegiono = self.kreiLoko(regiono, grLando)
-    if grRegiono:
-      pl._handle = grRegiono.handle
-    if len(partoj) <1:
-      return
-
-    fako = partoj.pop(len(partoj)-1)
-    grFako = self.kreiLoko(fako, grRegiono)
-    if grFako:
-      pl._handle = grFako.handle
-    if len(partoj) <1:
-      return
-
-    municipo = partoj.pop(len(partoj)-1)
-    grMunicipo = self.kreiLoko(municipo, grFako)
-    if grMunicipo:
-      pl._handle = grMunicipo.handle
-    if len(partoj) <1:
-      pn = PlaceName()
-      pn.set_value(nomo.value)
-      grMunicipo.add_alternative_name(pn)
-      self.dbstate.db.commit_place(grMunicipo, self.txn)
-      return
-
-    lokloko = ", ".join(partoj)
-    grLoko = self.kreiLoko(lokloko, grMunicipo)
-    pl_handle = grLoko.handle
-    pn = PlaceName()
-    pn.set_value(nomo.value)
-    grLoko.add_alternative_name(pn)
-    self.dbstate.db.commit_place(grLoko, self.txn)
-
 
   def aldFamilio(self,fsFam):
     familio = None
@@ -649,7 +655,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     if not grPersonoHandle:
       grPerson = Person()
       self.aldNomoj( fsPersono, grPerson)
-      if fsPersono.gender.type == "http://gedcomx.org/Male" :
+      if not fsPersono.gender :
+        grPerson.set_gender(Person.UNKNOWN)
+      elif fsPersono.gender.type == "http://gedcomx.org/Male" :
         grPerson.set_gender(Person.MALE)
       elif fsPersono.gender.type == "http://gedcomx.org/Female" :
         grPerson.set_gender(Person.FEMALE)
