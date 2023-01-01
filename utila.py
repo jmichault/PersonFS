@@ -3,12 +3,12 @@ from gramps.gen.lib import Attribute, EventRoleType, Date
 from gramps.gen.lib.date import gregorian
 
 from gramps.gen.const import GRAMPS_LOCALE as glocale
+
 try:
     _trans = glocale.get_addon_translator(__file__)
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
-
 
 def grdato_al_formal( dato) :
   """

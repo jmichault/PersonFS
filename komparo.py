@@ -26,6 +26,7 @@ from urllib.parse import unquote
 from gramps.gen.plug.menu import FilterOption, TextOption, NumberOption, BooleanOption
 from gramps.gen.db import DbTxn
 from gramps.gen.display.name import displayer as name_displayer
+from gramps.gen.display.place import displayer as _pd
 from gramps.gen.filters import CustomFilters, GenericFilterFactory, rules
 from gramps.gen.lib import Date, EventRoleType, EventType, Person
 
@@ -214,7 +215,8 @@ def FaktoKomp(db, person, fsPerso, grEvent , fsFact ) :
     grFaktoDato = utila.grdato_al_formal(grFakto.date)
     if grFakto.place and grFakto.place != None :
       place = db.get_place_from_handle(grFakto.place)
-      grFaktoLoko = place.name.value
+      #grFaktoLoko = place.name.value
+      grFaktoLoko = _pd.display(db,place)
     else :
       grFaktoLoko = ''
   else :
@@ -510,7 +512,8 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           grFaktoDato = utila.grdato_al_formal(event.date)
           if event.place and event.place != None :
             place = db.get_place_from_handle(event.place)
-            grFaktoLoko = place.name.value
+            #grFaktoLoko = place.name.value
+            grFaktoLoko = _pd.display(db,place)
           else :
             grFaktoLoko = ''
           # FARINDAĴO : norma loknomo
@@ -683,7 +686,8 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     grFaktoDato = utila.grdato_al_formal(event.date)
     if event.place and event.place != None :
       place = db.get_place_from_handle(event.place)
-      grFaktoLoko = place.name.value
+      #grFaktoLoko = place.name.value
+      grFaktoLoko = _pd.display(db,place)
     else :
       grFaktoLoko = ''
     # FARINDAĴO : norma loknomo

@@ -231,7 +231,7 @@ class PersonFS(Gramplet):
           grFaktoDato = grdato_al_formal(event.date)
           if event.place and event.place != None :
             place = self.dbstate.db.get_place_from_handle(event.place)
-            grFaktoLoko = place.name.value
+            grFaktoLoko = _pd.display(self.dbstate.db,place)
           else :
             grFaktoLoko = ''
           # FARINDAĴO : norma loknomo

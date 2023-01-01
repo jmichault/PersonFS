@@ -11,6 +11,7 @@ _ = _trans.gettext
 # Subject to change: see https://www.familysearch.org/developers/docs/guides/facts
 #   kaj https://github.com/FamilySearch/gedcomx/blob/master/specifications/fact-types-specification.md
 from gramps.gen.lib import EventType
+from gramps.gen.lib import PlaceType
 
 GEDCOMX_GRAMPS_FAKTOJ = {
   "http://gedcomx.org/Adoption": EventType.ADOPT,
@@ -79,3 +80,27 @@ def reversed_dict(d):
 GRAMPS_GEDCOMX_FAKTOJ = reversed_dict( GEDCOMX_GRAMPS_FAKTOJ )
 
 GEDCOMX_GRAMPS_FAKTOJ.update(ALIAJ_FAKTOJ)
+
+GEDCOMX_GRAMPS_LOKOJ = {
+  "https://www.familysearch.org/platform/places/types/580": PlaceType.COUNTRY
+ ,"https://www.familysearch.org/platform/places/types/362": PlaceType.STATE
+ ,"https://www.familysearch.org/platform/places/types/209": PlaceType.COUNTY
+ ,"https://www.familysearch.org/platform/places/types/521": PlaceType.COUNTY
+ ,"https://www.familysearch.org/platform/places/types/186": PlaceType.CITY
+ ,"https://www.familysearch.org/platform/places/types/312": PlaceType.PARISH
+ ,"https://www.familysearch.org/platform/places/types/323": PlaceType.LOCALITY
+ ,"https://www.familysearch.org/platform/places/types/337": PlaceType.REGION
+ ,"https://www.familysearch.org/platform/places/types/215": PlaceType.DEPARTMENT
+ ,"https://www.familysearch.org/platform/places/types/308": PlaceType.NEIGHBORHOOD
+ ,"https://www.familysearch.org/platform/places/types/221": PlaceType.DISTRICT
+ ,"https://www.familysearch.org/platform/places/types/171": PlaceType.BOROUGH
+ ,"https://www.familysearch.org/platform/places/types/201": PlaceType.MUNICIPALITY
+ ,"https://www.familysearch.org/platform/places/types/376": PlaceType.TOWN
+ ,"https://www.familysearch.org/platform/places/types/391": PlaceType.VILLAGE
+ ,"https://www.familysearch.org/platform/places/types/266": PlaceType.HAMLET
+ ,"https://www.familysearch.org/platform/places/types/38": PlaceType.FARM
+ ,"https://www.familysearch.org/platform/places/types/23": PlaceType.BUILDING
+ ,"https://www.familysearch.org/platform/places/types/61": PlaceType.BUILDING
+ ,"https://www.familysearch.org/platform/places/types/115": PlaceType.BUILDING
+ ,"https://www.familysearch.org/platform/places/types/142": PlaceType.BUILDING
+}
