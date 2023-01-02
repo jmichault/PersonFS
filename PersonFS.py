@@ -185,7 +185,7 @@ class PersonFS(Gramplet):
 
   def konekti_FS(self):
     if not tree._FsSeanco:
-      print("konekti")
+      print("konektas al FS")
       #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
       tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     if not tree._FsSeanco.logged :
@@ -220,9 +220,6 @@ class PersonFS(Gramplet):
     fsP = gedcomx.Person()
     while iter_ is not None:
       if model.get_value(iter_, 6) : 
-        print("type="+str(model.get_value(iter_, 7)))
-        print("gr="+str(model.get_value(iter_, 8)))
-        print("fs="+str(model.get_value(iter_, 9)))
         if model.get_value(iter_, 7) == 'fakto' and model.get_value(iter_, 8) :
           grHandle = model.get_value(iter_, 8)
           event = self.dbstate.db.get_event_from_handle(grHandle)
@@ -283,9 +280,6 @@ class PersonFS(Gramplet):
     with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
       while iter_ is not None:
         if model.get_value(iter_, 6) : 
-          print("type="+str(model.get_value(iter_, 7)))
-          print("gr="+str(model.get_value(iter_, 8)))
-          print("fs="+str(model.get_value(iter_, 9)))
           # FARINDAĴO : aliaj tipoj
           if model.get_value(iter_, 7) == 'fakto' :
             fsFakto_id = model.get_value(iter_, 9)
@@ -378,7 +372,6 @@ class PersonFS(Gramplet):
   def toggled(self, path, val):
     row = self.modelKomp.model.get_iter((path,))
     tipo=self.modelKomp.model.get_value(row, 7)
-    print("toggled:tipo="+tipo)
     if tipo != 'fakto':
       self.modelKomp.model.set_value(row, 6, False)
       OkDialog(_('Pardonu, nur eventaj linioj povas esti elektitaj.'))
@@ -674,7 +667,6 @@ class PersonFS(Gramplet):
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo._places:
-            #print(" ajout place : "+place["id"])
             self.fs_TreeSercxo._places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
@@ -688,15 +680,11 @@ class PersonFS(Gramplet):
           self.fs_TreeSercxo._persons[person["id"]] = gedcomx.Person(person["id"], self.fs_TreeSercxo)
           gedcomx.maljsonigi(self.fs_TreeSercxo._persons[person["id"]],person)
         for person in data["persons"]:
-          #print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
-            #print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
-              #print("     mother")
               motherId=person["id"]
               mother=self.fs_TreeSercxo._persons[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
-              #print("     father")
               fatherId=person["id"]
               father=self.fs_TreeSercxo._persons[person["id"]]
       fsPerso = PersonFS.fs_TreeSercxo._persons.get(fsId) or gedcomx.Person()
@@ -719,7 +707,6 @@ class PersonFS(Gramplet):
           elif rel["type"] == "http://gedcomx.org/ParentChild":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
-            #print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
               person1=self.fs_TreeSercxo._persons[person1Id]
               if not father and person1.gender.type == "http://gedcomx.org/Male" :

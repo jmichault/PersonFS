@@ -3,11 +3,6 @@
         ; fsid George Washington : KNDX-MKG
 	; fsid avec parents multiples : 9CSJ-L2D
 
-# à faire pour version 1.2
-* bogue : lieux en double avec même url fs.
-	cause = lieux fusionnés. exemple : 7345333 fusionné avec 10735890
-
-
 # à faire pour version 1.3
 ## prioritaires
 * bogues :
