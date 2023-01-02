@@ -352,7 +352,7 @@ class PersonFS(Gramplet):
                 (_('Gramps Valoro'), 4, 300),
                 (_('FS Dato'), 5, 120),
                 (_('FS Valoro'), 6, 300),
-                ('x', 7, 20, TOGGLE,True),
+                ('x', 7, 20, TOGGLE,True,self.toggled),
                 (_('xTipo'), NOSORT, 0),
                 (_('xGr'), NOSORT, 0),
                 (_('xFs'), NOSORT, 0),
@@ -374,6 +374,15 @@ class PersonFS(Gramplet):
 	})
 
     return self.res
+
+  def toggled(self, path, val):
+    row = self.modelKomp.model.get_iter((path,))
+    tipo=self.modelKomp.model.get_value(row, 7)
+    print("toggled:tipo="+tipo)
+    if tipo != 'fakto':
+      self.modelKomp.model.set_value(row, 6, False)
+      OkDialog(_('Pardonu, nur eventaj linioj povas esti elektitaj.'))
+
 
   def ButBaskKonf_toggled(self, dummy):
    with DbTxn(_("FamilySearch tags"), self.dbstate.db) as txn:

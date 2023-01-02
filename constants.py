@@ -81,12 +81,15 @@ GRAMPS_GEDCOMX_FAKTOJ = reversed_dict( GEDCOMX_GRAMPS_FAKTOJ )
 
 GEDCOMX_GRAMPS_FAKTOJ.update(ALIAJ_FAKTOJ)
 
+# familysearch tipolokoj : <https://www.familysearch.org/platform/places/types> .
+
 GEDCOMX_GRAMPS_LOKOJ = {
   "https://www.familysearch.org/platform/places/types/580": PlaceType.COUNTRY
  ,"https://www.familysearch.org/platform/places/types/362": PlaceType.STATE
  ,"https://www.familysearch.org/platform/places/types/209": PlaceType.COUNTY
  ,"https://www.familysearch.org/platform/places/types/521": PlaceType.COUNTY
  ,"https://www.familysearch.org/platform/places/types/186": PlaceType.CITY
+ ,"https://www.familysearch.org/platform/places/types/520": PlaceType.CITY
  ,"https://www.familysearch.org/platform/places/types/312": PlaceType.PARISH
  ,"https://www.familysearch.org/platform/places/types/323": PlaceType.LOCALITY
  ,"https://www.familysearch.org/platform/places/types/337": PlaceType.REGION

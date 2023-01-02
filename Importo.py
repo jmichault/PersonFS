@@ -66,6 +66,7 @@ vorteco = 0
 #from objbrowser import browse ;browse(locals())
 
 def kreiLoko(db, txn, fsPlace, parent):
+  print("kreiLoko:"+fsPlace.id+" - "+fsPlace.display.name)
   place = Place()
   url = Url()
   url.path = 'https://api.familysearch.org/platform/places/description/'+fsPlace.id
@@ -116,7 +117,7 @@ def aldLoko(db, txn, pl):
     pl._handle = grLoko.handle
     return grLoko
   if not pl.id : return None
-
+  print("aldLoko:"+pl.id)
   mendo = '/platform/places/description/'+pl.id
   r = tree._FsSeanco.get_url( mendo ,{"Accept": "application/json,*/*"})
   if r and r.status_code == 200 :
@@ -141,19 +142,34 @@ def aldLoko(db, txn, pl):
     grParent = aldLoko( db, txn, fsParent)
   else:
     grParent = None
+  if fsPlaceId != pl.id :
+    # lieux fusionnés !
+    grLoko2 = akiriLokoPerId(db, fsPlace)
+    if not grLoko2:
+      grLoko2 = aldLoko(db, txn, fsPlace)
+    url = Url()
+    url.path = 'https://api.familysearch.org/platform/places/description/'+pl.id
+    url.type = UrlType('FamilySearch')
+    grLoko2.add_url(url)
+    db.commit_place(grLoko2, txn)
+    return grLoko2
+
   return kreiLoko(db, txn, fsPlace, grParent)
   
 
 def akiriLokoPerId(db, fsLoko):
+  print ("sercxi loko:"+str(fsLoko.id))
   if not fsLoko.id and fsLoko.description and fsLoko.description[:1]=='#' :
      fsLoko.id=fsLoko.description[1:]
   if not fsLoko.id:
     return None
   s_url = 'https://api.familysearch.org/platform/places/description/'+fsLoko.id
+  print ("sercxi url:"+s_url)
   # sercxi por loko kun cî «id»
   for handle in db.get_place_handles():
     place = db.get_place_from_handle(handle)
     for url in place.urls :
+      #print ("kompari url"+s_url+";kun:"+url.path)
       if str(url.type) == 'FamilySearch' and url.path == s_url :
         return place
   return None
