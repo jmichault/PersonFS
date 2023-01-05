@@ -1,16 +1,16 @@
 
 
-Ceci est un module pour interfacer _gramps_ avec _familysearch.com_.
+Ceci est une extension pour interfacer _gramps_ avec _familysearch.com_.
 il se compose de :
-* un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_. Il permet aussi de faire des recherches sur familysearch et de consulter les doublons potentiels trouvés par FamilySearch.
+* un [_gramplet_](https://www.gramps-project.org/wiki/index.php/Gramplets) permettant de comparer votre individu avec celui de _FamilySearch_. Depuis ce gramplet, vous pouvez aussi faire des recherches sur familysearch, consulter les doublons potentiels trouvés par FamilySearch, copier les évènements vers ou depuis FamilySearch, importer les ancêtre et descendants.
 * un module d'import accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «Import de données FamilySearch»
 * un module de comparaison accessible par le menu «Outils» --> «Modification de l'arbre familial» --> «FamilySearch : comparer»
 
-Pour pouvoir utiliser le module il vous faut un compte _familysearch_, celui-ci sera demandé au lancement du gramplet, ainsi que le mot de passe associé.
+Pour pouvoir utiliser l'extension il vous faut un compte _familysearch_, celui-ci sera demandé au lancement du gramplet, ainsi que le mot de passe associé.
 
 # installation
 ## prérequis
-Les module python «requests» et «gedcomx-v1» doivent être installés.
+Les modules python «requests» et «gedcomx-v1» doivent être installés.
 De ce fait ce plugin ne peut pas être utilisé avec la distribution AIO de gramps.
 
 ## en chargeant le zip
@@ -62,6 +62,8 @@ Depuis le gramplet, vous pouvez aussi :
 * Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de copier votre fiche vers FamilySearch si vous ne trouvez pas de correspondance.
 * Consulter les doublons potentiels proposés par FamilySearch, et de là vous pouvez accéder à la fiche FamilySearch complète du doublon potentiel, ou accéder à l'écran de fusion FamilySearch.
 * lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
+* copier des évènements vers ou depuis FamilySearch en cochant la dernière colonne, puis en utilisant le menu contextuel (clic droit).
+* changer d'individu en double-cliquant sur la ligne correspondante.
 
 # le module d'import
 Vous pouvez le lancer soit depuis le menu, soit depuis le gramplet.  
@@ -71,7 +73,9 @@ Vous avez juste à renseigner :
 * le nombre de générations descendantes.
 * cochez «Ne pas réimporter les personnes existantes» si vous voulez protéger vos individus existants.
 * cochez «Ajouter les conjoints» si vous voulez charger aussi les conjoints de toutes les personnes.
-  (note : si vous chargez des générations descendantes, les conjoints seront chargés)
+  (note : si vous chargez des générations descendantes, les conjoints seront forcément chargés)
+* cochez «Ajouter les sources» si vous voulez charger aussi les sources attachées.
+* cochez «Ajouter les notes» si vous voulez charger aussi les notes attachées.
 
 Puis cliquez sur le bouton «Importer»
 
@@ -83,18 +87,17 @@ Puis cliquez sur le bouton «Importer»
   * FS\_Gepatro : il y a un parent à synchroniser.
   * FS\_Familio : il y a un conjoint ou un enfant à synchroniser.
   * FS\_Fakto : il y a un évènement à synchoniser (autre que naissance ou décès).
-  * FS\_Dup : doublon potentiel détecté par FS
+  * FS\_Dup : doublon potentiel détecté par FamilySearch.
+  * FS\_Dok : documents à relier détectés par FamilySearch.
   * FS\_Gramps : changé dans gramps depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
   * FS\_FS : changé dans FamilySearch depuis la dernière fois que l'étiquette FS\_Konf a été positionné, ou que tout était conforme (étiquette FS\_Identa et aucun autre)
 * de plus l'étiquette FS\_Konf peut être positionnée depuis le gramplet : synchro pas parfaite mais marquée conforme.
 * l'outil peut être interrompu en cours de traitement.
 
-
 # méthode de travail suggérée.
 
 ## Créez des filtres
-1. créez un filtre : «ascendants»
-2. créez un filtre : «ascendants avec parent non synchronisé».
+1. créez un filtre sélectionnant les individus qui vous intéressent, par exemple : «ascendants sur x générations»
 
 ## démarrage
 1. activez le gramplet sur la vue Individus
@@ -105,6 +108,14 @@ Puis cliquez sur le bouton «Importer»
 3. faites de même avec ses parents, puis les parents de ses parents …
 
 ## régulièrement
-1. filtrez les «ascendants avec parent non synchronisé»
+1. exécutez le module de comparaison
+2. filtrez les «ascendants» avec l'étiquette FS_Gepatro
   * synchronisez les parents
-
+3. filtrez les «ascendants» avec l'étiquette FS_Familio
+  * synchronisez les enfants
+4. procédez de même avec les étiquettes FS_Esenco, FS_Fakto, FS_Nomo
+5. filtrez les «ascendants» avec l'étiquette FS_Dok
+  * cliquez sur le lien menant à FamilySearch et vérifiez les documents proposés.
+6. filtrez les «ascendants» avec l'étiquette FS_Dup
+  * cliquez sur le bouton «Voir les doublons FS» et vérifiez s'il faut les fusionner.
+7. consultez les lieux. Le transfert de données FamilySearch a très probablement créé des doublons : fusionnez les avec vos lieux pré-existants, ou mettez-les à vos propres normes.

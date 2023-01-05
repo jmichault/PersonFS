@@ -24,6 +24,7 @@ fs Gramplet.
 """
 
 import json
+import email.utils
 
 #-------------------------------------------------------------------------
 #
@@ -44,18 +45,16 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
+from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
 from gramps.gui.dialog import OptionDialog, OkDialog
-from gramps.gui.editors import EditPerson
-from gramps.gui.listmodel import ListModel, NOSORT, COLOR
+from gramps.gui.editors import EditPerson, EditEvent
+from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
 from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
-
-from gramps.plugins.lib.libgedcom import PERSONALCONSTANTEVENTS, FAMILYCONSTANTEVENTS, GED_TO_GRAMPS_EVENT
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
 import importlib
@@ -69,11 +68,12 @@ else:
   import gedcomx
 
 # lokaloj importadoj
-from constants import FACT_TAGS, FACT_TYPES
+from constants import GRAMPS_GEDCOMX_FAKTOJ
 import fs_db
 import komparo
 import tree
 import utila
+import Importo
 from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
@@ -86,6 +86,7 @@ except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
 
+#from objbrowser import browse ;browse(locals())
 
 #-------------------------------------------------------------------------
 #
@@ -153,16 +154,16 @@ class PersonFS(Gramplet):
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           #if self.vorteco >= 3:
-          #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
           #else :
-          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+          #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         #if self.vorteco >= 3:
-        #  tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
         #else :
-        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+        #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     return tree._FsSeanco
 
 
@@ -184,7 +185,7 @@ class PersonFS(Gramplet):
 
   def konekti_FS(self):
     if not tree._FsSeanco:
-      print("konekti")
+      print("konektas al FS")
       #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
       tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
     if not tree._FsSeanco.logged :
@@ -192,6 +193,137 @@ class PersonFS(Gramplet):
     if not PersonFS.fs_Tree:
       PersonFS.fs_Tree = tree.Tree()
       PersonFS.fs_Tree._getsources = False
+
+  def l_duobla_klako(self, treeview):
+    (model, iter_) = treeview.get_selection().get_selected()
+    if not iter_:
+      return
+    tipo=model.get_value(iter_, 7)
+    handle = model.get_value(iter_, 8)
+    if ( handle
+         and ( tipo == 'infano' or tipo == 'patro'
+            or tipo == 'patrino' or tipo == 'edzo')) :
+      self.uistate.set_active(handle, 'Person')
+    elif ( handle and tipo == 'fakto') :
+      event = self.dbstate.db.get_event_from_handle(handle)
+      try:
+        EditEvent(self.dbstate, self.uistate, [], event)
+      except WindowActiveError:
+        pass
+
+
+
+  def kopii_al_FS(self, treeview):
+    print("kopii_al_FS")
+    model = self.modelKomp.model
+    iter_ = model.get_iter_first()
+    fsP = gedcomx.Person()
+    while iter_ is not None:
+      if model.get_value(iter_, 6) : 
+        if model.get_value(iter_, 7) == 'fakto' and model.get_value(iter_, 8) :
+          grHandle = model.get_value(iter_, 8)
+          event = self.dbstate.db.get_event_from_handle(grHandle)
+          titolo = str(EventType(event.type))
+          grFaktoPriskribo = event.description or ''
+          grFaktoDato = grdato_al_formal(event.date)
+          if event.place and event.place != None :
+            place = self.dbstate.db.get_place_from_handle(event.place)
+            grFaktoLoko = _pd.display(self.dbstate.db,place)
+          else :
+            grFaktoLoko = ''
+          # FARINDAĴO : norma loknomo
+          if grFaktoLoko == '' :
+            grValoro = grFaktoPriskribo
+          else :
+            grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
+          fsFakto = gedcomx.Fact()
+          grTag = int(event.type)
+          if grTag:
+            tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or str(event.type)
+          else :
+            tipo = str(event.type)
+          if tipo[:6] == 'http:/' or tipo[:6] == 'data:,' :
+            fsFakto.type = tipo
+          else :
+            fsFakto.type = 'data:,'+tipo
+          fsFakto.value = grFaktoPriskribo
+          if grFaktoDato :
+            fsFakto.date = gedcomx.Date()
+            fsFakto.date.original = str (event.date)
+            fsFakto.date.formal = gedcomx.DateFormal(grFaktoDato)
+          if grFaktoLoko :
+            fsFakto.place = gedcomx.PlaceReference()
+            fsFakto.place.original = grFaktoLoko
+          fsP.facts.add(fsFakto)
+      # FARINDAĴO : edzoj, gepatroj, infanoj,…
+      iter_ =  model.iter_next(iter_)
+    peto = {'persons' : [gedcomx.jsonigi(fsP)]}
+    jsonpeto = json.dumps(peto)
+    res = tree._FsSeanco.post_url( "/platform/tree/persons/"+self.FSID, jsonpeto )
+    if res.status_code == 201:
+      print("ĝisdatigo sukceso")
+      self.ButRefresxigi_clicked(None)
+    else :
+      print("ĝisdatigo malsukceso")
+      print(" jsonpeto = "+jsonpeto)
+      print(" res.status_code="+str(res.status_code))
+      print (res.headers)
+      print (res.text)
+    
+  def kopii_al_gramps(self, treeview):
+    print("kopii_al_gramps")
+    model = self.modelKomp.model
+    iter_ = model.get_iter_first()
+    active_handle = self.get_active('Person')
+    grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+    fsPersono = gedcomx.Person._indekso.get(self.FSID) 
+    with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
+      while iter_ is not None:
+        if model.get_value(iter_, 6) : 
+          # FARINDAĴO : aliaj tipoj
+          if model.get_value(iter_, 7) == 'fakto' :
+            fsFakto_id = model.get_value(iter_, 9)
+            if fsPersono.facts:
+              for fsFakto in fsPersono.facts :
+                if fsFakto.id == fsFakto_id : break
+              if fsFakto.id == fsFakto_id :
+                print("importas fakto "+fsFakto_id)
+                event = Importo.aldFakto(self.dbstate.db,txn,fsFakto,grPersono)
+                found = False
+                for er in grPersono.get_event_ref_list():
+                  if er.ref == event.handle:
+                    found = True
+                    break
+                if not found:
+                  er = EventRef()
+                  er.set_role(EventRoleType.PRIMARY)
+                  er.set_reference_handle(event.get_handle())
+                  self.dbstate.db.commit_event(event, txn)
+                  grPersono.add_event_ref(er)
+                if event.type == EventType.BIRTH :
+                  grPersono.set_birth_ref(er)
+                elif event.type == EventType.DEATH :
+                  grPersono.set_death_ref(er)
+        iter_ =  model.iter_next(iter_)
+      self.dbstate.db.commit_person(grPersono,txn)
+    self.ButRefresxigi_clicked(None)
+
+  def l_dekstra_klako(self, treeview, event):
+    menu = Gtk.Menu()
+    menu.set_reserve_toggle_size(False)
+    item  = Gtk.MenuItem(label=_('Kopii elekton de gramps al FS'))
+    item.set_sensitive(1)
+    item.connect("activate",lambda obj: self.kopii_al_FS(treeview))
+    item.show()
+    menu.append(item)
+    item  = Gtk.MenuItem(label=_('Kopii elekton de FS al gramps'))
+    item.set_sensitive(1)
+    item.connect("activate",lambda obj: self.kopii_al_gramps(treeview))
+    item.show()
+    menu.append(item)
+    self.menu = menu
+    self.menu.popup(None, None, None, None, event.button, event.time)
+
 
   def krei_gui(self):
     """
@@ -208,14 +340,20 @@ class PersonFS(Gramplet):
     self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
     titles = [  
-                (_('Coloro'), 1, 20,COLOR),
+                (_('Koloro'), 1, 20,COLOR),
 		( _('Propreco'), 2, 100),
 		( _('Dato'), 3, 120),
-                (_('Gramps Valoro'), 4, 200),
+                (_('Gramps Valoro'), 4, 300),
                 (_('FS Dato'), 5, 120),
-                (_('FS Valoro'), 6, 200),
+                (_('FS Valoro'), 6, 300),
+                ('x', 7, 20, TOGGLE,True,self.toggled),
+                (_('xTipo'), NOSORT, 0),
+                (_('xGr'), NOSORT, 0),
+                (_('xFs'), NOSORT, 0),
              ]
-    self.modelKomp = ListModel(self.propKomp, titles)
+    self.modelKomp = ListModel(self.propKomp, titles
+                 ,event_func=self.l_duobla_klako
+                 ,right_click=self.l_dekstra_klako)
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
@@ -231,10 +369,17 @@ class PersonFS(Gramplet):
 
     return self.res
 
+  def toggled(self, path, val):
+    row = self.modelKomp.model.get_iter((path,))
+    tipo=self.modelKomp.model.get_value(row, 7)
+    if tipo != 'fakto':
+      self.modelKomp.model.set_value(row, 6, False)
+      OkDialog(_('Pardonu, nur eventaj linioj povas esti elektitaj.'))
+
+
   def ButBaskKonf_toggled(self, dummy):
    with DbTxn(_("FamilySearch tags"), self.dbstate.db) as txn:
     val = self.top.get_object("ButBaskKonf").get_active()
-    print ("checkbox active : "+str(val))
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
@@ -249,22 +394,31 @@ class PersonFS(Gramplet):
     self.dbstate.db.commit_person(grPersono, txn, grPersono.change)
 
   def ButRefresxigi_clicked(self, dummy):
-    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
-    f = open('arbo1.out.json','w')
-    json.dump(rezulto,f,indent=2)
-    f.close()
     if self.FSID :
-      try:
-        PersonFS.fs_Tree._persons.pop(self.FSID)
-      except:
-        pass
+      fsPersono = gedcomx.Person._indekso.get(self.FSID)
+      if fsPersono:
+        for paro in fsPersono._paroj :
+          paro.person1=None
+          paro.person2=None
+          paro.facts=set()
+        fsPersono.facts=set()
+        fsPersono.names=set()
+        fsPersono._gepatroj =set()
+        fsPersono._infanoj=set()
+        fsPersono._paroj=set()
+        fsPersono._infanojCP = set()
+        fsPersono._gepatrojCP=set()
+        fsPersono.sortKey = None
+      PersonFS.fs_Tree._persons.pop(self.FSID)
       PersonFS.fs_Tree.add_persons([self.FSID])
-    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
-    f = open('arbo2.out.json','w')
-    json.dump(rezulto,f,indent=2)
-    f.close()
+    #rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
+    #f = open('arbo2.out.json','w')
+    #json.dump(rezulto,f,indent=2)
+    #f.close()
 
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,True)
@@ -337,7 +491,7 @@ class PersonFS(Gramplet):
     #  fsFakto = gedcomx.Fact()
     #  fsFakto.date = gedcomx.Date()
     #  fsFakto.date.original = grFaktoDato
-    #  fsFakto.type = FACT_TYPES.get(grTag)
+    #  fsFakto.type = GRAMPS_GEDCOMX_FAKTOJ.get(grTag)
     #  fsFakto.place = grFaktoLoko
     #  fsFakto.value = grFaktoPriskribo
     #  fsPerso.facts.add(fsFakto)
@@ -422,6 +576,8 @@ class PersonFS(Gramplet):
     if not PersonFS.fs_TreeSercxo:
       PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
+    self.modelRes.cid=None
+    self.modelRes.model.set_sort_column_id(-2,0)
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
     r = tree._FsSeanco.get_url(
@@ -486,6 +642,8 @@ class PersonFS(Gramplet):
     if not PersonFS.fs_TreeSercxo:
       PersonFS.fs_TreeSercxo = tree.Tree()
       PersonFS.fs_TreeSercxo._getsources = False
+    self.modelRes.cid=None
+    self.modelRes.model.set_sort_column_id(-2,0)
     self.modelRes.clear()
     mendo = "/platform/tree/search?"
     grNomo = self.top.get_object("fs_nomo_eniro").get_text()
@@ -524,7 +682,6 @@ class PersonFS(Gramplet):
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo._places:
-            #print(" ajout place : "+place["id"])
             self.fs_TreeSercxo._places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
@@ -538,15 +695,11 @@ class PersonFS(Gramplet):
           self.fs_TreeSercxo._persons[person["id"]] = gedcomx.Person(person["id"], self.fs_TreeSercxo)
           gedcomx.maljsonigi(self.fs_TreeSercxo._persons[person["id"]],person)
         for person in data["persons"]:
-          #print("   person:"+person["id"])
           if "ascendancyNumber" in person["display"] and person["display"]["ascendancyNumber"] == 1 :
-            #print("   asc")
             if person["gender"]["type"] == "http://gedcomx.org/Female" :
-              #print("     mother")
               motherId=person["id"]
               mother=self.fs_TreeSercxo._persons[person["id"]]
             elif person["gender"]["type"] == "http://gedcomx.org/Male" :
-              #print("     father")
               fatherId=person["id"]
               father=self.fs_TreeSercxo._persons[person["id"]]
       fsPerso = PersonFS.fs_TreeSercxo._persons.get(fsId) or gedcomx.Person()
@@ -569,7 +722,6 @@ class PersonFS(Gramplet):
           elif rel["type"] == "http://gedcomx.org/ParentChild":
             person1Id = rel["person1"]["resourceId"]
             person2Id = rel["person2"]["resourceId"]
-            #print("   ParentChild;p1="+person1Id+";p2="+person2Id)
             if person2Id == fsId :
               person1=self.fs_TreeSercxo._persons[person1Id]
               if not father and person1.gender.type == "http://gedcomx.org/Male" :
@@ -580,7 +732,6 @@ class PersonFS(Gramplet):
       fsNomo = fsPerso.akPrefNomo()
       fsBirth = get_fsfact (fsPerso, 'http://gedcomx.org/Birth' ) or gedcomx.Fact()
       fsBirthLoko = fsBirth.place 
-      #from objbrowser import browse ;browse(locals())
       if fsBirthLoko :
         fsBirth = str(fsBirth.date or '') + ' \n@ ' +fsBirthLoko.original
       else :
@@ -591,7 +742,6 @@ class PersonFS(Gramplet):
         fsDeath = str(fsDeath.date or '') + ' \n@ ' +fsDeathLoko.original
       else :
         fsDeath = str(fsDeath.date or '')
-      #from objbrowser import browse ;browse(locals())
       if father :
         fsPatroNomo = father.akPrefNomo()
       else:
@@ -614,6 +764,8 @@ class PersonFS(Gramplet):
 
   def ButEdzoj_clicked(self, dummy):
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,True)
@@ -668,6 +820,8 @@ class PersonFS(Gramplet):
 
   def main(self):
     active_handle = self.get_active('Person')
+    self.modelKomp.cid=None
+    self.modelKomp.model.set_sort_column_id(-2,0)
     self.modelKomp.clear()
     if active_handle:
       self.kompariFs(active_handle,False)
