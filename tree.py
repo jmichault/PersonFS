@@ -58,6 +58,7 @@ class Tree(gedcomx.Gedcomx):
     """
     new_fids = [fid for fid in fids if fid and fid not in self._persons.keys()]
     while new_fids:
+
       if len(new_fids) ==1:
         data = _FsSeanco.get_jsonurl(
             "/platform/tree/persons/" + new_fids[0]
@@ -95,8 +96,10 @@ class Tree(gedcomx.Gedcomx):
     """
     rels = set()
     for fid in fids & self._persons.keys():
-      for paro in self._persons[fid]._paroj :
-        rels |= {paro.person1.resourceId , paro.person2.resourceId }
+      fsPersono = self._persons[fid]
+      if hasattr(fsPersono,'_paroj') and fsPersono._paroj :
+        for paro in fsPersono._paroj :
+          rels |= {paro.person1.resourceId , paro.person2.resourceId }
     rels.difference_update(fids)
     self.add_persons(rels)
     return set(filter(None, rels))
@@ -107,8 +110,10 @@ class Tree(gedcomx.Gedcomx):
     """
     rels = set()
     for fid in fids & self._persons.keys():
-      for paro in self._persons[fid]._infanoj :
-        rels |= {paro.person1.resourceId , paro.person2.resourceId }
+      fsPersono = self._persons[fid]
+      if hasattr(fsPersono,'_infanoj') and fsPersono._infanoj :
+        for paro in fsPersono._infanoj :
+          rels |= {paro.person1.resourceId , paro.person2.resourceId }
     rels.difference_update(fids)
     self.add_persons(rels)
     return set(filter(None, rels))

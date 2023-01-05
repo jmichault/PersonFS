@@ -2,6 +2,7 @@
 * note : fsid fusionné : GZKW-DLY,GJ7P-84L;
         ; fsid George Washington : KNDX-MKG
 	; fsid avec parents multiples : 9CSJ-L2D
+	; fsid avec lieu non standardisé : LR24-CQK
 
 # à faire pour version 1.3
 ## prioritaires

@@ -1,3 +1,4 @@
+	; fsid avec lieu non standardisé : LR24-CQK
 
 # les lieux dans familysearch :
 

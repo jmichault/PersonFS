@@ -395,11 +395,26 @@ class PersonFS(Gramplet):
 
   def ButRefresxigi_clicked(self, dummy):
     if self.FSID :
+      fsPersono = gedcomx.Person._indekso.get(self.FSID)
+      if fsPersono:
+        for paro in fsPersono._paroj :
+          paro.person1=None
+          paro.person2=None
+          paro.facts=set()
+        fsPersono.facts=set()
+        fsPersono.names=set()
+        fsPersono._gepatroj =set()
+        fsPersono._infanoj=set()
+        fsPersono._paroj=set()
+        fsPersono._infanojCP = set()
+        fsPersono._gepatrojCP=set()
+        fsPersono.sortKey = None
+      PersonFS.fs_Tree._persons.pop(self.FSID)
       PersonFS.fs_Tree.add_persons([self.FSID])
-    rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
-    f = open('arbo2.out.json','w')
-    json.dump(rezulto,f,indent=2)
-    f.close()
+    #rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
+    #f = open('arbo2.out.json','w')
+    #json.dump(rezulto,f,indent=2)
+    #f.close()
 
     active_handle = self.get_active('Person')
     self.modelKomp.cid=None
