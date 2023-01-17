@@ -6,19 +6,28 @@
 
 # à faire pour version 1.3
 ## prioritaires
+* maintenir un dictionnaire personne.fsid-handle.
+* maintenir un dictionnaire lieu.fsid-handle.
 * bogues :
- * gramplet : rafraichir ne supprime pas les évènements supprimés dans familysearch.
  * import : la liste des filtres est celle du démarrage de gramps.
+ * import : enfants mal reliés à leurs parents ?
 * gramplet :
-  * copie des noms, sexe, conjoints, enfants
+  * bogue : les noms ne s'affichent pas tous.
+  * copie des noms, sexe, conjoints, enfants, père, mère
+  * si coche d'un parent, enfant ou conjoint : le chercher dans gramps.
+    * si absent : suggérer l'import.
+    * si présent : cocher.
   * comparer les lieux.
+  * copie/mise à jour des mariages vers gramps
 * recherche :
   * dates : supprimer le A et les autres caractères non gérés dans la date.
   * création dans FS : lier aux parents et aux enfants qui existent dans FS
-  * plus de critères (au moins décès : lieu de décès, lieu général)
+  * plus de critères (au moins décès : date + lieu de décès, et lieu général)
 * import :
+  * normaliser les noms/prénoms ?
+  * importer/mettre à jour l'ID des objets : évènement, famille, source, citation.
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
-  * cocher par défaut «Ne pas réimporter les personnes existantes»
+  * cocher systématiquement par défaut «Ne pas réimporter les personnes existantes»
 ## facultatifs
 * gestion des relevés (= «records» FS)
 * gedcomx : attributs inconnus :
@@ -31,6 +40,9 @@
   * comparaison : gérer le drapeau «vivant» sur familysearch.
   * rafraichir : ne recharger la personne que si elle a été modifiée.
   * faire des listes déroulantes.
+  * copie d'individus FS manquants dans gramps. (pour l'inverse, on va plutôt se déplacer sur la fiche gramps, faire une recherche et créer si pas trouvé)
+  * liaison de conjoints FS vers gramps (le conjoint doit exister dans gramps, sinon : message).
+  * suppression d'évènements familysearch.
 * recherche :
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné
@@ -64,7 +76,7 @@
   * gestion des notes
 * dans l'import :
   * gestion des «attribution» ?
-  * charger les ID des lieux , sources , Relationship,ChildAndParentsRelationship ?
+  * charger les ID des lieux , sources , Relationship, ChildAndParentsRelationship ?
 * gestion des nicknames à voir
 * chargement du portrait FS vers gramps
 * chargement des images FS vers gramps

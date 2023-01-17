@@ -63,7 +63,9 @@ Depuis le gramplet, vous pouvez aussi :
 * Consulter les doublons potentiels proposés par FamilySearch, et de là vous pouvez accéder à la fiche FamilySearch complète du doublon potentiel, ou accéder à l'écran de fusion FamilySearch.
 * lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
 * copier des évènements vers ou depuis FamilySearch en cochant la dernière colonne, puis en utilisant le menu contextuel (clic droit).
+  * attention : les lieux qui ne sont pas normalisés dans FamilySearch ne sont pas copiés.
 * changer d'individu en double-cliquant sur la ligne correspondante.
+* éditer un évènement de la personne en double-cliquant sur la ligne correspondante.
 
 # le module d'import
 Vous pouvez le lancer soit depuis le menu, soit depuis le gramplet.  
