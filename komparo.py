@@ -282,12 +282,11 @@ def NomojKomp(grPersono, fsPerso ) :
         , False, 'nomo', str(grNomo), fsNomo.id
 		))
     koloro = "yellow3"
-    for fsNomo in fsNomoj :
-      if fsNomo == fsNomo : continue
+    for fsN in fsNomoj :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', ''
-		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', None, fsNomo.id
+		, '', fsN.akSurname() +  ', ' + fsN.akGiven()
+        , False, 'nomo', None, fsN.id
 		))
     return res
 
@@ -478,14 +477,14 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       fsEdzTrio = None
       fsParo = None
       for paro in fsEdzoj :
-        if (paro.person1.resourceId == edzoFsid
-            or paro.person1.resourceId== '' and edzoFsid == '') :
+        if ( (paro.person1 and paro.person1.resourceId == edzoFsid)
+            or( (paro.person1==None or paro.person1.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
           fsEdzoj.remove(paro)
           break
-        elif (paro.person2.resourceId == edzoFsid 
-            or paro.person2.resourceId== '' and edzoFsid == '') :
+        elif ( (paro.person2 and paro.person2.resourceId == edzoFsid)
+            or( (paro.person2==None or paro.person2.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
           fsEdzoj.remove(paro)
@@ -566,6 +565,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         fsFaktoDato = str(fsFakto.date or '')
         if fsFakto.place:
           fsFaktoLoko = fsFakto.place.original or ''
+        else : fsFaktoLoko = '' 
         fsFaktoPriskribo = fsFakto.value or ''
         if fsFaktoLoko == '' :
           fsValoro = fsFaktoPriskribo

@@ -390,8 +390,13 @@ class PersonFS(Gramplet):
               grParo.add_event_ref(er)
       
             self.dbstate.db.commit_family(grParo,txn)
-
-
+          elif ( (tipolinio == 'nomo')
+             and model.get_value(iter_, 9) ) :
+            grNomo_str = model.get_value(iter_, 8)
+            fsNomo_id = model.get_value(iter_, 9)
+            for fsNomo in fsPersono.names :
+              if fsNomo.id == fsNomo_id : break
+            Importo.aldNomo(self.dbstate.db, txn, fsNomo, grPersono)
         iter_ =  model.iter_next(iter_)
       self.dbstate.db.commit_person(grPersono,txn)
       self.dbstate.db.transaction_commit(txn)
@@ -503,7 +508,8 @@ class PersonFS(Gramplet):
         fsPersono._infanojCP = set()
         fsPersono._gepatrojCP=set()
         fsPersono.sortKey = None
-      PersonFS.fs_Tree._persons.pop(self.FSID)
+      if self.FSID in PersonFS.fs_Tree._persons :
+        PersonFS.fs_Tree._persons.pop(self.FSID)
       PersonFS.fs_Tree.add_persons([self.FSID])
     #rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
     #f = open('arbo2.out.json','w')
@@ -716,7 +722,12 @@ class PersonFS(Gramplet):
       self.top.get_object("fs_sekso_eniro").set_text('Female')
     grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
-      self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
+      birdoDato = grdato_al_formal(grBirth.date)
+      if birdoDato[0] == 'A' : birdoDato = birdoDato[1:]
+      if birdoDato[0] == '/' : birdoDato = birdoDato[1:]
+      posOblikvo = birdoDato.find('/')
+      if posOblikvo > 1 : birdoDato = birdoDato[:posOblikvo]
+      self.top.get_object("fs_birdo_eniro").set_text( birdoDato)
     else:
       self.top.get_object("fs_birdo_eniro").set_text( '')
     if grBirth and grBirth.place and grBirth.place != None :
@@ -776,7 +787,8 @@ class PersonFS(Gramplet):
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo._places:
-            self.fs_TreeSercxo._places[place["id"]] = (
+            if 'latitude' in place and 'longitude' in place :
+              self.fs_TreeSercxo._places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
                             )

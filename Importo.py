@@ -274,6 +274,33 @@ def aldFakto(db, txn, fsFakto, obj):
   db.commit_event(event, txn)
   return event
 
+def aldNomo(db, txn, fsNomo, grPerson):
+  nomo = Name()
+  if fsNomo.type == 'http://gedcomx.org/MarriedName' :
+    nomo.set_type(NameType(NameType.MARRIED))
+  elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
+    nomo.set_type(NameType(NameType.AKA))
+  elif fsNomo.type == 'http://gedcomx.org/BirthName' :
+    nomo.set_type(NameType(NameType.BIRTH))
+  #elif fsNomo.type == 'http://gedcomx.org/NickName' :
+  #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
+  #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
+  #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
+  else :
+    # FARINDAĴO : administri moknomojn ĝuste
+    nomo.set_type(NameType(NameType.CUSTOM))
+  nomo.set_first_name(fsNomo.akGiven())
+  s = nomo.get_primary_surname()
+  s.set_surname(fsNomo.akSurname())
+  for fsNoto in fsNomo.notes :
+    noto = aldNoto(db, txn, fsNoto,nomo.note_list)
+    nomo.add_note(noto.handle)
+  if fsNomo.preferred :
+    grPerson.set_primary_name(nomo)
+  else:
+    grPerson.add_alternate_name(nomo)
+
+
 
 class FSImportoOpcionoj(MenuToolOptions):
   """
@@ -793,31 +820,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   def aldNomoj(self, fsPersono, grPerson):
     for fsNomo in fsPersono.names :
-      nomo = Name()
-      if fsNomo.type == 'http://gedcomx.org/MarriedName' :
-        nomo.set_type(NameType(NameType.MARRIED))
-      elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
-        nomo.set_type(NameType(NameType.AKA))
-      elif fsNomo.type == 'http://gedcomx.org/BirthName' :
-        nomo.set_type(NameType(NameType.BIRTH))
-      #elif fsNomo.type == 'http://gedcomx.org/NickName' :
-      #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
-      #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
-      #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
-      else :
-        # FARINDAĴO : administri moknomojn ĝuste
-        nomo.set_type(NameType(NameType.CUSTOM))
-      nomo.set_first_name(fsNomo.akGiven())
-      s = nomo.get_primary_surname()
-      s.set_surname(fsNomo.akSurname())
-      for fsNoto in fsNomo.notes :
-        noto = aldNoto(self.dbstate.db, self.txn, fsNoto,nomo.note_list)
-        nomo.add_note(noto.handle)
-      if fsNomo.preferred :
-        grPerson.set_primary_name(nomo)
-      else:
-        grPerson.add_alternate_name(nomo)
-
+      aldNomo(self.dbstate.db, self.txn, fsNomo, grPerson)
 
   def __get_menu_options(self):
     menu = self.options.menu

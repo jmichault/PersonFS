@@ -6,21 +6,19 @@
 
 # à faire pour version 1.3
 ## prioritaires
-* maintenir un dictionnaire personne.fsid-handle.
-* maintenir un dictionnaire lieu.fsid-handle.
 * bogues :
  * import : la liste des filtres est celle du démarrage de gramps.
  * import : enfants mal reliés à leurs parents ?
+ * gramplet : import des enfants duplique les noms.
 * gramplet :
-  * bogue : les noms ne s'affichent pas tous.
-  * copie des noms, sexe, conjoints, enfants, père, mère
+  * copie des conjoints, enfants, père, mère ?
   * si coche d'un parent, enfant ou conjoint : le chercher dans gramps.
     * si absent : suggérer l'import.
     * si présent : cocher.
+  * si coche de sexe : suggérer de faire la correction manuellement.
   * comparer les lieux.
   * copie/mise à jour des mariages vers gramps
 * recherche :
-  * dates : supprimer le A et les autres caractères non gérés dans la date.
   * création dans FS : lier aux parents et aux enfants qui existent dans FS
   * plus de critères (au moins décès : date + lieu de décès, et lieu général)
 * import :
@@ -29,14 +27,19 @@
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
   * cocher systématiquement par défaut «Ne pas réimporter les personnes existantes»
 ## facultatifs
+* gérer le «LifeSketch»
+* maintenir un dictionnaire personne.fsid-handle.
+* maintenir un dictionnaire lieu.fsid-handle.
 * gestion des relevés (= «records» FS)
 * gedcomx : attributs inconnus :
-  * Person:fields
+  * Person:fields (dans les recherches ?)
   * Person:Principal, ex. : LR2N-SRM
   * PlaceDescription:placeDescriptionInfo
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 * gramplet :
+  * copie des noms vers FS : positionner preferred correctement.
+	attention : il doit toujours rester un nom préféré sur FS.
   * comparaison : gérer le drapeau «vivant» sur familysearch.
   * rafraichir : ne recharger la personne que si elle a été modifiée.
   * faire des listes déroulantes.
