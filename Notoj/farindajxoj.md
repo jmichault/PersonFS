@@ -7,14 +7,17 @@
 # à faire pour version 1.3
 ## prioritaires
 * bogues :
- * import : la liste des filtres est celle du démarrage de gramps.
+ * comparaison : la liste des filtres est celle du démarrage de gramps.
  * import : enfants mal reliés à leurs parents ?
  * gramplet : import des enfants duplique les noms.
 * gramplet :
   * copie des conjoints, enfants, père, mère ?
-  * si coche d'un parent, enfant ou conjoint : le chercher dans gramps.
-    * si absent : suggérer l'import.
-    * si présent : cocher.
+  * si coche d'un parent, enfant ou conjoint :
+    * si absent de FS mais a un FSTID : accepter.
+    * si absent de FS et pas de FSTID : suggérer d'aller sur la fiche.
+    * si absent de gramps : chercher le FSID dans gramps.
+      * si absent : suggérer l'import.
+      * si présent : associer.
   * si coche de sexe : suggérer de faire la correction manuellement.
   * comparer les lieux.
   * copie/mise à jour des mariages vers gramps
@@ -26,6 +29,7 @@
   * importer/mettre à jour l'ID des objets : évènement, famille, source, citation.
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
   * cocher systématiquement par défaut «Ne pas réimporter les personnes existantes»
+* traduction en français
 ## facultatifs
 * gérer le «LifeSketch»
 * maintenir un dictionnaire personne.fsid-handle.
@@ -77,6 +81,7 @@
   * lier un enfant ou conjoint gramps avec un enfant ou conjoint FS
   * gestion des sources
   * gestion des notes
+  * gestion des images et du portrait
 * dans l'import :
   * gestion des «attribution» ?
   * charger les ID des lieux , sources , Relationship, ChildAndParentsRelationship ?

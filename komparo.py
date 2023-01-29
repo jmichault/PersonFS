@@ -263,7 +263,7 @@ def NomojKomp(grPersono, fsPerso ) :
     res.append ( ( koloro , _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', str(grNomo), fsNomo.id
+        , False, 'nomo1', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
 		))
     fsNomoj = fsPerso.names.copy()
     if fsNomo and fsNomo in fsNomoj: fsNomoj.remove(fsNomo)
@@ -279,7 +279,7 @@ def NomojKomp(grPersono, fsPerso ) :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', str(grNomo), fsNomo.id
+        , False, 'nomo', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
 		))
     koloro = "yellow3"
     for fsN in fsNomoj :
