@@ -50,9 +50,12 @@ else:
   pip.main(['install', '--user', 'gedcomx-v1'])
   import gedcomx
 
+import fs_db
 import PersonFS
 from constants import GEDCOMX_GRAMPS_FAKTOJ, GEDCOMX_GRAMPS_LOKOJ
 import tree
+import komparo
+from utila import fsdato_al_gr
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -101,6 +104,7 @@ def kreiLoko(db, txn, fsPlace, parent):
   place.set_type(place_type)
   db.add_place(place, txn)
   db.commit_place(place, txn)
+  fsPlace._handle = place.handle
   return place
 
 
@@ -184,12 +188,13 @@ def aldNoto(db, txn, fsNoto,EkzNotoj):
         if titolo == fsNoto.subject:
           return n
   note = Note()
-  tags = [  StyledTextTag("fs_sn", fsNoto.id,[(0, len(fsNoto.subject))])
-          , StyledTextTag(StyledTextTagType.BOLD, True,[(0, len(fsNoto.subject))])
-          , StyledTextTag(StyledTextTagType.FONTSIZE, 16,[(0, len(fsNoto.subject))])  ]
-  titolo = StyledText(fsNoto.subject, tags)
   note.set_format(Note.FORMATTED)
-  note.set_styledtext(titolo)
+  if fsNoto.subject :
+    lenSub = len(fsNoto.subject)
+    tags = [  StyledTextTag("fs_sn", fsNoto.id,[(0, lenSub)])
+          , StyledTextTag(StyledTextTagType.BOLD, True,[(0, lenSub)])
+          , StyledTextTag(StyledTextTagType.FONTSIZE, 16,[(0, lenSub)])  ]
+    note.set_styledtext(StyledText(fsNoto.subject, tags))
   note.append("\n\n"+(fsNoto.text or ''))
   #note_type = NoteType()
   #note_type.set((note_type, note_cust))
@@ -197,6 +202,27 @@ def aldNoto(db, txn, fsNoto,EkzNotoj):
   db.commit_note(note, txn)
   return note
   
+def updFakto(db, txn, fsFakto, grFakto):
+  if fsFakto.place :
+    if not hasattr(fsFakto.place,'normalized') :
+      from objbrowser import browse ;browse(locals())
+      print("lieu par normalisé : "+fsFakto.place.original)
+      plantage()
+    grLoko = akiriLokoPerId(db, fsFakto.place)
+    if grLoko:
+      grLokoHandle = grLoko.handle
+    else :
+      aldLoko( db, txn, fsFakto.place)
+      grLokoHandle = fsFakto.place._handle
+    grFakto.set_place_handle( grLokoHandle )
+  fsFaktoPriskribo = fsFakto.value or ''
+  fsFaktoDato = fsFakto.date or ''
+  grDato = fsdato_al_gr(fsFakto.date)
+  if grDato :
+    grFakto.set_date_object( grDato )
+  grFakto.set_description(fsFaktoPriskribo)
+  db.commit_event(grFakto, txn)
+
 def aldFakto(db, txn, fsFakto, obj):
   evtType = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
   if not evtType:
@@ -214,46 +240,21 @@ def aldFakto(db, txn, fsFakto, obj):
     if grLoko:
       grLokoHandle = grLoko.handle
     else :
-      aldLoko( db, txn, fsFakto.place)
-      grLokoHandle = fsFakto.place._handle
+      grLoko = aldLoko( db, txn, fsFakto.place)
+      if grLoko :
+        grLokoHandle = grLoko.handle
       
   fsFaktoPriskribo = fsFakto.value or ''
   fsFaktoDato = fsFakto.date or ''
-  if fsFakto.date:
-    grDate = Date()
-    grDate.set_calendar(Date.CAL_GREGORIAN)
-    jaro=monato=tago= 0
-    if fsFakto.date.formal :
-      if fsFakto.date.formal.proksimuma :
-        grDate.set_modifier(Date.MOD_ABOUT)
-      if fsFakto.date.formal.gamo :
-        if fsFakto.date.formal.finalaDato :
-          grDate.set_modifier(Date.MOD_BEFORE)
-        elif fsFakto.date.formal.finalaDato :
-          grDate.set_modifier(Date.MOD_AFTER)
-      if fsFakto.date.formal.unuaDato:
-        jaro = fsFakto.date.formal.unuaDato.jaro
-        monato = fsFakto.date.formal.unuaDato.monato
-        tago = fsFakto.date.formal.unuaDato.tago
-      else :
-        jaro = fsFakto.date.formal.finalaDato.jaro
-        monato = fsFakto.date.formal.finalaDato.monato
-        tago = fsFakto.date.formal.finalaDato.tago
-      # FARINDAĴO : kompleksaj datoj, dato gamo
-      #if tago and monato and jaro :
-      #  grDate.set_yr_mon_day(jaro, monato, tago)
-      #else :
-      #  grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original)
-    grDate.set(value=(tago, monato, jaro, 0),text=fsFakto.date.original or '',newyear=Date.NEWYEAR_JAN1)
-  else : grDate = None
+  grDato = fsdato_al_gr(fsFakto.date)
 
   # serĉi ekzistanta
   for fakto in obj.event_ref_list :
     e = db.get_event_from_handle(fakto.ref)
     if ( e.type.value == evtType ) :
-      if ( e.get_date_object() == grDate ):
+      if ( e.get_date_object() == grDato ):
         return e
-      elif ( ( e.get_date_object().is_empty() and not grDate)
+      elif ( ( e.get_date_object().is_empty() and not grDato)
            and ( e.get_place_handle() == grLokoHandle or (not e.get_place_handle() and not grLokoHandle))
            and ( e.description == fsFaktoPriskribo or (not e.description and not fsFaktoPriskribo))
          ) :
@@ -262,8 +263,8 @@ def aldFakto(db, txn, fsFakto, obj):
   event.set_type( evtType )
   if grLokoHandle:
     event.set_place_handle( grLokoHandle )
-  if grDate :
-    event.set_date_object( grDate )
+  if grDato :
+    event.set_date_object( grDato )
   event.set_description(fsFaktoPriskribo)
   # noto
   for fsNoto in fsFakto.notes:
@@ -272,6 +273,33 @@ def aldFakto(db, txn, fsFakto, obj):
   db.add_event(event, txn)
   db.commit_event(event, txn)
   return event
+
+def aldNomo(db, txn, fsNomo, grPerson):
+  nomo = Name()
+  if fsNomo.type == 'http://gedcomx.org/MarriedName' :
+    nomo.set_type(NameType(NameType.MARRIED))
+  elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
+    nomo.set_type(NameType(NameType.AKA))
+  elif fsNomo.type == 'http://gedcomx.org/BirthName' :
+    nomo.set_type(NameType(NameType.BIRTH))
+  #elif fsNomo.type == 'http://gedcomx.org/NickName' :
+  #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
+  #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
+  #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
+  else :
+    # FARINDAĴO : administri moknomojn ĝuste
+    nomo.set_type(NameType(NameType.CUSTOM))
+  nomo.set_first_name(fsNomo.akGiven())
+  s = nomo.get_primary_surname()
+  s.set_surname(fsNomo.akSurname())
+  for fsNoto in fsNomo.notes :
+    noto = aldNoto(db, txn, fsNoto,nomo.note_list)
+    nomo.add_note(noto.handle)
+  if fsNomo.preferred :
+    grPerson.set_primary_name(nomo)
+  else:
+    grPerson.add_alternate_name(nomo)
+
 
 
 class FSImportoOpcionoj(MenuToolOptions):
@@ -484,6 +512,8 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     print(_("Importado…"))
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
+    # krei datumbazan tabelon
+    fs_db.create_schema(self.db)
     with DbTxn("FamilySearch import", self.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
@@ -512,6 +542,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         progress.step()
         self.aldInfano(fsCpr)
       self.txn = None
+      self.dbstate.db.transaction_commit(txn)
     print("import fini.")
     self.uistate.set_busy_cursor(False)
     progress.close()
@@ -785,34 +816,11 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       #continue
       
     self.dbstate.db.commit_person(grPerson,self.txn)
+    komparo.kompariFsGr(fsPersono,grPerson,self.dbstate.db,None)
 
   def aldNomoj(self, fsPersono, grPerson):
     for fsNomo in fsPersono.names :
-      nomo = Name()
-      if fsNomo.type == 'http://gedcomx.org/MarriedName' :
-        nomo.set_type(NameType(NameType.MARRIED))
-      elif fsNomo.type == 'http://gedcomx.org/AlsoKnownAs' :
-        nomo.set_type(NameType(NameType.AKA))
-      elif fsNomo.type == 'http://gedcomx.org/BirthName' :
-        nomo.set_type(NameType(NameType.BIRTH))
-      #elif fsNomo.type == 'http://gedcomx.org/NickName' :
-      #elif fsNomo.type == 'http://gedcomx.org/AdoptiveName' :
-      #elif fsNomo.type == 'http://gedcomx.org/FormalName' :
-      #elif fsNomo.type == 'http://gedcomx.org/ReligiousName' :
-      else :
-        # FARINDAĴO : administri moknomojn ĝuste
-        nomo.set_type(NameType(NameType.CUSTOM))
-      nomo.set_first_name(fsNomo.akGiven())
-      s = nomo.get_primary_surname()
-      s.set_surname(fsNomo.akSurname())
-      for fsNoto in fsNomo.notes :
-        noto = aldNoto(self.dbstate.db, self.txn, fsNoto,nomo.note_list)
-        nomo.add_note(noto.handle)
-      if fsNomo.preferred :
-        grPerson.set_primary_name(nomo)
-      else:
-        grPerson.add_alternate_name(nomo)
-
+      aldNomo(self.dbstate.db, self.txn, fsNomo, grPerson)
 
   def __get_menu_options(self):
     menu = self.options.menu

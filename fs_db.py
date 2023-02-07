@@ -57,9 +57,14 @@ stato_tags = (
 
 def create_schema(db):
   # krei datumbazan tabelon
-  with DbTxn(_("FamilySearch : krei datumbazan tabelon"), db) as txn:
-    if not db.dbapi.table_exists("personfs_stato"):
-      db.dbapi.execute('CREATE TABLE personfs_stato '
+  if db.transaction :
+    intr = True
+    txn = db.transaction
+  else :
+    intr = False
+    txn = None
+  if not db.dbapi.table_exists("personfs_stato"):
+    db.dbapi.execute('CREATE TABLE personfs_stato '
                          '('
                          'p_handle VARCHAR(50) PRIMARY KEY NOT NULL, '
                          'fsid CHAR(8), '
@@ -71,13 +76,18 @@ def create_schema(db):
                          'konf_esenco CHAR(1),'
                          'konf CHAR(1) '
                          ')')
-    for t in stato_tags:
-      if not db.get_tag_from_name(t[0]):
-        tag = Tag()
-        tag.set_name(t[0])
-        tag.set_color(t[1])
-        db.add_tag(tag, txn)
-        db.commit_tag(tag, txn)
+  for t in stato_tags:
+    if not db.get_tag_from_name(t[0]):
+      if txn == None :
+        txn = DbTxn(_("FamilySearch : krei datumbazan tabelon"), db) 
+      tag = Tag()
+      tag.set_name(t[0])
+      tag.set_color(t[1])
+      db.add_tag(tag, txn)
+      db.commit_tag(tag, txn)
+  if txn != None and not intr :
+    db.transaction_commit(txn)
+    del txn
 
 class db_stato:
   def __init__(self, db, p_handle=None):

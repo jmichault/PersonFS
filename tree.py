@@ -58,7 +58,6 @@ class Tree(gedcomx.Gedcomx):
     """
     new_fids = [fid for fid in fids if fid and fid not in self._persons.keys()]
     while new_fids:
-
       if len(new_fids) ==1:
         data = _FsSeanco.get_jsonurl(
             "/platform/tree/persons/" + new_fids[0]

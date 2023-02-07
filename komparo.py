@@ -53,13 +53,16 @@ from constants import GEDCOMX_GRAMPS_FAKTOJ
 class FSKomparoOpcionoj(MenuToolOptions):
 
   def __init__(self, name, person_id=None, dbstate=None):
+    print("KO.init")
     self.db = dbstate.get_database()
     MenuToolOptions.__init__(self, name, person_id, dbstate)
 
   def add_menu_options(self, menu):
+    print("KO.amo")
     self.__general_options(menu)
 
   def __general_options(self, menu):
+    print("KO.go")
     category_name = _("FamilySearch Komparo Opcionoj")
     self.__gui_tagoj = NumberOption(_("Nombro tagoj"), 0, 0, 99) 
     self.__gui_tagoj.set_help(_("Nombro da tagoj inter du komparoj"))
@@ -91,12 +94,15 @@ class FSKomparoOpcionoj(MenuToolOptions):
 class FSKomparo(PluginWindows.ToolManagedWindowBatch):
 
   def get_title(self):
+    print("K.title")
     return _("FamilySearch Komparo")
 
   def initial_frame(self):
+    print("K.options")
     return _("Options")
 
   def run(self):
+    print("K.run")
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
@@ -263,7 +269,7 @@ def NomojKomp(grPersono, fsPerso ) :
     res.append ( ( koloro , _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', str(grNomo), fsNomo.id
+        , False, 'nomo1', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
 		))
     fsNomoj = fsPerso.names.copy()
     if fsNomo and fsNomo in fsNomoj: fsNomoj.remove(fsNomo)
@@ -279,15 +285,14 @@ def NomojKomp(grPersono, fsPerso ) :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
 		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', str(grNomo), fsNomo.id
+        , False, 'nomo', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
 		))
     koloro = "yellow3"
-    for fsNomo in fsNomoj :
-      if fsNomo == fsNomo : continue
+    for fsN in fsNomoj :
       res.append (( koloro , '  ' + _trans.gettext('Name')
 		, '', ''
-		, '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', None, fsNomo.id
+		, '', fsN.akSurname() +  ', ' + fsN.akGiven()
+        , False, 'nomo', None, fsN.id
 		))
     return res
 
@@ -478,14 +483,14 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       fsEdzTrio = None
       fsParo = None
       for paro in fsEdzoj :
-        if (paro.person1.resourceId == edzoFsid
-            or paro.person1.resourceId== '' and edzoFsid == '') :
+        if ( (paro.person1 and paro.person1.resourceId == edzoFsid)
+            or( (paro.person1==None or paro.person1.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
           fsEdzoj.remove(paro)
           break
-        elif (paro.person2.resourceId == edzoFsid 
-            or paro.person2.resourceId== '' and edzoFsid == '') :
+        elif ( (paro.person2 and paro.person2.resourceId == edzoFsid)
+            or( (paro.person2==None or paro.person2.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
           fsEdzoj.remove(paro)
@@ -552,7 +557,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           res.append( ( koloro , ' '+titolo
   		  , grFaktoDato , grValoro
   		  , fsFaktoDato , fsValoro
-          , False, 'edzoFakto', eventref.ref ,fsFakto_id
+          , False, 'edzoFakto', eventref.ref ,fsFakto_id, family.handle, fsParo.id
   		  ) )
       koloro = "yellow3"
       for fsFakto in fsFaktoj :
@@ -566,6 +571,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         fsFaktoDato = str(fsFakto.date or '')
         if fsFakto.place:
           fsFaktoLoko = fsFakto.place.original or ''
+        else : fsFaktoLoko = '' 
         fsFaktoPriskribo = fsFakto.value or ''
         if fsFaktoLoko == '' :
           fsValoro = fsFaktoPriskribo
@@ -574,7 +580,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         res.append( ( koloro , ' '+titolo
 		  , '' , ''
 		  , fsFaktoDato , fsValoro
-          , False, 'edzoFakto', None ,fsFakto.id
+          , False, 'edzoFakto', None ,fsFakto.id, family.handle, fsParo.id
 		 ) )
         
       for child_ref in family.get_child_ref_list():
@@ -583,12 +589,13 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         infanoFsid = utila.getfsid(infano)
         fsInfanoId = ''
         for triopo in fsInfanoj :
-          if ( ((triopo.parent1 and triopo.parent1.resourceId == fsid)
-                 and ( (triopo.parent2 and triopo.parent2.resourceId == fsEdzoId)
-                    or (not triopo.parent2 and fsEdzoId=='')))
-             or((triopo.parent2 and triopo.parent2.resourceId == fsid)
-                 and ( (triopo.parent1 and triopo.parent1.resourceId == fsEdzoId)
-                    or (not triopo.parent1 and fsEdzoId==''))) ) :
+          if ( (   ((triopo.parent1 and triopo.parent1.resourceId == fsid)
+                    and ( (triopo.parent2 and triopo.parent2.resourceId == fsEdzoId)
+                       or (not triopo.parent2 and fsEdzoId=='')))
+                 or((triopo.parent2 and triopo.parent2.resourceId == fsid)
+                    and ( (triopo.parent1 and triopo.parent1.resourceId == fsEdzoId)
+                       or (not triopo.parent1 and fsEdzoId==''))) )
+              and triopo.child.resourceId == infanoFsid ) :
             fsInfanoId = infanoFsid
             fsInfanoj.remove(triopo)
             break
@@ -866,22 +873,29 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   else :
     FS_FS = False
   ret = list() 
-  with DbTxn(_("FamilySearch tags"), db) as txn:
-    # «tags»
-    for t in fs_db.stato_tags:
-      val = locals().get(t[0])
-      if val == None : continue
-      tag_fs = db.get_tag_from_name(t[0])
-      if val : ret.append(t[0])
-      if not val and tag_fs.handle in grPersono.tag_list:
-        grPersono.remove_tag(tag_fs.handle)
-      if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
-        grPersono.add_tag(tag_fs.handle)
-    db.commit_person(grPersono, txn, grPersono.change)
-    dbPersono.gramps_datomod = grPersono.change
-    dbPersono.fs_datomod = fsPersono._last_modified
-    dbPersono.konf_esenco = not FS_Esenco
-    dbPersono.commit(txn)
+  if db.transaction :
+    intr = True
+    txn=db.transaction
+  else :
+    intr = False
+    txn = DbTxn(_("FamilySearch tags"), db)
+  # «tags»
+  for t in fs_db.stato_tags:
+    val = locals().get(t[0])
+    if val == None : continue
+    tag_fs = db.get_tag_from_name(t[0])
+    if val : ret.append(t[0])
+    if not val and tag_fs.handle in grPersono.tag_list:
+      grPersono.remove_tag(tag_fs.handle)
+    if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
+      grPersono.add_tag(tag_fs.handle)
+  db.commit_person(grPersono, txn, grPersono.change)
+  dbPersono.gramps_datomod = grPersono.change
+  dbPersono.fs_datomod = fsPersono._last_modified
+  dbPersono.konf_esenco = not FS_Esenco
+  dbPersono.commit(txn)
+  if not intr :
+    db.transaction_commit(txn)
   return ret
 
   # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …

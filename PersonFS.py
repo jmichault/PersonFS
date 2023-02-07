@@ -45,7 +45,7 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
+from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Name, NameType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
@@ -204,7 +204,8 @@ class PersonFS(Gramplet):
          and ( tipo == 'infano' or tipo == 'patro'
             or tipo == 'patrino' or tipo == 'edzo')) :
       self.uistate.set_active(handle, 'Person')
-    elif ( handle and tipo == 'fakto') :
+    elif ( handle
+         and (tipo == 'fakto' or tipo == 'edzoFakto')) :
       event = self.dbstate.db.get_event_from_handle(handle)
       try:
         EditEvent(self.dbstate, self.uistate, [], event)
@@ -216,11 +217,16 @@ class PersonFS(Gramplet):
   def kopii_al_FS(self, treeview):
     print("kopii_al_FS")
     model = self.modelKomp.model
+    active_handle = self.get_active('Person')
+    grPersono = self.dbstate.db.get_person_from_handle(active_handle)
     iter_ = model.get_iter_first()
+    fsTP = gedcomx.Gedcomx()
     fsP = gedcomx.Person()
     while iter_ is not None:
       if model.get_value(iter_, 6) : 
-        if model.get_value(iter_, 7) == 'fakto' and model.get_value(iter_, 8) :
+        tipolinio = model.get_value(iter_, 7)
+        if ( (tipolinio == 'fakto' or tipolinio == 'edzoFakto')
+             and model.get_value(iter_, 8) ) :
           grHandle = model.get_value(iter_, 8)
           event = self.dbstate.db.get_event_from_handle(grHandle)
           titolo = str(EventType(event.type))
@@ -249,26 +255,102 @@ class PersonFS(Gramplet):
           fsFakto.value = grFaktoPriskribo
           if grFaktoDato :
             fsFakto.date = gedcomx.Date()
-            fsFakto.date.original = str (event.date)
+            fsFakto.date.original = event.date.text
+            if not fsFakto.date.original or fsFakto.date.original=='' :
+              fsFakto.date.original = str (event.date)
             fsFakto.date.formal = gedcomx.DateFormal(grFaktoDato)
+            if str(fsFakto.date.formal) == '' :
+              fsFakto.date.formal = None
           if grFaktoLoko :
             fsFakto.place = gedcomx.PlaceReference()
             fsFakto.place.original = grFaktoLoko
-          fsP.facts.add(fsFakto)
+          if tipolinio == 'fakto' :
+            fsTP.persons.add(fsP)
+            fsP.facts.add(fsFakto)
+          elif tipolinio == 'edzoFakto' :
+            fsTR = gedcomx.Gedcomx()
+            grFamilyHandle = model.get_value(iter_, 10)
+            RSfsid = model.get_value(iter_, 11)
+            grFamily = self.dbstate.db.get_family_from_handle(grFamilyHandle)
+            fsRS = gedcomx.Relationship()
+            fsRS.id = RSfsid
+            fsRS.facts.add(fsFakto)
+            fsTR.relationships.add(fsRS)
+            peto = gedcomx.jsonigi(fsTR)
+            jsonpeto = json.dumps(peto)
+            res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
+            if res.status_code == 201 or res.status_code == 204:
+              print("ĝisdatigo sukceso")
+              self.ButRefresxigi_clicked(None)
+            if res.status_code != 201 and res.status_code != 204 :
+              print("ĝisdatigo rezulto :")
+              print(" jsonpeto = "+jsonpeto)
+              print(" res.status_code="+str(res.status_code))
+              print (res.headers)
+              print (res.text)
+        elif ( (tipolinio == 'nomo' or tipolinio == 'nomo1')
+             and model.get_value(iter_, 8) ) :
+          strNomo = model.get_value(iter_, 8)
+          grSurname = model.get_value(iter_, 10)
+          grGiven = model.get_value(iter_, 11)
+          fsNomoId = model.get_value(iter_, 9)
+          if tipolinio == 'nomo1' :
+            grNomo = grPersono.primary_name
+          else :
+            grNomo = None
+            for grN in grPersono.alternate_names :
+              if strNomo == str(grN) :
+                grNomo = grN
+                break
+            if not grNomo :
+              for grNomo in grPersono.alternate_names :
+                if (     grNomo.get_primary_surname().surname == grSurname
+                     and grNomo.first_name == grGiven) :
+                  break
+          fsNomo = gedcomx.Name()
+          if tipolinio == 'nomo1':
+            fsNomo.preferred = True
+          else:
+            fsNomo.preferred = False
+          if fsNomoId :
+            fsNomo.id = fsNomoId
+          if grNomo.type == NameType(NameType.MARRIED) :
+            fsNomo.type = 'http://gedcomx.org/MarriedName'
+          elif grNomo.type ==  NameType(NameType.AKA) :
+            fsNomo.type = 'http://gedcomx.org/AlsoKnownAs'
+          elif grNomo.type == NameType(NameType.BIRTH) :
+             fsNomo.type = 'http://gedcomx.org/BirthName'
+          else : 
+            fsNomo.type = "http://gedcomx.org/BirthName"
+          fsNF = gedcomx.NameForm()
+          fsNP = gedcomx.NamePart()
+          fsNP.type = "http://gedcomx.org/Surname"
+          fsNP.value = grSurname
+          fsNF.parts.add (fsNP)
+          fsNP = gedcomx.NamePart()
+          fsNP.type = "http://gedcomx.org/Given"
+          fsNP.value = grGiven
+          fsNF.parts.add (fsNP)
+          fsNomo.nameForms.add(fsNF)
+          fsP.names.add(fsNomo)
+          fsP.id = self.FSID
+          fsTP.persons.add(fsP)
       # FARINDAĴO : edzoj, gepatroj, infanoj,…
       iter_ =  model.iter_next(iter_)
-    peto = {'persons' : [gedcomx.jsonigi(fsP)]}
-    jsonpeto = json.dumps(peto)
-    res = tree._FsSeanco.post_url( "/platform/tree/persons/"+self.FSID, jsonpeto )
-    if res.status_code == 201:
-      print("ĝisdatigo sukceso")
-      self.ButRefresxigi_clicked(None)
-    else :
-      print("ĝisdatigo malsukceso")
-      print(" jsonpeto = "+jsonpeto)
-      print(" res.status_code="+str(res.status_code))
-      print (res.headers)
-      print (res.text)
+
+    if len(fsTP.persons) >0 :
+      peto = gedcomx.jsonigi(fsTP)
+      jsonpeto = json.dumps(peto)
+      res = tree._FsSeanco.post_url( "/platform/tree/persons/"+self.FSID, jsonpeto )
+      if res.status_code == 201 or res.status_code == 204:
+        print("ĝisdatigo sukceso")
+        self.ButRefresxigi_clicked(None)
+      if res.status_code != 201 and res.status_code != 204 :
+        print("ĝisdatigo rezulto :")
+        print(" jsonpeto = "+jsonpeto)
+        print(" res.status_code="+str(res.status_code))
+        print (res.headers)
+        print (res.text)
     
   def kopii_al_gramps(self, treeview):
     print("kopii_al_gramps")
@@ -277,18 +359,34 @@ class PersonFS(Gramplet):
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
     fsPersono = gedcomx.Person._indekso.get(self.FSID) 
-    with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
+    if self.dbstate.db.transaction :
+      print("??? transaction en cours ???")
+      self.dbstate.db.transaction_commit(self.dbstate.db.transaction)
+    #  intr = True
+    #  txn=self.dbstate.db.transaction
+    #else :
+    #  intr = False
+    #  txn = DbTxn(_("kopii al gramps"), self.dbstate.db)
+    with DbTxn(_("kopii al gramps"), self.dbstate.db) as txn:
+    #if txn :
       while iter_ is not None:
         if model.get_value(iter_, 6) : 
           # FARINDAĴO : aliaj tipoj
-          if model.get_value(iter_, 7) == 'fakto' :
+          tipolinio = model.get_value(iter_, 7)
+          if ( (tipolinio == 'fakto' )
+             and model.get_value(iter_, 9) ) :
             fsFakto_id = model.get_value(iter_, 9)
+            grFaktoH = model.get_value(iter_, 8)
             if fsPersono.facts:
               for fsFakto in fsPersono.facts :
                 if fsFakto.id == fsFakto_id : break
               if fsFakto.id == fsFakto_id :
                 print("importas fakto "+fsFakto_id)
-                event = Importo.aldFakto(self.dbstate.db,txn,fsFakto,grPersono)
+                if grFaktoH :
+                  event = self.dbstate.db.get_event_from_handle(grFaktoH)
+                  Importo.updFakto(self.dbstate.db,txn,fsFakto,event)
+                else :
+                  event = Importo.aldFakto(self.dbstate.db,txn,fsFakto,grPersono)
                 found = False
                 for er in grPersono.get_event_ref_list():
                   if er.ref == event.handle:
@@ -304,8 +402,45 @@ class PersonFS(Gramplet):
                   grPersono.set_birth_ref(er)
                 elif event.type == EventType.DEATH :
                   grPersono.set_death_ref(er)
+          elif ( (tipolinio == 'edzoFakto')
+             and model.get_value(iter_, 9) 
+             and model.get_value(iter_, 10) ) :
+            grFaktoH = model.get_value(iter_, 8)
+            fsFakto_id = model.get_value(iter_, 9)
+            grParoH = model.get_value(iter_, 10)
+            fsParo_id = model.get_value(iter_, 11)
+            grParo = self.dbstate.db.get_family_from_handle(grParoH)
+            fsParo = gedcomx.Relationship._indekso[fsParo_id]
+            for fsFakto in fsParo.facts :
+              if fsFakto.id == fsFakto_id : break
+            if grFaktoH :
+              event = self.dbstate.db.get_event_from_handle(grFaktoH)
+              Importo.updFakto(self.dbstate.db,txn,fsFakto,event)
+            else :
+              event = Importo.aldFakto(self.dbstate.db,txn,fsFakto,grParo)
+            found = False
+            for er in grParo.get_event_ref_list():
+              if er.ref == event.handle:
+                found = True
+                break
+            if not found:
+              er = EventRef()
+              er.set_role(EventRoleType.FAMILY)
+              er.set_reference_handle(event.get_handle())
+              self.dbstate.db.commit_event(event, txn)
+              grParo.add_event_ref(er)
+      
+            self.dbstate.db.commit_family(grParo,txn)
+          elif ( (tipolinio == 'nomo' or tipolinio == 'nomo1')
+             and model.get_value(iter_, 9) ) :
+            grNomo_str = model.get_value(iter_, 8)
+            fsNomo_id = model.get_value(iter_, 9)
+            for fsNomo in fsPersono.names :
+              if fsNomo.id == fsNomo_id : break
+            Importo.aldNomo(self.dbstate.db, txn, fsNomo, grPersono)
         iter_ =  model.iter_next(iter_)
       self.dbstate.db.commit_person(grPersono,txn)
+      self.dbstate.db.transaction_commit(txn)
     self.ButRefresxigi_clicked(None)
 
   def l_dekstra_klako(self, treeview, event):
@@ -350,6 +485,8 @@ class PersonFS(Gramplet):
                 (_('xTipo'), NOSORT, 0),
                 (_('xGr'), NOSORT, 0),
                 (_('xFs'), NOSORT, 0),
+                (_('xGr2'), NOSORT, 0),
+                (_('xFs2'), NOSORT, 0),
              ]
     self.modelKomp = ListModel(self.propKomp, titles
                  ,event_func=self.l_duobla_klako
@@ -372,9 +509,11 @@ class PersonFS(Gramplet):
   def toggled(self, path, val):
     row = self.modelKomp.model.get_iter((path,))
     tipo=self.modelKomp.model.get_value(row, 7)
-    if tipo != 'fakto':
+    #if tipo != 'fakto' and tipo != 'edzoFakto' :
+    if tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' :
       self.modelKomp.model.set_value(row, 6, False)
-      OkDialog(_('Pardonu, nur eventaj linioj povas esti elektitaj.'))
+      OkDialog(_('Pardonu, nur eventaj or nomaj linioj povas esti elektitaj.'))
+      print("  toggled:tipo="+tipo)
 
 
   def ButBaskKonf_toggled(self, dummy):
@@ -392,6 +531,7 @@ class PersonFS(Gramplet):
       dbPersono.konf = val
       dbPersono.commit(txn)
     self.dbstate.db.commit_person(grPersono, txn, grPersono.change)
+    self.dbstate.db.transaction_commit(txn)
 
   def ButRefresxigi_clicked(self, dummy):
     if self.FSID :
@@ -409,7 +549,8 @@ class PersonFS(Gramplet):
         fsPersono._infanojCP = set()
         fsPersono._gepatrojCP=set()
         fsPersono.sortKey = None
-      PersonFS.fs_Tree._persons.pop(self.FSID)
+      if self.FSID in PersonFS.fs_Tree._persons :
+        PersonFS.fs_Tree._persons.pop(self.FSID)
       PersonFS.fs_Tree.add_persons([self.FSID])
     #rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
     #f = open('arbo2.out.json','w')
@@ -622,7 +763,12 @@ class PersonFS(Gramplet):
       self.top.get_object("fs_sekso_eniro").set_text('Female')
     grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
-      self.top.get_object("fs_birdo_eniro").set_text( grdato_al_formal(grBirth.date))
+      birdoDato = grdato_al_formal(grBirth.date)
+      if birdoDato[0] == 'A' : birdoDato = birdoDato[1:]
+      if birdoDato[0] == '/' : birdoDato = birdoDato[1:]
+      posOblikvo = birdoDato.find('/')
+      if posOblikvo > 1 : birdoDato = birdoDato[:posOblikvo]
+      self.top.get_object("fs_birdo_eniro").set_text( birdoDato)
     else:
       self.top.get_object("fs_birdo_eniro").set_text( '')
     if grBirth and grBirth.place and grBirth.place != None :
@@ -682,7 +828,8 @@ class PersonFS(Gramplet):
       if "places" in data:
         for place in data["places"]:
           if place["id"] not in self.fs_TreeSercxo._places:
-            self.fs_TreeSercxo._places[place["id"]] = (
+            if 'latitude' in place and 'longitude' in place :
+              self.fs_TreeSercxo._places[place["id"]] = (
                                 str(place["latitude"]),
                                 str(place["longitude"]),
                             )
@@ -863,7 +1010,8 @@ class PersonFS(Gramplet):
     PersonFS.FSID = fsid
     # ŝarĝante individuan "FamilySearch" :
     PersonFS.fs_Tree.add_persons([fsid])
-    fsPerso = gedcomx.Person._indekso.get(fsid) 
+    #fsPerso = gedcomx.Person._indekso.get(fsid) 
+    fsPerso = PersonFS.fs_Tree._persons.get(fsid)
     if not fsPerso :
       mendo = "/platform/tree/persons/"+fsid
       r = tree._FsSeanco.head_url( mendo )

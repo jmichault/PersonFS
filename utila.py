@@ -10,6 +10,39 @@ except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
 
+def fsdato_al_gr( fsDato) :
+  if fsDato:
+    grDato = Date()
+    grDato.set_calendar(Date.CAL_GREGORIAN)
+    jaro=monato=tago= 0
+    if fsDato.formal :
+      if fsDato.formal.proksimuma :
+        grDato.set_modifier(Date.MOD_ABOUT)
+      if fsDato.formal.gamo :
+        if not fsDato.formal.unuaDato :
+          grDato.set_modifier(Date.MOD_BEFORE)
+        elif not fsDato.formal.finalaDato :
+          grDato.set_modifier(Date.MOD_AFTER)
+        else :
+          grDato.set_modifier(Date.MOD_RANGE)
+          jaro2 = fsDato.formal.finalaDato.jaro
+          monato2 = fsDato.formal.finalaDato.monato
+          tago2 = fsDato.formal.finalaDato.tago
+      if fsDato.formal.unuaDato:
+        jaro = fsDato.formal.unuaDato.jaro
+        monato = fsDato.formal.unuaDato.monato
+        tago = fsDato.formal.unuaDato.tago
+      else :
+        jaro = fsDato.formal.finalaDato.jaro
+        monato = fsDato.formal.finalaDato.monato
+        tago = fsDato.formal.finalaDato.tago
+    if grDato.modifier == Date.MOD_RANGE :
+      grDato.set(value=(tago, monato, jaro, 0, tago2, monato2, jaro2, 0),text=fsDato.original or '',newyear=Date.NEWYEAR_JAN1)
+    else : 
+      grDato.set(value=(tago, monato, jaro, 0),text=fsDato.original or '',newyear=Date.NEWYEAR_JAN1)
+  else : grDato = None
+  return grDato
+
 def grdato_al_formal( dato) :
   """
   " konvertas gramps-daton al «formal» dato
