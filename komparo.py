@@ -53,13 +53,16 @@ from constants import GEDCOMX_GRAMPS_FAKTOJ
 class FSKomparoOpcionoj(MenuToolOptions):
 
   def __init__(self, name, person_id=None, dbstate=None):
+    print("KO.init")
     self.db = dbstate.get_database()
     MenuToolOptions.__init__(self, name, person_id, dbstate)
 
   def add_menu_options(self, menu):
+    print("KO.amo")
     self.__general_options(menu)
 
   def __general_options(self, menu):
+    print("KO.go")
     category_name = _("FamilySearch Komparo Opcionoj")
     self.__gui_tagoj = NumberOption(_("Nombro tagoj"), 0, 0, 99) 
     self.__gui_tagoj.set_help(_("Nombro da tagoj inter du komparoj"))
@@ -91,12 +94,15 @@ class FSKomparoOpcionoj(MenuToolOptions):
 class FSKomparo(PluginWindows.ToolManagedWindowBatch):
 
   def get_title(self):
+    print("K.title")
     return _("FamilySearch Komparo")
 
   def initial_frame(self):
+    print("K.options")
     return _("Options")
 
   def run(self):
+    print("K.run")
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konektita al FamilySearch'))
       return

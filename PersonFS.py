@@ -255,7 +255,9 @@ class PersonFS(Gramplet):
           fsFakto.value = grFaktoPriskribo
           if grFaktoDato :
             fsFakto.date = gedcomx.Date()
-            fsFakto.date.original = str (event.date)
+            fsFakto.date.original = event.date.text
+            if not fsFakto.date.original or fsFakto.date.original=='' :
+              fsFakto.date.original = str (event.date)
             fsFakto.date.formal = gedcomx.DateFormal(grFaktoDato)
             if str(fsFakto.date.formal) == '' :
               fsFakto.date.formal = None
@@ -357,7 +359,16 @@ class PersonFS(Gramplet):
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
     fsPersono = gedcomx.Person._indekso.get(self.FSID) 
+    if self.dbstate.db.transaction :
+      print("??? transaction en cours ???")
+      self.dbstate.db.transaction_commit(self.dbstate.db.transaction)
+    #  intr = True
+    #  txn=self.dbstate.db.transaction
+    #else :
+    #  intr = False
+    #  txn = DbTxn(_("copy al gramps"), self.dbstate.db)
     with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
+    #if txn :
       while iter_ is not None:
         if model.get_value(iter_, 6) : 
           # FARINDAĴO : aliaj tipoj

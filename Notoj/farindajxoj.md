@@ -7,11 +7,8 @@
 # à faire pour version 1.3
 ## prioritaires
 * bogues :
- * comparaison : la liste des filtres est celle du démarrage de gramps.
- * import : enfants mal reliés à leurs parents ?
- * gramplet : import des enfants duplique les noms.
+  * comparaison : la liste des filtres est celle du premier lancement.
 * gramplet :
-  * copie des conjoints, enfants, père, mère ?
   * si coche d'un parent, enfant ou conjoint :
     * si absent de FS mais a un FSTID : accepter.
     * si absent de FS et pas de FSTID : suggérer d'aller sur la fiche.
@@ -20,7 +17,6 @@
       * si présent : associer.
   * si coche de sexe : suggérer de faire la correction manuellement.
   * comparer les lieux.
-  * copie/mise à jour des mariages vers gramps
 * recherche :
   * création dans FS : lier aux parents et aux enfants qui existent dans FS
   * plus de critères (au moins décès : date + lieu de décès, et lieu général)
@@ -30,6 +26,7 @@
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
   * cocher systématiquement par défaut «Ne pas réimporter les personnes existantes»
 * traduction en français
+* mise à jour doc
 ## facultatifs
 * gérer le «LifeSketch»
 * maintenir un dictionnaire personne.fsid-handle.
@@ -42,6 +39,7 @@
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 * gramplet :
+  * rafraichissement sans relecture de FS après saisie dans gramps ?
   * copie des noms vers FS : positionner preferred correctement.
 	attention : il doit toujours rester un nom préféré sur FS.
   * comparaison : gérer le drapeau «vivant» sur familysearch.
@@ -50,6 +48,9 @@
   * copie d'individus FS manquants dans gramps. (pour l'inverse, on va plutôt se déplacer sur la fiche gramps, faire une recherche et créer si pas trouvé)
   * liaison de conjoints FS vers gramps (le conjoint doit exister dans gramps, sinon : message).
   * suppression d'évènements familysearch.
+  * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
+    * --> lier les autres évènements aux conjoints ?
+    * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
 * recherche :
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné
@@ -67,6 +68,7 @@
 * ne pas se connecter à FamilySearch avant l'ouverture de la BD
 * éviter la double comparaison à l'ouverture de gramps
 * import :
+  * gestion de l'évènement StillBirth (= enfant mort-né) ?
   * éviter de créer de nouveaux lieux quand un lieu identique existe déjà
   * accélérer l'import des lieux.
   * accélérer le chargement des notes et sources.
