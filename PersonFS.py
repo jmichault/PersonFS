@@ -366,8 +366,8 @@ class PersonFS(Gramplet):
     #  txn=self.dbstate.db.transaction
     #else :
     #  intr = False
-    #  txn = DbTxn(_("copy al gramps"), self.dbstate.db)
-    with DbTxn(_("copy al gramps"), self.dbstate.db) as txn:
+    #  txn = DbTxn(_("kopii al gramps"), self.dbstate.db)
+    with DbTxn(_("kopii al gramps"), self.dbstate.db) as txn:
     #if txn :
       while iter_ is not None:
         if model.get_value(iter_, 6) : 

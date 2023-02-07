@@ -4,7 +4,7 @@
 	; fsid avec parents multiples : 9CSJ-L2D
 	; fsid avec lieu non standardisé : LR24-CQK
 
-# à faire pour version 1.3
+# à faire pour version 1.4
 ## prioritaires
 * bogues :
   * comparaison : la liste des filtres est celle du premier lancement.
