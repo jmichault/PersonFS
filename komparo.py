@@ -783,46 +783,84 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
     return
   dbPersono.fsid = fsPersono.id
   FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=FS_Dup=FS_Dok=False
+  # Komparo de esenca eroj
+  listres=list()
   res = SeksoKomp(grPersono, fsPersono)
-  if(model) :  model.add( res )
+  if res: listres.append(res)
   if res and res[0] != "green" : FS_Esenco = True
-  res = NomojKomp(grPersono, fsPersono)
-  for linio in res:
-    if linio[0] != "green" : FS_Nomo = True
-    if model:
-       model.add( linio)
-  if res and res[0][0] != "green" : FS_Esenco = True
-
+  resNomoj = NomojKomp(grPersono, fsPersono)
+  if resNomoj :
+    if resNomoj[0][0] != "green" : FS_Esenco = True
+    listres.append(resNomoj.pop(0))
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BIRTH , "http://gedcomx.org/Birth") 
-  if model and res: model.add(res)
+  if res: listres.append(res)
   if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BAPTISM , "http://gedcomx.org/Baptism")
-  if model and res: model.add(res)
-  if res and res[0] != "green" : FS_Fakto = True
+  if res: listres.append(res)
+  if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.DEATH , "http://gedcomx.org/Death") 
-  if model and res: model.add(res)
+  if res: listres.append(res)
   if res and res[0] != "green" : FS_Esenco = True
   res = FaktoKomp(db, grPersono, fsPersono, EventType.BURIAL , "http://gedcomx.org/Burial")
-  if model and res: model.add(res)
-  if res and res[0] != "green" : FS_Fakto = True
+  if res: listres.append(res)
+  if res and res[0] != "green" : FS_Esenco = True
 
+  if(model and len(listres)) :
+    if FS_Esenco:
+      esenco_id = model.add(['red',_('Esenco'),'==========','============================','==========','====================',False,'Esenco',None,None,None,None]  )
+    else:
+      esenco_id = model.add(['green',_('Esenco'),'==========','============================','==========','====================',False,'Esenco',None,None,None,None]  )
+    for linio in listres:
+      model.add( linio,node=esenco_id)
+
+  # Komparo de aliaj nomoj
+  if len(resNomoj)>0 :
+    for linio in resNomoj:
+      if linio[0] != "green" : FS_Nomo = True
+    if model :
+      if FS_Nomo:
+        nomo_id = model.add(['red',_('Aliaj nomoj'),'==========','============================','==========','====================',False,'Aliaj nomoj',None,None,None,None]  )
+      else:
+        nomo_id = model.add(['green',_('Aliaj nomoj'),'==========','============================','==========','====================',False,'Aliaj nomoj',None,None,None,None]  )
+      for linio in resNomoj:
+        model.add( linio,node=nomo_id)
+
+  # Komparo de gepatroj
   res = aldGepKomp(db, grPersono, fsPersono)
   FS_Gepatro=False
   for linio in res:
     if linio[0] != "green" : FS_Gepatro = True
-    if model:
-       model.add( linio)
+  if(model and len(res)) :
+    if FS_Gepatro:
+      gepatro_id = model.add(['red',_('Gepatroj'),'==========','============================','==========','====================',False,'Gepatroj',None,None,None,None]  )
+    else:
+      gepatro_id = model.add(['green',_('Gepatroj'),'==========','============================','==========','====================',False,'Gepatroj',None,None,None,None]  )
+    for linio in res:
+      model.add( linio,node=gepatro_id)
 
+  # Komparo de familioj
   res = aldEdzKomp(db, grPersono, fsPersono)
   for linio in res:
     if linio[0] != "green" : FS_Familio = True
-    if model:
-       model.add( linio)
+  if(model and len(res)) :
+    if FS_Familio:
+      familio_id = model.add(['red',_('Familioj'),'==========','============================','==========','====================',False,'Familioj',None,None,None,None]  )
+    else:
+      familio_id = model.add(['green',_('Familioj'),'==========','============================','==========','====================',False,'Familioj',None,None,None,None]  )
+    for linio in res:
+       model.add( linio,node=familio_id)
+
+  # Komparo de aliaj faktoj
   res = aldAliajFaktojKomp(db, grPersono, fsPersono)
   for linio in res:
     if linio[0] != "green" : FS_Fakto = True
-    if model:
-       model.add( linio)
+  if model and len(res):
+    if FS_Fakto:
+      fakto_id = model.add(['red',_('Faktoj'),'==========','============================','==========','====================',False,'Faktoj',None,None,None,None]  )
+    else:
+      fakto_id = model.add(['green',_('Faktoj'),'==========','============================','==========','====================',False,'Faktoj',None,None,None,None]  )
+    for linio in res:
+      model.add( linio,node=fakto_id)
 
   if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
     mendo = "/platform/tree/persons/"+fsPersono.id

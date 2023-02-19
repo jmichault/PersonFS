@@ -475,7 +475,7 @@ class PersonFS(Gramplet):
     self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
     titles = [  
-                (_('Koloro'), 1, 20,COLOR),
+                (_('Koloro'), 1, 40,COLOR),
 		( _('Propreco'), 2, 100),
 		( _('Dato'), 3, 120),
                 (_('Gramps Valoro'), 4, 300),
@@ -488,7 +488,7 @@ class PersonFS(Gramplet):
                 (_('xGr2'), NOSORT, 0),
                 (_('xFs2'), NOSORT, 0),
              ]
-    self.modelKomp = ListModel(self.propKomp, titles
+    self.modelKomp = ListModel(self.propKomp, titles, list_mode="tree"
                  ,event_func=self.l_duobla_klako
                  ,right_click=self.l_dekstra_klako)
     self.top.connect_signals({
@@ -1012,25 +1012,32 @@ class PersonFS(Gramplet):
     PersonFS.fs_Tree.add_persons([fsid])
     #fsPerso = gedcomx.Person._indekso.get(fsid) 
     fsPerso = PersonFS.fs_Tree._persons.get(fsid)
-    if not fsPerso :
+    # legas persona kaplinio
+    mendo = "/platform/tree/persons/"+fsid
+    r = tree._FsSeanco.head_url( mendo )
+    if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+      fsid = r.headers['X-Entity-Forwarded-Id']
+      PersonFS.FSID = fsid
+      utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
       mendo = "/platform/tree/persons/"+fsid
       r = tree._FsSeanco.head_url( mendo )
-      if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
-        fsid = r.headers['X-Entity-Forwarded-Id']
-        PersonFS.FSID = fsid
-        utila.ligi_gr_fs(db, grPersono, fsid)
-        mendo = "/platform/tree/persons/"+fsid
-        r = tree._FsSeanco.head_url( mendo )
-      datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-      etag = r.headers['Etag']
+    datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+    etag = r.headers['Etag']
+    if not fsPerso :
       PersonFS.fs_Tree.add_persons([fsid])
       fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()
+    if fsPerso and fsid != PersonFS.FSID :
+      fsPerso.id=fsid
 
     if getfs == True :
       PersonFS.fs_Tree.add_spouses([fsid])
       PersonFS.fs_Tree.add_children([fsid])
     
     kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
+    for row in self.modelKomp.model :
+      if row[0] == 'red' :
+        self.propKomp.expand_row(row.path,1)
+    
     box1 = self.top.get_object("Box1")
     if ('FS_Esenco' in kompRet) :
       box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
@@ -1047,6 +1054,7 @@ class PersonFS(Gramplet):
     else:
       box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
 
+    
 
     return
 

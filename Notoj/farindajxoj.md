@@ -6,13 +6,20 @@
 
 # à faire pour version 1.4
 ## prioritaires
+* gérer la version de gedcomx-v1
 * bogues :
+  * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
+  * afficher message quand le mot de passe familysearch est mauvais.
+  * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID.
+  * gramplet : mariage coté gramps pas affiché.
 * gramplet :
+  * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
+  * possibilité de renseigner manuellement le \_FSFTID d'une personnes
   * si coche d'un parent, enfant ou conjoint :
-    * si absent de FS mais a un FSTID : accepter.
-    * si absent de FS et pas de FSTID : suggérer d'aller sur la fiche.
-    * si absent de gramps : chercher le FSID dans gramps.
+    * si absent de FS mais a un FSFTID : accepter.
+    * si absent de FS et pas de FSFTID : suggérer d'aller sur la fiche.
+    * si absent de gramps : chercher le FSFTID dans gramps.
       * si absent : suggérer l'import.
       * si présent : associer.
   * si coche de sexe : suggérer de faire la correction manuellement.
@@ -51,6 +58,7 @@
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
     * --> lier les autres évènements aux conjoints ?
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
+    * piste : voir comment sont gérées les publications de mariage quand on les les joint dans FS.
 * recherche :
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné
