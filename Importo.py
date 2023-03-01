@@ -55,7 +55,7 @@ import PersonFS
 from constants import GEDCOMX_GRAMPS_FAKTOJ, GEDCOMX_GRAMPS_LOKOJ
 import tree
 import komparo
-from utila import fsdato_al_gr
+from utila import fsdato_al_gr, get_fsftid
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -248,10 +248,18 @@ def aldFakto(db, txn, fsFakto, obj):
   fsFaktoDato = fsFakto.date or ''
   grDato = fsdato_al_gr(fsFakto.date)
 
-  # serĉi ekzistanta
+  # serĉi ekzistanta per FSFTID
   for fakto in obj.event_ref_list :
     e = db.get_event_from_handle(fakto.ref)
-    if ( e.type.value == evtType ) :
+    attr = get_fsftid(e)
+    if attr == fsFakto.id :
+      return e
+
+  # serĉi ekzistanta per (tipo kaj dato) aux (tipo kaj …)
+  for fakto in obj.event_ref_list :
+    e = db.get_event_from_handle(fakto.ref)
+    grTipo = int(e.type) or e.type
+    if ( grTipo == evtType ) :
       if ( e.get_date_object() == grDato ):
         return e
       elif ( ( e.get_date_object().is_empty() and not grDato)
@@ -266,6 +274,10 @@ def aldFakto(db, txn, fsFakto, obj):
   if grDato :
     event.set_date_object( grDato )
   event.set_description(fsFaktoPriskribo)
+  if fsFakto.id :
+    attr = Attribute()
+    attr.set_type('_FSFTID')
+    attr.set_value(fsFakto.id)
   # noto
   for fsNoto in fsFakto.notes:
     noto = aldNoto(db, txn, fsNoto,event.note_list)
@@ -489,7 +501,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print(_("Elŝutante edzojn…"))
       todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
-    # notoj
+    # notoj , fontoj kaj memoroj
     if self.notoj or self.fontoj:
       progress.set_pass(_('Elŝutante notojn… (6/10)'),len(self.fs_TreeImp.persons))
       print(_("Elŝutante notojn…"))
@@ -817,6 +829,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       
     self.dbstate.db.commit_person(grPerson,self.txn)
     komparo.kompariFsGr(fsPersono,grPerson,self.dbstate.db,None)
+    self.window.hide()
 
   def aldNomoj(self, fsPersono, grPerson):
     for fsNomo in fsPersono.names :

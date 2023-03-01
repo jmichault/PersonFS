@@ -52,23 +52,26 @@ class Tree(gedcomx.Gedcomx):
     self._sources = dict()
     self._notes = list()
 
+  def add_persono(self, fid):
+    data = _FsSeanco.get_jsonurl( "/platform/tree/persons/" + fid)
+    if data:
+      gedcomx.maljsonigi(self,data)
+
   def add_persons(self, fids):
     """add individuals to the family tree
     :param fids: an iterable of fid
     """
-    new_fids = [fid for fid in fids if fid and fid not in self._persons.keys()]
-    while new_fids:
-      if len(new_fids) ==1:
-        data = _FsSeanco.get_jsonurl(
-            "/platform/tree/persons/" + new_fids[0]
-          )
-      else:
-        data = _FsSeanco.get_jsonurl(
-            "/platform/tree/persons?pids=" + ",".join(new_fids[:MAX_PERSONS])
-          )
-      if data:
-        gedcomx.maljsonigi(self,data)
-      new_fids = new_fids[MAX_PERSONS:]
+    async def sxargi_personoj(loop,fids):
+      farindajxoj = set()
+      for fid in fids :
+        if fid not in self._persons.keys() :
+          farindajxoj.add(loop.run_in_executor(None,self.add_persono,fid))
+      for farindajxo in farindajxoj :
+        await farindajxo
+        
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete( sxargi_personoj(loop,fids))
+
     for fid in fids :
       if fid in gedcomx.Person._indekso :
         self._persons[fid]=gedcomx.Person._indekso[fid]

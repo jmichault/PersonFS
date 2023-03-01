@@ -59,6 +59,7 @@ from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
 import importlib
 gedcomx_spec = importlib.util.find_spec("gedcomx")
+# FARINDAJXO : vérifier la version de gedcomx, essayer de mettre à jour si < x.y
 if gedcomx_spec and gedcomx_spec.loader:
   import gedcomx
 else:
@@ -74,7 +75,7 @@ import komparo
 import tree
 import utila
 import Importo
-from utila import getfsid, get_grevent, get_fsfact, grdato_al_formal
+from utila import get_fsftid, get_grevent, get_fsfact, grdato_al_formal
 
 import sys
 import os
@@ -219,15 +220,18 @@ class PersonFS(Gramplet):
     model = self.modelKomp.model
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
-    iter_ = model.get_iter_first()
     fsTP = gedcomx.Gedcomx()
+    fsTR = gedcomx.Gedcomx()
     fsP = gedcomx.Person()
-    while iter_ is not None:
-      if model.get_value(iter_, 6) : 
-        tipolinio = model.get_value(iter_, 7)
+    for x in model:
+     l = [x]
+     l.extend(x.iterchildren())
+     for linio in l :
+      if linio[6] : 
+        tipolinio = linio[7]
         if ( (tipolinio == 'fakto' or tipolinio == 'edzoFakto')
-             and model.get_value(iter_, 8) ) :
-          grHandle = model.get_value(iter_, 8)
+             and linio[8] ) :
+          grHandle = linio[8]
           event = self.dbstate.db.get_event_from_handle(grHandle)
           titolo = str(EventType(event.type))
           grFaktoPriskribo = event.description or ''
@@ -269,8 +273,8 @@ class PersonFS(Gramplet):
             fsP.facts.add(fsFakto)
           elif tipolinio == 'edzoFakto' :
             fsTR = gedcomx.Gedcomx()
-            grFamilyHandle = model.get_value(iter_, 10)
-            RSfsid = model.get_value(iter_, 11)
+            grFamilyHandle = linio[10]
+            RSfsid = linio[11]
             grFamily = self.dbstate.db.get_family_from_handle(grFamilyHandle)
             fsRS = gedcomx.Relationship()
             fsRS.id = RSfsid
@@ -281,7 +285,6 @@ class PersonFS(Gramplet):
             res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
             if res.status_code == 201 or res.status_code == 204:
               print("ĝisdatigo sukceso")
-              self.ButRefresxigi_clicked(None)
             if res.status_code != 201 and res.status_code != 204 :
               print("ĝisdatigo rezulto :")
               print(" jsonpeto = "+jsonpeto)
@@ -289,11 +292,11 @@ class PersonFS(Gramplet):
               print (res.headers)
               print (res.text)
         elif ( (tipolinio == 'nomo' or tipolinio == 'nomo1')
-             and model.get_value(iter_, 8) ) :
-          strNomo = model.get_value(iter_, 8)
-          grSurname = model.get_value(iter_, 10)
-          grGiven = model.get_value(iter_, 11)
-          fsNomoId = model.get_value(iter_, 9)
+             and linio[8] ) :
+          strNomo = linio[8]
+          grSurname = linio[10]
+          grGiven = linio[11]
+          fsNomoId = linio[9]
           if tipolinio == 'nomo1' :
             grNomo = grPersono.primary_name
           else :
@@ -335,8 +338,42 @@ class PersonFS(Gramplet):
           fsP.names.add(fsNomo)
           fsP.id = self.FSID
           fsTP.persons.add(fsP)
-      # FARINDAĴO : edzoj, gepatroj, infanoj,…
-      iter_ =  model.iter_next(iter_)
+        elif ( (tipolinio == 'edzo' )
+             and linio[8] ) :
+          grEdzo = self.dbstate.db.get_person_from_handle(linio[8])
+          fsTR = gedcomx.Gedcomx()
+          grFamilyHandle = linio[10]
+          RSfsid = linio[11]
+          grFamily = self.dbstate.db.get_family_from_handle(grFamilyHandle)
+          fsRS = gedcomx.Relationship()
+          fsRS.person1 = gedcomx.ResourceReference()
+          fsRS.person2 = gedcomx.ResourceReference()
+          fsRS.id = RSfsid
+          fsRS.type = "http://gedcomx.org/Couple"
+          if grEdzo.get_gender() == Person.MALE :
+            fsRS.person1.resourceId = get_fsftid(grEdzo)
+            fsRS.person2.resourceId = get_fsftid(grPersono)
+          else:
+            fsRS.person2.resourceId = get_fsftid(grEdzo)
+            fsRS.person1.resourceId = get_fsftid(grPersono)
+          fsRS.person1.resource = "https://api.familysearch.org/platform/tree/persons/" + fsRS.person1.resourceId
+          fsRS.person2.resource = "https://api.familysearch.org/platform/tree/persons/" + fsRS.person2.resourceId
+          fsTR.relationships.add(fsRS)
+          peto = gedcomx.jsonigi(fsTR)
+          jsonpeto = json.dumps(peto)
+          if RSfsid and RSfsid != '' :
+            res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
+          else :
+            res = tree._FsSeanco.post_url( "/platform/tree/relationships", jsonpeto )
+          if res.status_code == 201 or res.status_code == 204:
+            print("ĝisdatigo sukceso")
+          if res.status_code != 201 and res.status_code != 204 :
+            print("ĝisdatigo rezulto :")
+            print(" jsonpeto = "+jsonpeto)
+            print(" res.status_code="+str(res.status_code))
+            print (res.headers)
+            print (res.text)
+      # FARINDAĴO : gepatroj, infanoj,…
 
     if len(fsTP.persons) >0 :
       peto = gedcomx.jsonigi(fsTP)
@@ -344,18 +381,18 @@ class PersonFS(Gramplet):
       res = tree._FsSeanco.post_url( "/platform/tree/persons/"+self.FSID, jsonpeto )
       if res.status_code == 201 or res.status_code == 204:
         print("ĝisdatigo sukceso")
-        self.ButRefresxigi_clicked(None)
       if res.status_code != 201 and res.status_code != 204 :
         print("ĝisdatigo rezulto :")
         print(" jsonpeto = "+jsonpeto)
         print(" res.status_code="+str(res.status_code))
         print (res.headers)
         print (res.text)
+    if len(fsTP.persons) >0 or len(fsTR.relationships) >0 :
+      self.ButRefresxigi_clicked(None)
     
   def kopii_al_gramps(self, treeview):
     print("kopii_al_gramps")
     model = self.modelKomp.model
-    iter_ = model.get_iter_first()
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
     fsPersono = gedcomx.Person._indekso.get(self.FSID) 
@@ -369,14 +406,17 @@ class PersonFS(Gramplet):
     #  txn = DbTxn(_("kopii al gramps"), self.dbstate.db)
     with DbTxn(_("kopii al gramps"), self.dbstate.db) as txn:
     #if txn :
-      while iter_ is not None:
-        if model.get_value(iter_, 6) : 
+      for x in model:
+       l = [x]
+       l.extend(x.iterchildren())
+       for linio in l :
+        if linio[6] : 
           # FARINDAĴO : aliaj tipoj
-          tipolinio = model.get_value(iter_, 7)
+          tipolinio = linio[7]
           if ( (tipolinio == 'fakto' )
-             and model.get_value(iter_, 9) ) :
-            fsFakto_id = model.get_value(iter_, 9)
-            grFaktoH = model.get_value(iter_, 8)
+             and linio[9] ) :
+            fsFakto_id = linio[9]
+            grFaktoH = linio[8]
             if fsPersono.facts:
               for fsFakto in fsPersono.facts :
                 if fsFakto.id == fsFakto_id : break
@@ -403,12 +443,12 @@ class PersonFS(Gramplet):
                 elif event.type == EventType.DEATH :
                   grPersono.set_death_ref(er)
           elif ( (tipolinio == 'edzoFakto')
-             and model.get_value(iter_, 9) 
-             and model.get_value(iter_, 10) ) :
-            grFaktoH = model.get_value(iter_, 8)
-            fsFakto_id = model.get_value(iter_, 9)
-            grParoH = model.get_value(iter_, 10)
-            fsParo_id = model.get_value(iter_, 11)
+             and linio[9] 
+             and linio[10] ) :
+            grFaktoH = linio[8]
+            fsFakto_id = linio[9]
+            grParoH = linio[10]
+            fsParo_id = linio[11]
             grParo = self.dbstate.db.get_family_from_handle(grParoH)
             fsParo = gedcomx.Relationship._indekso[fsParo_id]
             for fsFakto in fsParo.facts :
@@ -432,13 +472,12 @@ class PersonFS(Gramplet):
       
             self.dbstate.db.commit_family(grParo,txn)
           elif ( (tipolinio == 'nomo' or tipolinio == 'nomo1')
-             and model.get_value(iter_, 9) ) :
-            grNomo_str = model.get_value(iter_, 8)
-            fsNomo_id = model.get_value(iter_, 9)
+             and linio[9] ) :
+            grNomo_str = linio[8]
+            fsNomo_id = linio[9]
             for fsNomo in fsPersono.names :
               if fsNomo.id == fsNomo_id : break
             Importo.aldNomo(self.dbstate.db, txn, fsNomo, grPersono)
-        iter_ =  model.iter_next(iter_)
       self.dbstate.db.commit_person(grPersono,txn)
       self.dbstate.db.transaction_commit(txn)
     self.ButRefresxigi_clicked(None)
@@ -510,9 +549,9 @@ class PersonFS(Gramplet):
     row = self.modelKomp.model.get_iter((path,))
     tipo=self.modelKomp.model.get_value(row, 7)
     #if tipo != 'fakto' and tipo != 'edzoFakto' :
-    if tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' :
+    if tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' and tipo != 'edzo' :
       self.modelKomp.model.set_value(row, 6, False)
-      OkDialog(_('Pardonu, nur eventaj or nomaj linioj povas esti elektitaj.'))
+      OkDialog(_('Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj.'))
       print("  toggled:tipo="+tipo)
 
 
@@ -647,7 +686,12 @@ class PersonFS(Gramplet):
       self.ButRefresxigi_clicked(None)
     else :
       print (res.headers)
-    #  FARINDAĴO 
+    #  FARINDAĴOJ :
+    #     1-  mettre à jour avec les noms et faits
+    #     2-  lier aux parents
+    #     3-  lier aux conjoints
+    #     4-  lier aux enfants
+    self.Sercxi.hide()
     return
 
   def ButLigi_clicked(self, dummy):
@@ -989,49 +1033,50 @@ class PersonFS(Gramplet):
     else :
       self.top.get_object("ButBaskKonf").set_active(False)
       
-    fsid = getfsid(grPersono)
+    fsid = get_fsftid(grPersono)
+    self.FSID = fsid
     if fsid == '' :
       fsid = 'xxxx-xxx'
-    self.top.get_object("LinkoButono").set_label(fsid)
-    if fsid == '':
       lien = 'https://familysearch.org/'
     else :
       lien = 'https://familysearch.org/tree/person/' + fsid
+    self.top.get_object("LinkoButono").set_label(fsid)
     self.top.get_object("LinkoButono").set_uri(lien)
-    # Se fsid ne estas specifita: nenio pli :
-    if fsid == '' or fsid == 'xxxx-xxx' :
-      return
-    self.FSID = fsid
+    ## Se fsid ne estas specifita: nenio pli :
+    ##if fsid == '' or fsid == 'xxxx-xxx' :
+    ##  return
 
-    # Se ĝi ne estas konektita al familysearch: nenio pli.
-    if tree._FsSeanco == None or not tree._FsSeanco.logged:
-      return
+    ### Se ĝi ne estas konektita al familysearch: nenio pli.
+    ##if tree._FsSeanco == None or not tree._FsSeanco.logged:
+    ##  return
     #
-    PersonFS.FSID = fsid
-    # ŝarĝante individuan "FamilySearch" :
-    PersonFS.fs_Tree.add_persons([fsid])
-    #fsPerso = gedcomx.Person._indekso.get(fsid) 
-    fsPerso = PersonFS.fs_Tree._persons.get(fsid)
-    # legas persona kaplinio
-    mendo = "/platform/tree/persons/"+fsid
-    r = tree._FsSeanco.head_url( mendo )
-    if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
-      fsid = r.headers['X-Entity-Forwarded-Id']
-      PersonFS.FSID = fsid
-      utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
+    PersonFS.FSID = self.FSID
+    fsPerso = gedcomx.Person()
+    if PersonFS.FSID != '' :
+      # ŝarĝante individuan "FamilySearch" :
+      PersonFS.fs_Tree.add_persons([fsid])
+      #fsPerso = gedcomx.Person._indekso.get(fsid) 
+      fsPerso = PersonFS.fs_Tree._persons.get(fsid)
+      # legas persona kaplinio
       mendo = "/platform/tree/persons/"+fsid
       r = tree._FsSeanco.head_url( mendo )
-    datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-    etag = r.headers['Etag']
-    if not fsPerso :
-      PersonFS.fs_Tree.add_persons([fsid])
-      fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()
-    if fsPerso and fsid != PersonFS.FSID :
-      fsPerso.id=fsid
+      if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+        fsid = r.headers['X-Entity-Forwarded-Id']
+        PersonFS.FSID = fsid
+        utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
+        mendo = "/platform/tree/persons/"+fsid
+        r = tree._FsSeanco.head_url( mendo )
+      datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+      etag = r.headers['Etag']
+      if not fsPerso :
+        PersonFS.fs_Tree.add_persons([fsid])
+        fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()
+      if fsPerso and fsid != PersonFS.FSID :
+        fsPerso.id=fsid
 
-    if getfs == True :
-      PersonFS.fs_Tree.add_spouses([fsid])
-      PersonFS.fs_Tree.add_children([fsid])
+      if getfs == True :
+        PersonFS.fs_Tree.add_spouses([fsid])
+        PersonFS.fs_Tree.add_children([fsid])
     
     kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
     for row in self.modelKomp.model :

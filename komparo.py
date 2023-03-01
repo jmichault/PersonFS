@@ -134,7 +134,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         return
       progress.step()
       person = self.db.get_person_from_handle(handle)
-      fsid = utila.getfsid(person)
+      fsid = utila.get_fsftid(person)
       if(fsid == ''): continue
       self.db.dbapi.execute("select stat_dato from personfs_stato where p_handle=?",[handle])
       datumoj = self.db.dbapi.fetchone()
@@ -429,8 +429,8 @@ def aldGepKomp(db, grPersono, fsPersono ) :
     fsMother = None
     fs_father_name = ''
     fs_mother_name = ''
-  fatherFsid = utila.getfsid(father)
-  motherFsid = utila.getfsid(mother)
+  fatherFsid = utila.get_fsftid(father)
+  motherFsid = utila.get_fsftid(mother)
   koloro = "orange"
   if (fatherFsid == fsfather_id) :
     koloro = "green"
@@ -478,21 +478,24 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       else :
         edzo = Person()
       edzoNomo = edzo.primary_name
-      edzoFsid = utila.getfsid(edzo)
+      edzoFsid = utila.get_fsftid(edzo)
       fsEdzoId = ''
       fsEdzTrio = None
       fsParo = None
+      fsParoId = None
       for paro in fsEdzoj :
         if ( (paro.person1 and paro.person1.resourceId == edzoFsid)
             or( (paro.person1==None or paro.person1.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
+          fsParoId = paro.id
           fsEdzoj.remove(paro)
           break
         elif ( (paro.person2 and paro.person2.resourceId == edzoFsid)
             or( (paro.person2==None or paro.person2.resourceId== '') and edzoFsid == '')) :
           fsEdzoId = edzoFsid
           fsParo = paro
+          fsParoId = paro.id
           fsEdzoj.remove(paro)
           break
       
@@ -504,7 +507,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       res.append( ( koloro , _trans.gettext('Spouse')
                 , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
 		  , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
-          , False, 'edzo', edzo_handle ,fsEdzoId
+          , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
            ) )
       # familiaj eventoj (edziĝo, …)
       fsFaktoj = set()
@@ -561,7 +564,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
   		  ) )
       koloro = "yellow3"
       for fsFakto in fsFaktoj :
-        evtType = GEDCOMX_GRAMPS_FAKTOJ.get(fsFakto.type)
+        evtType = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
         if evtType :
           titolo = str(EventType(evtType))
         elif fsFakto.type[:6] == 'data:,':
@@ -586,7 +589,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       for child_ref in family.get_child_ref_list():
         infano = db.get_person_from_handle(child_ref.ref)
         infanoNomo = infano.primary_name
-        infanoFsid = utila.getfsid(infano)
+        infanoFsid = utila.get_fsftid(infano)
         fsInfanoId = ''
         for triopo in fsInfanoj :
           if ( (   ((triopo.parent1 and triopo.parent1.resourceId == fsid)
@@ -643,7 +646,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
     res.append( ( koloro , _trans.gettext('Spouse')
                 , '', ''
 		  , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
-                , False, 'edzo', None  ,fsEdzoId
+                , False, 'edzo', None  ,fsEdzoId , None, paro.id
            ) )
     toRemove=set()
     for triopo in fsInfanoj :
@@ -781,7 +784,8 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       and dbPersono.stat_dato > fsPersono._datmod
       and dbPersono.stat_dato > grPersono.change):
     return
-  dbPersono.fsid = fsPersono.id
+  if fsPersono.id :
+    dbPersono.fsid = fsPersono.id
   FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=FS_Dup=FS_Dok=False
   # Komparo de esenca eroj
   listres=list()
@@ -862,7 +866,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
     for linio in res:
       model.add( linio,node=fakto_id)
 
-  if not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
+  if fsPersono.id and (not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified ) :
     mendo = "/platform/tree/persons/"+fsPersono.id
     r = tree._FsSeanco.head_url( mendo )
     while r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
@@ -877,25 +881,26 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       fsPersono._etag = r.headers['Etag']
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   # Serĉi ĉu FamilySearch ofertas duplonojn
-  mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
-  r = tree._FsSeanco.head_url(
+  if fsPersono.id :
+    mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
+    r = tree._FsSeanco.head_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
                 )
-  if r.status_code == 200 :
-    FS_Dup = True
-  # Serĉi ĉu FamilySearch ofertas dokumentoj
-  mendo = "/service/tree/tree-data/record-matches/"+fsPersono.id
-  r = tree._FsSeanco.get_url( mendo ,{"Accept": "application/json,*/*"})
-  if r.status_code == 200 :
-    try:
-      j = r.json()
-      if ( 'data' in j
-          and 'matches' in j['data'] 
-          and len(j['data']['matches']) >= 1 ) :
-        FS_Dok = True
-    except Exception as e:
-      self.write_log("WARNING: corrupted file from %s, error: %s" % (mendo, e))
-      print(r.content)
+    if r.status_code == 200 :
+      FS_Dup = True
+    # Serĉi ĉu FamilySearch ofertas dokumentoj
+    mendo = "/service/tree/tree-data/record-matches/"+fsPersono.id
+    r = tree._FsSeanco.get_url( mendo ,{"Accept": "application/json,*/*"})
+    if r.status_code == 200 :
+      try:
+        j = r.json()
+        if ( 'data' in j
+            and 'matches' in j['data'] 
+            and len(j['data']['matches']) >= 1 ) :
+          FS_Dok = True
+      except Exception as e:
+        self.write_log("WARNING: corrupted file from %s, error: %s" % (mendo, e))
+        print(r.content)
   dbPersono.stat_dato = int(time.time())
   if ( FS_Identa 
        and ( not dbPersono.konf_dato 
@@ -929,7 +934,8 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       grPersono.add_tag(tag_fs.handle)
   db.commit_person(grPersono, txn, grPersono.change)
   dbPersono.gramps_datomod = grPersono.change
-  dbPersono.fs_datomod = fsPersono._last_modified
+  if fsPersono.id :
+    dbPersono.fs_datomod = fsPersono._last_modified
   dbPersono.konf_esenco = not FS_Esenco
   dbPersono.commit(txn)
   if not intr :

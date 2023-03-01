@@ -59,7 +59,8 @@ Les dates sont affichés chaque fois que c'est possible en utilisant le format [
 
 Depuis le gramplet, vous pouvez aussi :
 * Accéder à la fiche FamilySearch complète en cliquant sur le N° d'identification (à droite de l'écran), ce qui lance votre navigateur internet.
-* Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de copier votre fiche vers FamilySearch si vous ne trouvez pas de correspondance.
+* Lancer une recherche sur FamilySearch, qui vous permet aussi d'associer votre fiche à une fiche familysearch existante, ou de créer la personne dans FamilySearch si vous ne trouvez pas de correspondance.
+  * Attention : la personne est créée avec le minimum de renseignements : nom, prénom. À vous de transférer les autres renseignements, et de la lier à ses enfants, conjoints, parents.
 * Consulter les doublons potentiels proposés par FamilySearch, et de là vous pouvez accéder à la fiche FamilySearch complète du doublon potentiel, ou accéder à l'écran de fusion FamilySearch.
 * lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
 * copier des noms ou des évènements vers ou depuis FamilySearch en cochant la dernière colonne, puis en utilisant le menu contextuel (clic droit).
