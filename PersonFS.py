@@ -532,7 +532,7 @@ class PersonFS(Gramplet):
                  ,right_click=self.l_dekstra_klako)
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
-            "on_ButEdzoj_clicked"      : self.ButEdzoj_clicked,
+            "on_ButImp1K_clicked"      : self.ButImp1K_clicked,
             "on_ButSercxi_clicked"      : self.ButSercxi_clicked,
             "on_ButDup_clicked"      : self.ButDup_clicked,
             "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
@@ -605,13 +605,11 @@ class PersonFS(Gramplet):
       self.set_has_data(self.get_has_data(active_handle))
     else:
       self.set_has_data(False)
-    return
 
   def ButImporti_clicked(self, dummy):
     gpr = PluginRegister.get_instance()
     plg = gpr.get_plugin('Importo de FamilySearch')
     run_plugin(plg,self.dbstate,self.uistate)
-    return
 
   def ButAldoni_clicked(self, dummy):
     active_handle = self.get_active('Person')
@@ -953,17 +951,13 @@ class PersonFS(Gramplet):
 		) )
     return
 
-  def ButEdzoj_clicked(self, dummy):
+  def ButImp1K_clicked(self, dummy):
     active_handle = self.get_active('Person')
-    self.modelKomp.cid=None
-    self.modelKomp.model.set_sort_column_id(-2,0)
-    self.modelKomp.clear()
-    if active_handle:
-      self.kompariFs(active_handle,True)
-      self.set_has_data(self.get_has_data(active_handle))
-    else:
-      self.set_has_data(False)
-    return
+    grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+    importilo = Importo.FsAlGr()
+    fsid = get_fsftid(grPersono)
+    importilo.importi(self, fsid)
+    self.uistate.set_active(active_handle, 'Person')
 
   def pref_clicked(self, dummy):
     top = self.top.get_object("PersonFSPrefDialogo")
