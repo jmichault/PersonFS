@@ -10,8 +10,9 @@ Pour pouvoir utiliser l'extension il vous faut un compte _familysearch_, celui-c
 
 # installation
 ## prérequis
-Les modules python «requests» et «gedcomx-v1» doivent être installés.
-De ce fait ce plugin ne peut pas être utilisé avec la distribution AIO de gramps.
+Les modules python «requests» et «gedcomx-v1» doivent être installés ( ` pip install requests gedcomx-v1 ` ).
+De ce fait ce plugin ne peut pas être utilisé avec la distribution AIO de gramps.  
+Il faut patcher gramps avec la commande : ` sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py `  
 
 ## en chargeant le zip
 Sur la [page d'accueil du projet](https://github.com/jmichault/PersonFS), cliquez «Releases» (à droite), et dans «Assets» choisissez le fichier PersonFS.zip).  
@@ -25,6 +26,14 @@ cd ~/.gramps/gramps51/plugins
 git clone https://github.com/jmichault/PersonFS.git
 ```
 (note : à adapter si gramps n'est pas en version 5.1)
+
+## avec git, pour la branche en développement
+Dans un terminal, exécutez les commandes suivantes :
+
+```
+cd ~/.gramps/gramps51/plugins
+git clone -b dev https://github.com/jmichault/PersonFS.git
+```
 
 # le gramplet
 ## activation
