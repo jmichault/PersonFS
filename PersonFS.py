@@ -818,8 +818,8 @@ class PersonFS(Gramplet):
     grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
       birdoDato = grdato_al_formal(grBirth.date)
-      if birdoDato[0] == 'A' : birdoDato = birdoDato[1:]
-      if birdoDato[0] == '/' : birdoDato = birdoDato[1:]
+      if len(birdoDato) >0 and birdoDato[0] == 'A' : birdoDato = birdoDato[1:]
+      if len(birdoDato) >0 and birdoDato[0] == '/' : birdoDato = birdoDato[1:]
       posOblikvo = birdoDato.find('/')
       if posOblikvo > 1 : birdoDato = birdoDato[:posOblikvo]
       self.top.get_object("fs_birdo_eniro").set_text( birdoDato)
