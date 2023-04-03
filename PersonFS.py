@@ -123,7 +123,7 @@ class PersonFS(Gramplet):
       pf = _pd.get_formats()[fmt]
       lingvo = pf.language
   if len(lingvo) != 2:
-      lingvo = 'fr'
+      lingvo = lingvo[:2]
 
   def aki_sesio():
     if not tree._FsSeanco:

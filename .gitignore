@@ -132,3 +132,4 @@ dmypy.json
 *.swp
 tests/
 toto*
+_traduko.jar
