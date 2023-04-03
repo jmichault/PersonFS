@@ -12,11 +12,12 @@
     * le conjoint absent côté FS apparaît en vert ???.
   * gramplet : mariage coté gramps pas affiché si pas de mariage côté FS.
   * gramplet : copie d'un mariage ou d'un conjoint : plante sur la ligne suivante. CORRIGÉ ? à tester
+  * import : le réimport crée des doublons sur les noms et les évènements dans l'arbre FS.
   * bogue gramps si case à cocher dans un treeview : sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
   * afficher message quand le mot de passe familysearch est mauvais.
-  * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID.
+  * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID. CORRIGÉ ? a tester
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
   * possibilité de renseigner manuellement le \_FSFTID d'une personnes
@@ -36,6 +37,8 @@
     * après création : transférer aussi les faits et noms.
   * plus de critères (au moins décès : date + lieu de décès, et lieu général)
 * import :
+  * détecter les doublons fsid et avertir : à tester.
+  * ne pas lancer si pas de fsid.
   * normaliser les noms/prénoms (majuscules et minuscules).
   * importer/mettre à jour l'ID des objets : évènement, famille, source, citation.
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
@@ -53,8 +56,6 @@
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 * gramplet :
-  * ajouter un bouton pour copier le FSFTID
-  * ajouter un bouton «Import en 1 clic»
   * rafraichissement sans relecture de FS après saisie dans gramps ?
   * copie des noms vers FS : positionner preferred correctement.
 	attention : il doit toujours rester un nom préféré sur FS.

@@ -101,7 +101,8 @@ class Tree(gedcomx.Gedcomx):
       fsPersono = self._persons[fid]
       if hasattr(fsPersono,'_paroj') and fsPersono._paroj :
         for paro in fsPersono._paroj :
-          rels |= {paro.person1.resourceId , paro.person2.resourceId }
+          if paro.person1 : rels |= {paro.person1.resourceId}
+          if paro.person2 : rels |= {paro.person2.resourceId}
     rels.difference_update(fids)
     self.add_persons(rels)
     return set(filter(None, rels))

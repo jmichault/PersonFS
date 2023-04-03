@@ -413,6 +413,7 @@ class FsAlGr:
     vokanto.uistate.set_busy_cursor(True)
     vokanto.dbstate.db.disable_signals()
     cnt=0
+    dupAverto=True
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
@@ -420,12 +421,23 @@ class FsAlGr:
     for person_handle in vokanto.dbstate.db.get_person_handles() :
       progress.step()
       person = vokanto.dbstate.db.get_person_from_handle(person_handle)
-      for attr in person.get_attribute_list():
-        if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
+      fsid = get_fsftid(person)
+      if fsid  ==self.FS_ID :
           print(_('«FamilySearch» ekzistanta ID'))
-        if attr.get_type() == '_FSFTID':
-          self.fs_gr[attr.get_value()] = person_handle
-          break
+      if self.fs_gr.get(fsid) :
+        print(_('«FamilySearch» duplikata ID : %s ')%(fsid))
+        if dupAverto :
+          WarningDialog(_('Ne konekta al FamilySearch'))
+          qd = QuestionDialog2(
+                _('Duplikata FSFTID')
+              , _('«FamilySearch» duplikata ID : %s ')%(fsid)
+              , _('_Daŭru averton'), _('_Ĉesu averton')
+              , parent=vokanto.uistate.window)
+          if not qd.run():
+            dupAverto = False
+
+      else :
+        self.fs_gr[fsid] = person_handle
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))
       return

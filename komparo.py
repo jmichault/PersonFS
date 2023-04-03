@@ -438,7 +438,8 @@ def aldGepKomp(db, grPersono, fsPersono ) :
     koloro = "yellow"
   elif father is None and fsfather_id != '':
     koloro = "yellow3"
-  res.append ( ( koloro , _trans.gettext('Father')
+  if father or fsFather :
+    res.append ( ( koloro , _trans.gettext('Father')
 		, grperso_datoj(db, father) , ' ' + father_name + ' [' + fatherFsid  + ']'
 		, fsperso_datoj(db, fsFather) , fs_father_name + ' [' + fsfather_id + ']'
         , False, 'patro', father_handle ,fatherFsid
@@ -450,7 +451,8 @@ def aldGepKomp(db, grPersono, fsPersono ) :
     koloro = "yellow"
   elif mother is None and fsmother_id != '':
     koloro = "yellow3"
-  res.append( ( koloro , _trans.gettext('Mother')
+  if mother or fsMother :
+    res.append( ( koloro , _trans.gettext('Mother')
 		, grperso_datoj(db, mother) , ' ' + mother_name + ' [' + motherFsid + ']'
 		, fsperso_datoj(db, fsMother) , fs_mother_name + ' [' + fsmother_id + ']'
         , False, 'patrino', mother_handle ,motherFsid
@@ -634,9 +636,9 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         fsInfanoj.remove(triopo)
   koloro = "yellow3"
   for paro in fsEdzoj :
-    if paro.person1.resourceId == fsid :
+    if paro.person1 and paro.person1.resourceId == fsid :
       fsEdzoId = paro.person2.resourceId
-    else :
+    elif paro.person1 :
       fsEdzoId = paro.person1.resourceId
     fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId)
     if fsEdzo :
@@ -879,6 +881,8 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
       fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
     if 'Etag' in r.headers :
       fsPersono._etag = r.headers['Etag']
+  if not hasattr(fsPersono,'_last_modified') :
+    fsPersono._last_modified = 0
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   # Serĉi ĉu FamilySearch ofertas duplonojn
   if fsPersono.id :

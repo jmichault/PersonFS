@@ -533,6 +533,7 @@ class PersonFS(Gramplet):
     self.top.connect_signals({
             "on_pref_clicked"      : self.pref_clicked,
             "on_ButImp1K_clicked"      : self.ButImp1K_clicked,
+            "on_kopii_clicked"      : self.ButKopii_clicked,
             "on_ButSercxi_clicked"      : self.ButSercxi_clicked,
             "on_ButDup_clicked"      : self.ButDup_clicked,
             "on_ButLancxi_clicked"      : self.ButLancxi_clicked,
@@ -690,6 +691,17 @@ class PersonFS(Gramplet):
     #     3-  lier aux conjoints
     #     4-  lier aux enfants
     self.Sercxi.hide()
+    return
+
+  def ButKopii_clicked(self, dummy):
+    #self.FSID
+    clipboard = Gtk.Clipboard.get_for_display(Gdk.Display.get_default(),
+                        Gdk.SELECTION_CLIPBOARD)
+    clipboard.set_text(self.FSID, -1)
+    clipboard = Gtk.Clipboard.get_for_display(Gdk.Display.get_default(),
+                        Gdk.SELECTION_PRIMARY)
+    clipboard.set_text(self.FSID, -1)
+
     return
 
   def ButLigi_clicked(self, dummy):
