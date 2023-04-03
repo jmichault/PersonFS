@@ -1,4 +1,4 @@
-xgettext --from-code=UTF-8 --no-wrap -k_ -kN_ -o locale/PersonFS.pot *.py *.glade
+xgettext --from-code=UTF-8 --no-wrap -k -k_ -kN_ -o locale/PersonFS.pot *.py *.glade
 sed -i "s/charset=CHARSET/charset=UTF-8/"  locale/PersonFS.pot
 
 for x in locale/*/LC_MESSAGES

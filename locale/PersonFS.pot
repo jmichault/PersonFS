@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-03 21:35+0200\n"
+"POT-Creation-Date: 2023-04-03 22:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: constants.py:59
-msgid "LifeSketch"
+msgid "Vivskizo"
 msgstr ""
 
 #: constants.py:60
@@ -35,10 +35,6 @@ msgstr ""
 
 #: Importo.py:411
 msgid "FamilySearch Importo"
-msgstr ""
-
-#: Importo.py:411 komparo.py:109
-msgid "Starting"
 msgstr ""
 
 #: Importo.py:420
@@ -244,25 +240,8 @@ msgstr ""
 msgid "Kompari sendepende de la nombro da tagoj."
 msgstr ""
 
-#: komparo.py:76
-msgid "Person Filter"
-msgstr ""
-
-#: komparo.py:83
-#, python-format
-msgid "All %s"
-msgstr ""
-
-#: komparo.py:83
-msgid "Persons"
-msgstr ""
-
 #: komparo.py:98
 msgid "FamilySearch Komparo"
-msgstr ""
-
-#: komparo.py:102
-msgid "Options"
 msgstr ""
 
 #: komparo.py:107
@@ -286,40 +265,8 @@ msgstr ""
 msgid "FS ID %s ne trovita"
 msgstr ""
 
-#: komparo.py:195 komparo.py:201
-msgid "male"
-msgstr ""
-
-#: komparo.py:197 komparo.py:203
-msgid "female"
-msgstr ""
-
-#: komparo.py:199 komparo.py:205
-msgid "unknown"
-msgstr ""
-
 #: komparo.py:209
 msgid "Sekso:"
-msgstr ""
-
-#: komparo.py:269 komparo.py:285 komparo.py:292
-msgid "Name"
-msgstr ""
-
-#: komparo.py:442
-msgid "Father"
-msgstr ""
-
-#: komparo.py:455
-msgid "Mother"
-msgstr ""
-
-#: komparo.py:509 komparo.py:648
-msgid "Spouse"
-msgstr ""
-
-#: komparo.py:612 komparo.py:629 komparo.py:664 komparo.py:679
-msgid "Child"
 msgstr ""
 
 #: komparo.py:816 komparo.py:818
@@ -343,7 +290,7 @@ msgid "Faktoj"
 msgstr ""
 
 #: komparo.py:928 PersonFS.py:560
-msgid "FamilySearch tags"
+msgid "FamilySearch etikedoj"
 msgstr ""
 
 #: PersonFS.gpr.py:30
@@ -434,32 +381,12 @@ msgstr ""
 msgid "Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj."
 msgstr ""
 
-#: PersonFS.py:758 PersonFS.py:800
-msgid "score"
-msgstr ""
-
 #: PersonFS.py:759 PersonFS.py:801
 msgid "FS Id"
 msgstr ""
 
 #: PersonFS.py:760 PersonFS.py:802
 msgid "Nomo, antaŭnomo"
-msgstr ""
-
-#: PersonFS.py:761 PersonFS.py:803
-msgid "Birth"
-msgstr ""
-
-#: PersonFS.py:762 PersonFS.py:804
-msgid "Death"
-msgstr ""
-
-#: PersonFS.py:763 PersonFS.py:805
-msgid "Parents"
-msgstr ""
-
-#: PersonFS.py:764 PersonFS.py:806
-msgid "Spouses"
 msgstr ""
 
 #: PersonFS.py:788

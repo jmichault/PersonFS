@@ -557,7 +557,7 @@ class PersonFS(Gramplet):
 
 
   def ButBaskKonf_toggled(self, dummy):
-   with DbTxn(_("FamilySearch tags"), self.dbstate.db) as txn:
+   with DbTxn(_("FamilySearch etikedoj"), self.dbstate.db) as txn:
     val = self.top.get_object("ButBaskKonf").get_active()
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
     active_handle = self.get_active('Person')
@@ -755,13 +755,13 @@ class PersonFS(Gramplet):
         self.uistate.window.set_modal(False)
       TreeRes = self.top.get_object("PersonFSDupRes")
       titles = [  
-                (_('score'), 1, 80),
+                (_trans.gettext('score'), 1, 80),
                 (_('FS Id'), 2, 90),
                 (_('Nomo, antaŭnomo'), 3, 200),
-                (_('Birth'), 4, 250),
-                (_('Death'), 5, 250),
-                (_('Parents'), 6, 250),
-                (_('Spouses'), 7, 250),
+                (_trans.gettext('Birth'), 4, 250),
+                (_trans.gettext('Death'), 5, 250),
+                (_trans.gettext('Parents'), 6, 250),
+                (_trans.gettext('Spouses'), 7, 250),
              ]
       self.modelRes = ListModel(TreeRes, titles,self.SerDupCxangxo)
     active_handle = self.get_active('Person')
@@ -797,13 +797,13 @@ class PersonFS(Gramplet):
         self.uistate.window.set_modal(False)
       TreeRes = self.top.get_object("PersonFSResRes")
       titles = [  
-                (_('score'), 1, 80),
+                (_trans.gettext('score'), 1, 80),
                 (_('FS Id'), 2, 90),
                 (_('Nomo, antaŭnomo'), 3, 200),
-                (_('Birth'), 4, 250),
-                (_('Death'), 5, 250),
-                (_('Parents'), 6, 250),
-                (_('Spouses'), 7, 250),
+                (_trans.gettext('Birth'), 4, 250),
+                (_trans.gettext('Death'), 5, 250),
+                (_trans.gettext('Parents'), 6, 250),
+                (_trans.gettext('Spouses'), 7, 250),
              ]
       self.modelRes = ListModel(TreeRes, titles,self.SerSelCxangxo)
     active_handle = self.get_active('Person')

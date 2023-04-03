@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-03 21:23+0200\n"
+"POT-Creation-Date: 2023-04-03 22:53+0200\n"
 "PO-Revision-Date: 2023-04-03 21:15+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -18,8 +18,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: constants.py:59
-msgid "LifeSketch"
-msgstr "Lifesketch"
+msgid "Vivskizo"
+msgstr "Life sketch"
 
 #: constants.py:60
 msgid "Deklaro de naskiĝo"
@@ -36,10 +36,6 @@ msgstr "FamilySearch: Create a database table"
 #: Importo.py:411
 msgid "FamilySearch Importo"
 msgstr "FamilySearch Import"
-
-#: Importo.py:411 komparo.py:109
-msgid "Starting"
-msgstr "Starting"
 
 #: Importo.py:420
 msgid "Konstrui FSID listo (1/10)"
@@ -244,26 +240,9 @@ msgstr "To force a comparison"
 msgid "Kompari sendepende de la nombro da tagoj."
 msgstr "Compare independently of the number of days."
 
-#: komparo.py:76
-msgid "Person Filter"
-msgstr "Person Filter"
-
-#: komparo.py:83
-#, python-format
-msgid "All %s"
-msgstr "All %s"
-
-#: komparo.py:83
-msgid "Persons"
-msgstr "Persons"
-
 #: komparo.py:98
 msgid "FamilySearch Komparo"
 msgstr "FamilySearch Comparison"
-
-#: komparo.py:102
-msgid "Options"
-msgstr "Options"
 
 #: komparo.py:107
 msgid "Ne konektita al FamilySearch"
@@ -286,41 +265,9 @@ msgstr "Processing the list (2/2)"
 msgid "FS ID %s ne trovita"
 msgstr "Fs id %s not found"
 
-#: komparo.py:195 komparo.py:201
-msgid "male"
-msgstr "opposite"
-
-#: komparo.py:197 komparo.py:203
-msgid "female"
-msgstr "female"
-
-#: komparo.py:199 komparo.py:205
-msgid "unknown"
-msgstr "unknown"
-
 #: komparo.py:209
 msgid "Sekso:"
 msgstr "Sex:"
-
-#: komparo.py:269 komparo.py:285 komparo.py:292
-msgid "Name"
-msgstr "Name"
-
-#: komparo.py:442
-msgid "Father"
-msgstr "Father"
-
-#: komparo.py:455
-msgid "Mother"
-msgstr "Mother"
-
-#: komparo.py:509 komparo.py:648
-msgid "Spouse"
-msgstr "Spouse"
-
-#: komparo.py:612 komparo.py:629 komparo.py:664 komparo.py:679
-msgid "Child"
-msgstr "Child"
 
 #: komparo.py:816 komparo.py:818
 msgid "Esenco"
@@ -343,8 +290,8 @@ msgid "Faktoj"
 msgstr "Facts"
 
 #: komparo.py:928 PersonFS.py:560
-msgid "FamilySearch tags"
-msgstr "FamilySearch Tags"
+msgid "FamilySearch etikedoj"
+msgstr "FamilySearch tags"
 
 #: PersonFS.gpr.py:30
 msgid "PersonFS"
@@ -434,10 +381,6 @@ msgstr "xfs2"
 msgid "Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj."
 msgstr "Sorry, only husband, event or name lines can be chosen."
 
-#: PersonFS.py:758 PersonFS.py:800
-msgid "score"
-msgstr "score"
-
 #: PersonFS.py:759 PersonFS.py:801
 msgid "FS Id"
 msgstr "Fs id"
@@ -445,22 +388,6 @@ msgstr "Fs id"
 #: PersonFS.py:760 PersonFS.py:802
 msgid "Nomo, antaŭnomo"
 msgstr "Name, first name"
-
-#: PersonFS.py:761 PersonFS.py:803
-msgid "Birth"
-msgstr "BIRTH"
-
-#: PersonFS.py:762 PersonFS.py:804
-msgid "Death"
-msgstr "Death"
-
-#: PersonFS.py:763 PersonFS.py:805
-msgid "Parents"
-msgstr "Parents"
-
-#: PersonFS.py:764 PersonFS.py:806
-msgid "Spouses"
-msgstr "SPOUSES"
 
 #: PersonFS.py:788
 #, python-format

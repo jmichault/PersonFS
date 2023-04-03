@@ -73,14 +73,14 @@ class FSKomparoOpcionoj(MenuToolOptions):
     menu.add_option(category_name, "gui_deviga", self.__gui_deviga)
 
     all_persons = rules.person.Everyone([])
-    self.__gui_filter_name = FilterOption(_("Person Filter"), 0)
+    self.__gui_filter_name = FilterOption(_trans.gettext("Person Filter"), 0)
     menu.add_option(category_name,'Person', self.__gui_filter_name)
     # custom filter:
     filter_list = CustomFilters.get_filters('Person')
     # generic filter:
     GenericFilter = GenericFilterFactory('Person')
     all_filter = GenericFilter()
-    all_filter.set_name(_("All %s") % (_("Persons")))
+    all_filter.set_name(_trans.gettext("All %s") % (_trans.gettext("Persons")))
     all_filter.add_rule(all_persons)
     # only add the generic filter if it isn't already in the menu
     all_filter_in_list = False
@@ -99,14 +99,14 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
 
   def initial_frame(self):
     print("K.options")
-    return _("Options")
+    return _trans.gettext("Options")
 
   def run(self):
     print("K.run")
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
-    progress = ProgressMeter(_("FamilySearch : Komparo"), _('Starting'),
+    progress = ProgressMeter(_("FamilySearch : Komparo"), _trans.gettext('Starting'),
                    can_cancel=True, parent=self.uistate.window)
     self.uistate.set_busy_cursor(True)
     self.dbstate.db.disable_signals()
@@ -925,7 +925,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
     txn=db.transaction
   else :
     intr = False
-    txn = DbTxn(_("FamilySearch tags"), db)
+    txn = DbTxn(_("FamilySearch etikedoj"), db)
   # «tags»
   for t in fs_db.stato_tags:
     val = locals().get(t[0])

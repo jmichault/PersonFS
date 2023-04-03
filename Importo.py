@@ -408,7 +408,7 @@ class FsAlGr:
     self.FS_ID = FSFTID
     self.dbstate = vokanto.dbstate
     # Progresa stango
-    progress = ProgressMeter(_("FamilySearch Importo"), _('Starting'),
+    progress = ProgressMeter(_("FamilySearch Importo"), _trans.gettext('Starting'),
                                       parent=vokanto.uistate.window)
     vokanto.uistate.set_busy_cursor(True)
     vokanto.dbstate.db.disable_signals()

@@ -56,7 +56,7 @@ GEDCOMX_GRAMPS_FAKTOJ = {
   "data:,http://gedcomx.org/Will": EventType.WILL,
   "http://familysearch.org/v1/TitleOfNobility": EventType.NOB_TITLE,
 #
-  "http://familysearch.org/v1/LifeSketch": _('LifeSketch'),
+  "http://familysearch.org/v1/LifeSketch": _('Vivskizo'),
   "data:,Birth Registration": _('Deklaro de naskiĝo'),
   "data:,Death Registration": _('Deklaro de morto'),
 
