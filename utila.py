@@ -132,7 +132,7 @@ def ligi_gr_fs(db,grPersono,fsid):
       if attr.get_type() == '_FSFTID':
         attr.set_value(fsid)
         break
-    if not attr :
+    if not attr or attr.get_type() != '_FSFTID' :
       attr = Attribute()
       attr.set_type('_FSFTID')
       attr.set_value(fsid)
