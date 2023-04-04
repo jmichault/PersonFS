@@ -133,3 +133,4 @@ dmypy.json
 tests/
 toto*
 _traduko.jar
+*.old

@@ -271,7 +271,7 @@ msgstr "Sex:"
 
 #: komparo.py:816 komparo.py:818
 msgid "Esenco"
-msgstr "Essence"
+msgstr "Essential"
 
 #: komparo.py:828 komparo.py:830
 msgid "Aliaj nomoj"
@@ -443,7 +443,7 @@ msgstr "Sex:"
 
 #: PersonFS.glade:353
 msgid "Birdo :"
-msgstr "Bird:"
+msgstr "Birth:"
 
 #: PersonFS.glade:374
 msgid "Loko :"
@@ -451,7 +451,7 @@ msgstr "Location:"
 
 #: PersonFS.glade:393
 msgid "Lanĉi"
-msgstr "To launch"
+msgstr "Launch"
 
 #: PersonFS.glade:489
 msgid "Aldoni mian personon al FamilySearch"
@@ -463,7 +463,7 @@ msgstr "Gramps Individual/FamilySearch Individual"
 
 #: PersonFS.glade:636
 msgid "Serĉi"
-msgstr "To look for"
+msgstr "Search"
 
 #: PersonFS.glade:661
 msgid "refreŝigi"
