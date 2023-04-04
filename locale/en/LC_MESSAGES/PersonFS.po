@@ -427,7 +427,7 @@ msgstr "FamilySearch Password:"
 
 #: PersonFS.glade:254
 msgid "Ligi"
-msgstr "To attach"
+msgstr "Attach"
 
 #: PersonFS.glade:290
 msgid "Nomo :"
