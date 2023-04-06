@@ -51,7 +51,8 @@ from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
 from gramps.gui.dialog import OptionDialog, OkDialog
 from gramps.gui.editors import EditPerson, EditEvent
-from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
+#from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
+from mialistmodel import ListModel, NOSORT, COLOR, TOGGLE
 from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
@@ -86,6 +87,7 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
+
 
 #from objbrowser import browse ;browse(locals())
 
