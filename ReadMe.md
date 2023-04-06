@@ -2,7 +2,6 @@
 PersonFS is a [gramplet](https://www.gramps-project.org/wiki/index.php/Gramplets) to interface gramps with familysearch.com.
 warnings : 
 * don't work with windows AIO release.
-* you need to patch gramps with command ` sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py `
 * you need to install python modules requests and gedcomx-v1 with ` pip install requests gedcomx-v1 `
 
 Ceci est un [gramplet](https://www.gramps-project.org/wiki/index.php/Gramplets) pour interfacer gramps avec familysearch.com.
