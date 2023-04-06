@@ -6,29 +6,46 @@
 
 # à faire pour version 1.4
 ## prioritaires
+* gérer la version de gedcomx-v1
 * bogues :
+  * gramplet, si pas de FSID : 
+    * le conjoint absent côté FS apparaît en vert ???.
+  * gramplet : mariage coté gramps pas affiché si pas de mariage côté FS.
+  * gramplet : copie d'un mariage ou d'un conjoint : plante sur la ligne suivante. CORRIGÉ ? à tester
+  * import : le réimport crée des doublons sur les noms et les évènements dans l'arbre FS.
+  * bogue gramps si case à cocher dans un treeview : sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py
+  * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
+  * afficher message quand le mot de passe familysearch est mauvais.
+  * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID. CORRIGÉ ? a tester
 * gramplet :
+  * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
+  * possibilité de renseigner manuellement le \_FSFTID d'une personnes
+  * si coche d'une ligne de regroupement : cocher tout le groupe.
   * si coche d'un parent, enfant ou conjoint :
-    * si absent de FS mais a un FSTID : accepter.
-    * si absent de FS et pas de FSTID : suggérer d'aller sur la fiche.
-    * si absent de gramps : chercher le FSID dans gramps.
+    * si absent de FS mais a un FSFTID : accepter.
+    * si absent de FS et pas de FSFTID : suggérer d'aller sur la fiche.
+    * si absent de gramps : chercher le FSFTID dans gramps.
       * si absent : suggérer l'import.
-      * si présent : associer.
+      * si présent : accepter.
   * si coche de sexe : suggérer de faire la correction manuellement.
   * comparer les lieux.
+  * si erreur dans la copie : afficher un message.
 * recherche :
-  * création dans FS : lier aux parents et aux enfants qui existent dans FS
+  * création dans FS :
+    * lier aux parents et aux enfants qui existent dans FS
+    * après création : transférer aussi les faits et noms.
   * plus de critères (au moins décès : date + lieu de décès, et lieu général)
 * import :
-  * normaliser les noms/prénoms ?
+  * détecter les doublons fsid et avertir : à tester.
+  * ne pas lancer si pas de fsid.
+  * normaliser les noms/prénoms (majuscules et minuscules).
   * importer/mettre à jour l'ID des objets : évènement, famille, source, citation.
   * gérer une liaison auto des parents, conjoints et enfants s'ils existent déjà, plutôt que créer en double.
   * cocher systématiquement par défaut «Ne pas réimporter les personnes existantes»
 * traduction en français
 * mise à jour doc
 ## facultatifs
-* gérer le «LifeSketch»
 * maintenir un dictionnaire personne.fsid-handle.
 * maintenir un dictionnaire lieu.fsid-handle.
 * gestion des relevés (= «records» FS)
@@ -51,6 +68,9 @@
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
     * --> lier les autres évènements aux conjoints ?
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
+    * piste : voir comment sont gérées les publications de mariage quand on les joint dans FS.
+      mais si je me souviens bien, ils sont rentrés en tant que mariage ???
+  * idem pour les publications de mariage.
 * recherche :
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné

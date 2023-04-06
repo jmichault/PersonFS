@@ -95,10 +95,10 @@ def grdato_al_formal( dato) :
   
   return res
 
-def getfsid(grPersono) :
-  if not grPersono :
+def get_fsftid(grObj) :
+  if not grObj :
     return ''
-  for attr in grPersono.get_attribute_list():
+  for attr in grObj.get_attribute_list():
     if attr.get_type() == '_FSFTID':
       return attr.get_value()
   return ''

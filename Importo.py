@@ -55,7 +55,7 @@ import PersonFS
 from constants import GEDCOMX_GRAMPS_FAKTOJ, GEDCOMX_GRAMPS_LOKOJ
 import tree
 import komparo
-from utila import fsdato_al_gr
+from utila import fsdato_al_gr, get_fsftid
 
 try:
     _trans = glocale.get_addon_translator(__file__)
@@ -248,10 +248,18 @@ def aldFakto(db, txn, fsFakto, obj):
   fsFaktoDato = fsFakto.date or ''
   grDato = fsdato_al_gr(fsFakto.date)
 
-  # serĉi ekzistanta
+  # serĉi ekzistanta per FSFTID
   for fakto in obj.event_ref_list :
     e = db.get_event_from_handle(fakto.ref)
-    if ( e.type.value == evtType ) :
+    attr = get_fsftid(e)
+    if attr == fsFakto.id :
+      return e
+
+  # serĉi ekzistanta per (tipo kaj dato) aux (tipo kaj …)
+  for fakto in obj.event_ref_list :
+    e = db.get_event_from_handle(fakto.ref)
+    grTipo = int(e.type) or e.type
+    if ( grTipo == evtType ) :
       if ( e.get_date_object() == grDato ):
         return e
       elif ( ( e.get_date_object().is_empty() and not grDato)
@@ -266,6 +274,10 @@ def aldFakto(db, txn, fsFakto, obj):
   if grDato :
     event.set_date_object( grDato )
   event.set_description(fsFaktoPriskribo)
+  if fsFakto.id :
+    attr = Attribute()
+    attr.set_type('_FSFTID')
+    attr.set_value(fsFakto.id)
   # noto
   for fsNoto in fsFakto.notes:
     noto = aldNoto(db, txn, fsNoto,event.note_list)
@@ -300,132 +312,152 @@ def aldNomo(db, txn, fsNomo, grPerson):
   else:
     grPerson.add_alternate_name(nomo)
 
+def aldNomoj(db, txn, fsPersono, grPerson):
+  for fsNomo in fsPersono.names :
+    aldNomo(db, txn, fsNomo, grPerson)
 
-
-class FSImportoOpcionoj(MenuToolOptions):
-  """
-  " 
-  """
-  def __init__(self, name, person_id=None, dbstate=None):
-    """
-    " 
-    """
-    if vorteco >= 3:
-      print(_("Kromprogramoj"))
-    MenuToolOptions.__init__(self, name, person_id, dbstate)
-
-  def add_menu_options(self, menu):
-    """
-    " 
-    """
-    category_name = _("FamilySearch Importo Opcionoj")
-    self.__FS_ID = StringOption(_("FamilySearch ID"), 'XXXX-XXX')
-    self.__FS_ID.set_help(_("identiga numero por esti prenita de FamilySearch retejo"))
-    menu.add_option(category_name, "FS_ID", self.__FS_ID)
-    self.__gui_asc = NumberOption(_("Nombro ascentontaj"), 0, 0, 99)
-    self.__gui_asc.set_help(_("Nombro de generacioj por supreniri"))
-    menu.add_option(category_name, "gui_asc", self.__gui_asc)
-    self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
-    self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
-    menu.add_option(category_name, "gui_desc", self.__gui_desc)
-    self.__gui_nereimporti = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
-    self.__gui_nereimporti.set_help(_("Importi nur neekzistantajn personojn"))
-    menu.add_option(category_name, "gui_nereimporti", self.__gui_nereimporti)
-    self.__gui_edz = BooleanOption(_("Aldoni geedzoj"), False)
-    self.__gui_edz.set_help(_("Aldoni informojn pri geedzoj"))
-    menu.add_option(category_name, "gui_edz", self.__gui_edz)
-    self.__gui_fontoj = BooleanOption(_("Aldoni fontoj"), False)
-    self.__gui_fontoj.set_help(_("Aldoni fontoj"))
-    menu.add_option(category_name, "gui_fontoj", self.__gui_fontoj)
-    self.__gui_notoj = BooleanOption(_("Aldoni notoj"), False)
-    self.__gui_notoj.set_help(_("Aldoni notoj"))
-    menu.add_option(category_name, "gui_notoj", self.__gui_notoj)
-    self.__gui_vort = NumberOption(_("Vorteco"), 0, 0, 3)
-    self.__gui_vort.set_help(_("Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"))
-    menu.add_option(category_name, "gui_vort", self.__gui_vort)
-
-    if vorteco >= 3:
-      print(_("Menuo Aldonita"))
-  def load_previous_values(self):
-    MenuToolOptions.load_previous_values(self)
-    if PersonFS.PersonFS.FSID :
-      self.handler.options_dict['FS_ID'] = PersonFS.PersonFS.FSID
-    return
-
-class FSImporto(PluginWindows.ToolManagedWindowBatch):
-  """
-  " 
-  """
+class FsAlGr:
+  # 
   fs_TreeImp = None
   fs_gr = None
-  def __init__(self, dbstate, user, options_class, name, callback):
-    """
-    " 
-    """
-    self.uistate = user.uistate
-    PluginWindows.ToolManagedWindowBatch.__init__(self, dbstate, user, options_class, name, callback)
+  active_handle = None
+  # opcionoj
+  nereimporti = False
+  asc = 1
+  desc = 1
+  edz = True
+  notoj = False
+  fontoj = False
+  vorteco = 0
+  def aldPersono(self, db, txn, fsPersono):
+    fsid = fsPersono.id
+    grPersonoHandle = self.fs_gr.get(fsid)
+    if not grPersonoHandle:
+      grPerson = Person()
+      aldNomoj( db, txn, fsPersono, grPerson)
+      if not fsPersono.gender :
+        grPerson.set_gender(Person.UNKNOWN)
+      elif fsPersono.gender.type == "http://gedcomx.org/Male" :
+        grPerson.set_gender(Person.MALE)
+      elif fsPersono.gender.type == "http://gedcomx.org/Female" :
+        grPerson.set_gender(Person.FEMALE)
+      else :
+        grPerson.set_gender(Person.UNKNOWN)
+      attr = Attribute()
+      attr.set_type('_FSFTID')
+      attr.set_value(fsid)
+      grPerson.add_attribute(attr)
+  
+      db.add_person(grPerson,txn)
+      db.commit_person(grPerson,txn)
+      self.fs_gr[fsid] = grPerson.handle
+    else :
+      if self.nereimporti :
+        return
+      grPerson = db.get_person_from_handle(grPersonoHandle)
+  
+    # faktoj
+    for fsFakto in fsPersono.facts:
+      event = aldFakto(db, txn, fsFakto,grPerson)
+      found = False
+      for er in grPerson.get_event_ref_list():
+        if er.ref == event.handle:
+          found = True
+          break
+      if not found:
+        er = EventRef()
+        er.set_role(EventRoleType.PRIMARY)
+        er.set_reference_handle(event.get_handle())
+        db.commit_event(event, txn)
+        grPerson.add_event_ref(er)
+      if event.type == EventType.BIRTH :
+        grPerson.set_birth_ref(er)
+      elif event.type == EventType.DEATH :
+        grPerson.set_death_ref(er)
+      db.commit_person(grPerson,txn)
+    # notoj
+    for fsNoto in fsPersono.notes :
+      noto = aldNoto(db, txn, fsNoto,grPerson.note_list)
+      grPerson.add_note(noto.handle)
+    # fontoj
+    for fsFonto in fsPersono.sources :
+      c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
+      db.commit_person(grPerson,txn)
+    # FARINDAĴOJ : memoroj
+    #for fsMemoro in fsPersono.memories :
+      #print("memorie :")
+      #print(fsMemoro)
+      #m = Media()
+      #m.path = fsMemoro.url
+      #m.desc = fsMemoro.description
+      #db.add_media(m, txn)
+      #db.commit_media(m, txn)
+      #citation = Citation()
+      #citation.set_reference_handle(m.get_handle())
+      #db.add_citation(citation,txn)
+      #db.commit_citation(citation,txn)
+      #grPerson.add_citation(citation.handle)
+      #continue
+      
+    db.commit_person(grPerson,txn)
+    komparo.kompariFsGr(fsPersono,grPerson,db,None)
+  
+  def importi( self, vokanto, FSFTID):
 
-  def get_title(self):
-    """
-    " 
-    """
-    return _("FamilySearch Import Tool")  # tool window title
-
-  def initial_frame(self):
-    """
-    " 
-    """
-    return _("FamilySearch Importo Opcionoj")  # tab title
-
-  #@profile
-  def run(self):
-  #  cProfile.runctx('self.run2()',globals(),locals())
-  #def run2(self):
-    """
-    " 
-    """
-    active_handle = self.uistate.get_active('Person')
-    self.__get_menu_options()
-    print("import ID :"+self.FS_ID)
+    print("import ID :"+FSFTID)
+    self.FS_ID = FSFTID
+    self.dbstate = vokanto.dbstate
     # Progresa stango
-    progress = ProgressMeter(_("FamilySearch Importo"), _('Starting'),
-                                      parent=self.uistate.window)
-    self.uistate.set_busy_cursor(True)
-    self.dbstate.db.disable_signals()
+    progress = ProgressMeter(_("FamilySearch Importo"), _trans.gettext('Starting'),
+                                      parent=vokanto.uistate.window)
+    vokanto.uistate.set_busy_cursor(True)
+    vokanto.dbstate.db.disable_signals()
     cnt=0
+    dupAverto=True
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
-    progress.set_pass(_('Konstrui FSID listo (1/10)'), self.dbstate.db.get_number_of_people())
-    for person_handle in self.dbstate.db.get_person_handles() :
+    progress.set_pass(_('Konstrui FSID listo (1/10)'), vokanto.dbstate.db.get_number_of_people())
+    for person_handle in vokanto.dbstate.db.get_person_handles() :
       progress.step()
-      person = self.dbstate.db.get_person_from_handle(person_handle)
-      for attr in person.get_attribute_list():
-        if attr.get_type() == '_FSFTID' and attr.get_value() ==self.FS_ID :
+      person = vokanto.dbstate.db.get_person_from_handle(person_handle)
+      fsid = get_fsftid(person)
+      if fsid  ==self.FS_ID :
           print(_('«FamilySearch» ekzistanta ID'))
-        if attr.get_type() == '_FSFTID':
-          self.fs_gr[attr.get_value()] = person_handle
-          break
+      if self.fs_gr.get(fsid) :
+        print(_('«FamilySearch» duplikata ID : %s ')%(fsid))
+        if dupAverto :
+          WarningDialog(_('Ne konekta al FamilySearch'))
+          qd = QuestionDialog2(
+                _('Duplikata FSFTID')
+              , _('«FamilySearch» duplikata ID : %s ')%(fsid)
+              , _('_Daŭru averton'), _('_Ĉesu averton')
+              , parent=vokanto.uistate.window)
+          if not qd.run():
+            dupAverto = False
+
+      else :
+        self.fs_gr[fsid] = person_handle
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))
       return
     #if not tree._FsSeanco:
     #  if PersonFS.PersonFS.fs_sn == '' or PersonFS.PersonFS.fs_pasvorto == '':
     #    import locale, os
-    #    self.top = Gtk.Builder()
-    #    self.top.set_translation_domain("addon")
+    #    vokanto.top = Gtk.Builder()
+    #    vokanto.top.set_translation_domain("addon")
     #    base = os.path.dirname(__file__)
     #    locale.bindtextdomain("addon", base + "/locale")
     #    glade_file = base + os.sep + "PersonFS.PersonFS.glade"
-    #    self.top.add_from_file(glade_file)
-    #    top = self.top.get_object("PersonFSPrefDialogo")
-    #    top.set_transient_for(self.uistate.window)
-    #    parent_modal = self.uistate.window.get_modal()
+    #    vokanto.top.add_from_file(glade_file)
+    #    top = vokanto.top.get_object("PersonFSPrefDialogo")
+    #    top.set_transient_for(vokanto.uistate.window)
+    #    parent_modal = vokanto.uistate.window.get_modal()
     #    if parent_modal:
-    #      self.uistate.window.set_modal(False)
-    #    fsid = self.top.get_object("fsid_eniro")
+    #      vokanto.uistate.window.set_modal(False)
+    #    fsid = vokanto.top.get_object("fsid_eniro")
     #    fsid.set_text(PersonFS.PersonFS.fs_sn)
-    #    fspv = self.top.get_object("fspv_eniro")
+    #    fspv = vokanto.top.get_object("fspv_eniro")
     #    fspv.set_text(PersonFS.PersonFS.fs_pasvorto)
     #    top.show()
     #    res = top.run()
@@ -489,7 +521,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
       print(_("Elŝutante edzojn…"))
       todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
-    # notoj
+    # notoj , fontoj kaj memoroj
     if self.notoj or self.fontoj:
       progress.set_pass(_('Elŝutante notojn… (6/10)'),len(self.fs_TreeImp.persons))
       print(_("Elŝutante notojn…"))
@@ -513,21 +545,21 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     # FamilySearch ŝarĝo kompleta
     # Komenco de importo
     # krei datumbazan tabelon
-    fs_db.create_schema(self.db)
-    with DbTxn("FamilySearch import", self.dbstate.db) as txn:
+    fs_db.create_schema(vokanto.dbstate.db)
+    with DbTxn("FamilySearch import", vokanto.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
       progress.set_pass(_('Importado de lokoj… (7/10)'),len(self.fs_TreeImp.places))
       print(_("Importado de lokoj…"))
       for pl in self.fs_TreeImp.places :
         progress.step()
-        aldLoko( self.dbstate.db, txn, pl)
+        aldLoko( vokanto.dbstate.db, txn, pl)
       progress.set_pass(_('Importado de personoj… (8/10)'),len(self.fs_TreeImp.persons))
       print(_("Importado de personoj…"))
       # importi personoj
       for fsPersono in self.fs_TreeImp.persons :
         progress.step()
-        self.aldPersono(fsPersono)
+        self.aldPersono(vokanto.dbstate.db, txn, fsPersono)
       progress.set_pass(_('Importado de familioj… (9/10)'),len(self.fs_TreeImp.relationships))
       print(_("Importado de familioj…"))
       # importi familioj
@@ -542,14 +574,12 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
         progress.step()
         self.aldInfano(fsCpr)
       self.txn = None
-      self.dbstate.db.transaction_commit(txn)
+      vokanto.dbstate.db.transaction_commit(txn)
     print("import fini.")
-    self.uistate.set_busy_cursor(False)
+    vokanto.uistate.set_busy_cursor(False)
     progress.close()
-    self.dbstate.db.enable_signals()
-    self.dbstate.db.request_rebuild()
-    if active_handle :
-      self.uistate.set_active(active_handle, 'Person')
+    vokanto.dbstate.db.enable_signals()
+    vokanto.dbstate.db.request_rebuild()
 
   def aldInfano(self,fsCpr):
     if fsCpr.parent1:
@@ -745,91 +775,104 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     
     return citation
 
-  def aldPersono(self,fsPersono):
-    fsid = fsPersono.id
-    grPersonoHandle = self.fs_gr.get(fsid)
-    if not grPersonoHandle:
-      grPerson = Person()
-      self.aldNomoj( fsPersono, grPerson)
-      if not fsPersono.gender :
-        grPerson.set_gender(Person.UNKNOWN)
-      elif fsPersono.gender.type == "http://gedcomx.org/Male" :
-        grPerson.set_gender(Person.MALE)
-      elif fsPersono.gender.type == "http://gedcomx.org/Female" :
-        grPerson.set_gender(Person.FEMALE)
-      else :
-        grPerson.set_gender(Person.UNKNOWN)
-      attr = Attribute()
-      attr.set_type('_FSFTID')
-      attr.set_value(fsid)
-      grPerson.add_attribute(attr)
 
-      self.dbstate.db.add_person(grPerson,self.txn)
-      self.dbstate.db.commit_person(grPerson,self.txn)
-      self.fs_gr[fsid] = grPerson.handle
-    else :
-      if self.nereimporti :
-        return
-      grPerson = self.dbstate.db.get_person_from_handle(grPersonoHandle)
 
-    # faktoj
-    for fsFakto in fsPersono.facts:
-      event = aldFakto(self.dbstate.db, self.txn, fsFakto,grPerson)
-      found = False
-      for er in grPerson.get_event_ref_list():
-        if er.ref == event.handle:
-          found = True
-          break
-      if not found:
-        er = EventRef()
-        er.set_role(EventRoleType.PRIMARY)
-        er.set_reference_handle(event.get_handle())
-        self.dbstate.db.commit_event(event, self.txn)
-        grPerson.add_event_ref(er)
-      if event.type == EventType.BIRTH :
-        grPerson.set_birth_ref(er)
-      elif event.type == EventType.DEATH :
-        grPerson.set_death_ref(er)
-      self.dbstate.db.commit_person(grPerson,self.txn)
-    # notoj
-    for fsNoto in fsPersono.notes :
-      noto = aldNoto(self.dbstate.db, self.txn, fsNoto,grPerson.note_list)
-      grPerson.add_note(noto.handle)
-    # fontoj
-    for fsFonto in fsPersono.sources :
-      c = self.aldFonto(fsFonto,grPerson,grPerson.citation_list)
-      self.dbstate.db.commit_person(grPerson,self.txn)
-    # FARINDAĴOJ : memoroj
-    #for fsMemoro in fsPersono.memories :
-      #print("memorie :")
-      #print(fsMemoro)
-      #m = Media()
-      #m.path = fsMemoro.url
-      #m.desc = fsMemoro.description
-      #self.dbstate.db.add_media(m, self.txn)
-      #self.dbstate.db.commit_media(m, self.txn)
-      #citation = Citation()
-      #citation.set_reference_handle(m.get_handle())
-      #self.dbstate.db.add_citation(citation,self.txn)
-      #self.dbstate.db.commit_citation(citation,self.txn)
-      #grPerson.add_citation(citation.handle)
-      #continue
-      
-    self.dbstate.db.commit_person(grPerson,self.txn)
-    komparo.kompariFsGr(fsPersono,grPerson,self.dbstate.db,None)
+class FSImportoOpcionoj(MenuToolOptions):
+  """
+  " 
+  """
+  def __init__(self, name, person_id=None, dbstate=None):
+    """
+    " 
+    """
+    if vorteco >= 3:
+      print(_("Kromprogramoj"))
+    MenuToolOptions.__init__(self, name, person_id, dbstate)
 
-  def aldNomoj(self, fsPersono, grPerson):
-    for fsNomo in fsPersono.names :
-      aldNomo(self.dbstate.db, self.txn, fsNomo, grPerson)
+  def add_menu_options(self, menu):
+    """
+    " 
+    """
+    category_name = _("FamilySearch Importo Opcionoj")
+    self.__FS_ID = StringOption(_("FamilySearch ID"), 'XXXX-XXX')
+    self.__FS_ID.set_help(_("identiga numero por esti prenita de FamilySearch retejo"))
+    menu.add_option(category_name, "FS_ID", self.__FS_ID)
+    self.__gui_asc = NumberOption(_("Nombro ascentontaj"), 0, 0, 99)
+    self.__gui_asc.set_help(_("Nombro de generacioj por supreniri"))
+    menu.add_option(category_name, "gui_asc", self.__gui_asc)
+    self.__gui_desc = NumberOption(_("Nombro descendontaj"), 0, 0, 99)
+    self.__gui_desc.set_help(_("Nombro de generacioj descendontaj"))
+    menu.add_option(category_name, "gui_desc", self.__gui_desc)
+    self.__gui_nereimporti = BooleanOption(_("Ne reimporti ekzistantajn personojn"), True)
+    self.__gui_nereimporti.set_help(_("Importi nur neekzistantajn personojn"))
+    menu.add_option(category_name, "gui_nereimporti", self.__gui_nereimporti)
+    self.__gui_edz = BooleanOption(_("Aldoni geedzoj"), False)
+    self.__gui_edz.set_help(_("Aldoni informojn pri geedzoj"))
+    menu.add_option(category_name, "gui_edz", self.__gui_edz)
+    self.__gui_fontoj = BooleanOption(_("Aldoni fontoj"), False)
+    self.__gui_fontoj.set_help(_("Aldoni fontoj"))
+    menu.add_option(category_name, "gui_fontoj", self.__gui_fontoj)
+    self.__gui_notoj = BooleanOption(_("Aldoni notoj"), False)
+    self.__gui_notoj.set_help(_("Aldoni notoj"))
+    menu.add_option(category_name, "gui_notoj", self.__gui_notoj)
+    self.__gui_vort = NumberOption(_("Vorteco"), 0, 0, 3)
+    self.__gui_vort.set_help(_("Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"))
+    menu.add_option(category_name, "gui_vort", self.__gui_vort)
 
-  def __get_menu_options(self):
+    if vorteco >= 3:
+      print(_("Menuo Aldonita"))
+  def load_previous_values(self):
+    MenuToolOptions.load_previous_values(self)
+    if PersonFS.PersonFS.FSID :
+      self.handler.options_dict['FS_ID'] = PersonFS.PersonFS.FSID
+    return
+
+class FSImporto(PluginWindows.ToolManagedWindowBatch):
+  """
+  " 
+  """
+  def __init__(self, dbstate, user, options_class, name, callback):
+    """
+    " 
+    """
+    self.uistate = user.uistate
+    PluginWindows.ToolManagedWindowBatch.__init__(self, dbstate, user, options_class, name, callback)
+
+  def get_title(self):
+    """
+    " 
+    """
+    return _("FamilySearch Import Tool")  # tool window title
+
+  def initial_frame(self):
+    """
+    " 
+    """
+    return _("FamilySearch Importo Opcionoj")  # tab title
+
+  #@profile
+  def run(self):
+  #  cProfile.runctx('self.run2()',globals(),locals())
+  #def run2(self):
+    """
+    " 
+    """
+    importilo = FsAlGr()
+    self.__get_menu_options(importilo)
+    active_handle = self.uistate.get_active('Person')
+    importilo.importi(self,self.FS_ID)
+    self.window.hide()
+    if active_handle :
+      self.uistate.set_active(active_handle, 'Person')
+
+  def __get_menu_options(self,importilo):
     menu = self.options.menu
     self.FS_ID = menu.get_option_by_name('FS_ID').get_value()
-    self.asc = menu.get_option_by_name('gui_asc').get_value()
-    self.desc = menu.get_option_by_name('gui_desc').get_value()
-    self.edz = menu.get_option_by_name('gui_edz').get_value()
-    self.notoj = menu.get_option_by_name('gui_notoj').get_value()
-    self.fontoj = menu.get_option_by_name('gui_fontoj').get_value()
-    self.nereimporti = menu.get_option_by_name('gui_nereimporti').get_value()
-    self.vorteco = menu.get_option_by_name('gui_vort').get_value()
+    importilo.asc = menu.get_option_by_name('gui_asc').get_value()
+    importilo.desc = menu.get_option_by_name('gui_desc').get_value()
+    importilo.edz = menu.get_option_by_name('gui_edz').get_value()
+    importilo.notoj = menu.get_option_by_name('gui_notoj').get_value()
+    importilo.fontoj = menu.get_option_by_name('gui_fontoj').get_value()
+    importilo.nereimporti = menu.get_option_by_name('gui_nereimporti').get_value()
+    importilo.vorteco = menu.get_option_by_name('gui_vort').get_value()
 
