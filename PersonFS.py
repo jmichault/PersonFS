@@ -58,16 +58,19 @@ from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
+mingedcomx="1.0.8"
 import importlib
-gedcomx_spec = importlib.util.find_spec("gedcomx")
-# FARINDAJXO : vérifier la version de gedcomx, essayer de mettre à jour si < x.y
-if gedcomx_spec and gedcomx_spec.loader:
-  import gedcomx
-else:
-  print ('gedcomx ne trovita')
+from importlib.metadata import version
+try:
+  v = version('gedcomx-v1')
+except :
+  v="0.0.0"
+from packaging.version import parse
+if parse(v) < parse(mingedcomx) :
+  print (_('gedcomx ne trovita aŭ < %s' % mingedcomx))
   import pip
-  pip.main(['install', '--user', 'gedcomx-v1'])
-  import gedcomx
+  pip.main(['install', '--user', '--upgrade', 'gedcomx-v1'])
+import gedcomx
 
 # lokaloj importadoj
 from constants import GRAMPS_GEDCOMX_FAKTOJ
@@ -126,6 +129,8 @@ class PersonFS(Gramplet):
       lingvo = pf.language
   if len(lingvo) != 2:
       lingvo = lingvo[:2]
+  if not lingvo :
+    lingvo = glocale.language[0]
 
   def aki_sesio():
     if not tree._FsSeanco:
@@ -157,16 +162,17 @@ class PersonFS(Gramplet):
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
           CONFIG.save()
           #if self.vorteco >= 3:
-          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+          tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
           #else :
-          #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+          #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
         #if self.vorteco >= 3:
-        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
+        tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
         #else :
-        #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+        #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
+      print(" langage session FS = "+tree._FsSeanco.lingvo);
     return tree._FsSeanco
 
 
@@ -189,8 +195,8 @@ class PersonFS(Gramplet):
   def konekti_FS(self):
     if not tree._FsSeanco:
       print("konektas al FS")
-      #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2)
-      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2)
+      #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
+      tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
     if not tree._FsSeanco.logged :
       return
     if not PersonFS.fs_Tree:
@@ -778,7 +784,7 @@ class PersonFS(Gramplet):
     self.modelRes.clear()
     mendo = "/platform/tree/persons/"+self.FSID+"/matches"
     r = tree._FsSeanco.get_url(
-                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json"}
                 )
     if r.status_code == 200 :
       self.DatRes(r.json())

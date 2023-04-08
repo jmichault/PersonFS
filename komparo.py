@@ -888,7 +888,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
   if fsPersono.id :
     mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
     r = tree._FsSeanco.head_url(
-                    mendo ,{"Accept": "application/x-gedcomx-atom+json", "Accept-Language": "fr"}
+                    mendo ,{"Accept": "application/x-gedcomx-atom+json"}
                 )
     if r.status_code == 200 :
       FS_Dup = True

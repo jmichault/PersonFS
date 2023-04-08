@@ -857,6 +857,9 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
     """
     " 
     """
+    if not PersonFS.PersonFS.fs_Tree:
+      PersonFS.PersonFS.fs_Tree = tree.Tree()
+      PersonFS.PersonFS.fs_Tree._getsources = False
     importilo = FsAlGr()
     self.__get_menu_options(importilo)
     active_handle = self.uistate.get_active('Person')

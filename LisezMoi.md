@@ -10,7 +10,7 @@ Pour pouvoir utiliser l'extension il vous faut un compte _familysearch_, celui-c
 
 # installation
 ## prérequis
-Les modules python «requests» et «gedcomx-v1» doivent être installés (sous linux : ` pip install requests gedcomx-v1 ` ).
+Les modules python «requests» et «gedcomx-v1» (>=1.0.8) doivent être installés (sous linux : ` pip install --upgrade requests gedcomx-v1 ` ).
 De ce fait ce plugin ne peut pas être utilisé avec la distribution AIO de gramps.  
 
 ## en chargeant le zip

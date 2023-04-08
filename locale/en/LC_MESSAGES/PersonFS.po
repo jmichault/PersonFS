@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-03 22:53+0200\n"
+"POT-Creation-Date: 2023-04-08 17:34+0200\n"
 "PO-Revision-Date: 2023-04-03 21:15+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -289,7 +289,7 @@ msgstr "Families"
 msgid "Faktoj"
 msgstr "Facts"
 
-#: komparo.py:928 PersonFS.py:560
+#: komparo.py:928 PersonFS.py:568
 msgid "FamilySearch etikedoj"
 msgstr "FamilySearch tags"
 
@@ -306,8 +306,8 @@ msgid "FS"
 msgstr "Fs"
 
 #: PersonFS.gpr.py:47
-msgid "Importo de FamilySearch datoj"
-msgstr "Import of FamilySearch Dates"
+msgid "Importo de FamilySearch datumoj"
+msgstr "Import of FamilySearch Data"
 
 #: PersonFS.gpr.py:48
 msgid "FamilySearch."
@@ -321,80 +321,85 @@ msgstr "FamilySearch: Compare"
 msgid "FamilySearch : kompari gramps personojn kun FS personojn."
 msgstr "FamilySearch: Compare Gramps people with FS people."
 
-#: PersonFS.py:407
+#: PersonFS.py:70
+#, python-format
+msgid "gedcomx ne trovita aŭ < %s"
+msgstr "GEDCOMX not found or < %s"
+
+#: PersonFS.py:415
 msgid "kopii al gramps"
 msgstr "copy to gramps"
 
-#: PersonFS.py:488
+#: PersonFS.py:496
 msgid "Kopii elekton de gramps al FS"
 msgstr "Copy a selection from gramps to FS"
 
-#: PersonFS.py:493
+#: PersonFS.py:501
 msgid "Kopii elekton de FS al gramps"
 msgstr "Copy a selection from FS to Gramps"
 
-#: PersonFS.py:517
+#: PersonFS.py:525
 msgid "Koloro"
 msgstr "Color"
 
-#: PersonFS.py:518
+#: PersonFS.py:526
 msgid "Propreco"
 msgstr "Peculiarity"
 
-#: PersonFS.py:519
+#: PersonFS.py:527
 msgid "Dato"
 msgstr "Date"
 
-#: PersonFS.py:520
+#: PersonFS.py:528
 msgid "Gramps Valoro"
 msgstr "Gramps value"
 
-#: PersonFS.py:521
+#: PersonFS.py:529
 msgid "FS Dato"
 msgstr "Fs date"
 
-#: PersonFS.py:522
+#: PersonFS.py:530
 msgid "FS Valoro"
 msgstr "Fs value"
 
-#: PersonFS.py:524
+#: PersonFS.py:532
 msgid "xTipo"
 msgstr "XTIPO"
 
-#: PersonFS.py:525
+#: PersonFS.py:533
 msgid "xGr"
 msgstr "xgr"
 
-#: PersonFS.py:526
+#: PersonFS.py:534
 msgid "xFs"
 msgstr "xfs"
 
-#: PersonFS.py:527
+#: PersonFS.py:535
 msgid "xGr2"
 msgstr "xgr2"
 
-#: PersonFS.py:528
+#: PersonFS.py:536
 msgid "xFs2"
 msgstr "xfs2"
 
-#: PersonFS.py:555
+#: PersonFS.py:563
 msgid "Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj."
 msgstr "Sorry, only husband, event or name lines can be chosen."
 
-#: PersonFS.py:759 PersonFS.py:801
+#: PersonFS.py:767 PersonFS.py:809
 msgid "FS Id"
 msgstr "Fs id"
 
-#: PersonFS.py:760 PersonFS.py:802
+#: PersonFS.py:768 PersonFS.py:810
 msgid "Nomo, antaŭnomo"
 msgstr "Name, first name"
 
-#: PersonFS.py:788
+#: PersonFS.py:796
 #, python-format
 msgid "Neniuj verŝajnaj duplikatoj por la persono %s trovita de la retejo \"FamilySearch\"."
 msgstr "No likely duplicates for the person %s found from the \"FamilySearch\" website."
 
-#: utila.py:130
+#: utila.py:131
 msgid "Aldoni FamilySearch ID"
 msgstr "Add FamilySearch ID"
 
@@ -508,3 +513,6 @@ msgstr "FamilySearch Identifying No.:"
 #: PersonFS.glade:864
 msgid "Klaku min por kopii FSFTID al tondujo"
 msgstr "Click me to copy FSFTID to clipboard"
+
+#~ msgid "Importo de FamilySearch datoj"
+#~ msgstr "Import of FamilySearch Dates"
