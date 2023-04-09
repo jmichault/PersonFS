@@ -57,6 +57,12 @@ from gramps.gui.viewmanager import run_plugin
 from gramps.gui.widgets.buttons import IconButton
 from gramps.gui.widgets.styledtexteditor import StyledTextEditor
 
+try:
+    _trans = glocale.get_addon_translator(__file__)
+except ValueError:
+    _trans = glocale.translation
+_ = _trans.gettext
+
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
 mingedcomx="1.0.8"
 import importlib
@@ -84,12 +90,6 @@ from utila import get_fsftid, get_grevent, get_fsfact, grdato_al_formal
 import sys
 import os
 import time
-
-try:
-    _trans = glocale.get_addon_translator(__file__)
-except ValueError:
-    _trans = glocale.translation
-_ = _trans.gettext
 
 
 #from objbrowser import browse ;browse(locals())
