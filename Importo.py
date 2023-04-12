@@ -499,7 +499,7 @@ class FsAlGr:
       if not todo:
         break
       done |= todo
-      print( _("Elŝutante %s generaciojn de ascendantojn…") % (i + 1))
+      print( _("Elŝutante %d generaciojn de ascendantojn…") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
     progress.set_pass(_('Elŝutante posteulojn… (4/10)'),self.desc)
@@ -510,7 +510,7 @@ class FsAlGr:
       if not todo:
         break
       done |= todo
-      print( _("Elŝutante %s generaciojn de posteulojn…") % (i + 1))
+      print( _("Elŝutante %d generaciojn de posteulojn…") % (i + 1))
       todo = self.fs_TreeImp.add_children(todo) - done
     # edzoj
     if self.desc and not self.edz:
