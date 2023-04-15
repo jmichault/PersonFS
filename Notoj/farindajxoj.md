@@ -4,9 +4,8 @@
 	; fsid avec parents multiples : 9CSJ-L2D
 	; fsid avec lieu non standardisé : LR24-CQK
 
-# à faire pour version 1.4
+# à faire pour version 1.5
 ## prioritaires
-* gérer la version de gedcomx-v1
 * bogues :
   * gramplet, si pas de FSID : 
     * le conjoint absent côté FS apparaît en vert ???.
@@ -18,6 +17,7 @@
   * comparaison : la liste des filtres est celle du premier lancement.
   * afficher message quand le mot de passe familysearch est mauvais.
   * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID. CORRIGÉ ? a tester
+  * import 1 clic : quelquefois les enfants ne sont pas tous importés.
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
   * possibilité de renseigner manuellement le \_FSFTID d'une personnes
@@ -66,10 +66,8 @@
   * liaison de conjoints FS vers gramps (le conjoint doit exister dans gramps, sinon : message).
   * suppression d'évènements familysearch.
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
-    * --> lier les autres évènements aux conjoints ?
+    * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
-    * piste : voir comment sont gérées les publications de mariage quand on les joint dans FS.
-      mais si je me souviens bien, ils sont rentrés en tant que mariage ???
   * idem pour les publications de mariage.
 * recherche :
   * bouton d'import sur la recherche ?

@@ -184,7 +184,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         continue
       fsPersono._datemod = datemod
       fsPersono._etag = etag
-      kompariFsGr(fsPersono,grPersono,self.db)
+      kompariFsGr(fsPersono,grPersono,self.db,dupdok=True)
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()
@@ -779,7 +779,7 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
 		] )
   return res
 
-def kompariFsGr(fsPersono,grPersono,db,model=None):
+def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
   dbPersono= fs_db.db_stato(db,grPersono.handle)
   dbPersono.get()
   if (model == None and hasattr(fsPersono,'_datmod')
@@ -885,7 +885,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None):
     fsPersono._last_modified = 0
   FS_Identa = not( FS_Familio or FS_Esenco or FS_Nomo or FS_Fakto or FS_Gepatro )
   # Serĉi ĉu FamilySearch ofertas duplonojn
-  if fsPersono.id :
+  if fsPersono.id and dupdok:
     mendo = "/platform/tree/persons/"+fsPersono.id+"/matches"
     r = tree._FsSeanco.head_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json"}

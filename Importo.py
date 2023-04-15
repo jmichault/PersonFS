@@ -22,7 +22,6 @@
 """
 " «FamilySearch» importo.
 """
-#import cProfile
 import json
 from urllib.parse import unquote
 
@@ -75,6 +74,8 @@ def kreiLoko(db, txn, fsPlace, parent):
   url.path = 'https://api.familysearch.org/platform/places/description/'+fsPlace.id
   url.type = UrlType('FamilySearch')
   place.add_url(url)
+  if FsAlGr.fs_gr_lokoj :
+    FsAlGr.fs_gr_lokoj[url.path] = place.handle
   nomo = fsPlace.display.name
   place_name = PlaceName()
   place_name.set_value( nomo )
@@ -155,6 +156,8 @@ def aldLoko(db, txn, pl):
     url.path = 'https://api.familysearch.org/platform/places/description/'+pl.id
     url.type = UrlType('FamilySearch')
     grLoko2.add_url(url)
+    if FsAlGr.fs_gr_lokoj :
+      FsAlGr.fs_gr_lokoj[url.path] = grLoko2.handle
     db.commit_place(grLoko2, txn)
     return grLoko2
 
@@ -162,18 +165,24 @@ def aldLoko(db, txn, pl):
   
 
 def akiriLokoPerId(db, fsLoko):
-  print ("sercxi loko:"+str(fsLoko.id))
+  #print ("sercxi loko:"+str(fsLoko.id))
   if not fsLoko.id and fsLoko.description and fsLoko.description[:1]=='#' :
      fsLoko.id=fsLoko.description[1:]
   if not fsLoko.id:
     return None
   s_url = 'https://api.familysearch.org/platform/places/description/'+fsLoko.id
-  print ("sercxi url:"+s_url)
+  if FsAlGr.fs_gr_lokoj :
+    place_handle=FsAlGr.fs_gr_lokoj.get(s_url)
+    if place_handle :
+      return db.get_place_from_handle(place_handle)
+    else :
+      return None
+    
+  #print ("sercxi url:"+s_url)
   # sercxi por loko kun cî «id»
   for handle in db.get_place_handles():
     place = db.get_place_from_handle(handle)
     for url in place.urls :
-      #print ("kompari url"+s_url+";kun:"+url.path)
       if str(url.type) == 'FamilySearch' and url.path == s_url :
         return place
   return None
@@ -320,6 +329,7 @@ class FsAlGr:
   # 
   fs_TreeImp = None
   fs_gr = None
+  fs_gr_lokoj = None
   active_handle = None
   # opcionoj
   nereimporti = False
@@ -417,7 +427,7 @@ class FsAlGr:
     self.fs_gr = dict()
     # sercxi ĉi tiun numeron en «gramps».
     # kaj plenigas fs_gr vortaro.
-    progress.set_pass(_('Konstrui FSID listo (1/10)'), vokanto.dbstate.db.get_number_of_people())
+    progress.set_pass(_('Konstrui FSID listo (1/11)'), vokanto.dbstate.db.get_number_of_people())
     for person_handle in vokanto.dbstate.db.get_person_handles() :
       progress.step()
       person = vokanto.dbstate.db.get_person_from_handle(person_handle)
@@ -427,7 +437,6 @@ class FsAlGr:
       if self.fs_gr.get(fsid) :
         print(_('«FamilySearch» duplikata ID : %s ')%(fsid))
         if dupAverto :
-          WarningDialog(_('Ne konekta al FamilySearch'))
           qd = QuestionDialog2(
                 _('Duplikata FSFTID')
               , _('«FamilySearch» duplikata ID : %s ')%(fsid)
@@ -441,6 +450,16 @@ class FsAlGr:
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))
       return
+    progress.set_pass(_('Konstrui FSID listo por lokoj (2/11)'), vokanto.dbstate.db.get_number_of_places())
+    FsAlGr.fs_gr_lokoj = dict()
+    for place_handle in vokanto.dbstate.db.get_place_handles() :
+      progress.step()
+      place = vokanto.dbstate.db.get_place_from_handle(place_handle)
+      fsurl = None
+      for url in place.urls :
+        if str(url.type) == 'FamilySearch' :
+          FsAlGr.fs_gr_lokoj[url.path] = place_handle
+          break
     #if not tree._FsSeanco:
     #  if PersonFS.PersonFS.fs_sn == '' or PersonFS.PersonFS.fs_pasvorto == '':
     #    import locale, os
@@ -485,12 +504,12 @@ class FsAlGr:
       del self.fs_TreeImp
     self.fs_TreeImp = tree.Tree()
     # Legi la personojn en «FamilySearch».
-    progress.set_pass(_('Elŝutante personojn… (2/10)'), mode= ProgressMeter.MODE_ACTIVITY)
+    progress.set_pass(_('Elŝutante personojn… (3/11)'), mode= ProgressMeter.MODE_ACTIVITY)
     print(_("Elŝutante personon…"))
     if self.FS_ID:
       self.fs_TreeImp.add_persons([self.FS_ID])
     else : return
-    progress.set_pass(_('Elŝutante ascendantojn… (3/10)'),self.asc)
+    progress.set_pass(_('Elŝutante ascendantojn… (4/11)'),self.asc)
     # ascendante
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
@@ -502,7 +521,7 @@ class FsAlGr:
       print( _("Elŝutante %d generaciojn de ascendantojn…") % (i + 1))
       todo = self.fs_TreeImp.add_parents(todo) - done
     # descendante
-    progress.set_pass(_('Elŝutante posteulojn… (4/10)'),self.desc)
+    progress.set_pass(_('Elŝutante posteulojn… (5/11)'),self.desc)
     todo = set(self.fs_TreeImp._persons.keys())
     done = set()
     for i in range(self.desc):
@@ -517,13 +536,13 @@ class FsAlGr:
       print("posteuloj elŝutantaj : devigi elŝutanto de edzoj ")
       self.edz = True
     if self.edz :
-      progress.set_pass(_('Elŝutante edzojn… (5/10)'), mode= ProgressMeter.MODE_ACTIVITY)
+      progress.set_pass(_('Elŝutante edzojn… (6/11)'), mode= ProgressMeter.MODE_ACTIVITY)
       print(_("Elŝutante edzojn…"))
       todo = set(self.fs_TreeImp._persons.keys())
       self.fs_TreeImp.add_spouses(todo)
     # notoj , fontoj kaj memoroj
     if self.notoj or self.fontoj:
-      progress.set_pass(_('Elŝutante notojn… (6/10)'),len(self.fs_TreeImp.persons))
+      progress.set_pass(_('Elŝutante notojn… (7/11)'),len(self.fs_TreeImp.persons))
       print(_("Elŝutante notojn…"))
       for fsPersono in self.fs_TreeImp.persons :
         progress.step()
@@ -549,25 +568,25 @@ class FsAlGr:
     with DbTxn("FamilySearch import", vokanto.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj
-      progress.set_pass(_('Importado de lokoj… (7/10)'),len(self.fs_TreeImp.places))
+      progress.set_pass(_('Importado de lokoj… (8/11)'),len(self.fs_TreeImp.places))
       print(_("Importado de lokoj…"))
       for pl in self.fs_TreeImp.places :
         progress.step()
         aldLoko( vokanto.dbstate.db, txn, pl)
-      progress.set_pass(_('Importado de personoj… (8/10)'),len(self.fs_TreeImp.persons))
+      progress.set_pass(_('Importado de personoj… (9/11)'),len(self.fs_TreeImp.persons))
       print(_("Importado de personoj…"))
       # importi personoj
       for fsPersono in self.fs_TreeImp.persons :
         progress.step()
         self.aldPersono(vokanto.dbstate.db, txn, fsPersono)
-      progress.set_pass(_('Importado de familioj… (9/10)'),len(self.fs_TreeImp.relationships))
+      progress.set_pass(_('Importado de familioj… (10/11)'),len(self.fs_TreeImp.relationships))
       print(_("Importado de familioj…"))
       # importi familioj
       for fsFam in self.fs_TreeImp.relationships :
         progress.step()
         if fsFam.type == 'http://gedcomx.org/Couple':
           self.aldFamilio(fsFam)
-      progress.set_pass(_('Importado de infanoj… (10/10)'),len(self.fs_TreeImp.relationships))
+      progress.set_pass(_('Importado de infanoj… (11/11)'),len(self.fs_TreeImp.relationships))
       print(_("Importado de infanoj…"))
       # importi infanoj
       for fsCpr in self.fs_TreeImp.childAndParentsRelationships :
@@ -852,6 +871,7 @@ class FSImporto(PluginWindows.ToolManagedWindowBatch):
 
   #@profile
   def run(self):
+  #import cProfile
   #  cProfile.runctx('self.run2()',globals(),locals())
   #def run2(self):
     """
