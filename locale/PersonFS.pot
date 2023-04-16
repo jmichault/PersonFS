@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-08 17:36+0200\n"
+"POT-Creation-Date: 2023-04-16 16:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -33,190 +33,194 @@ msgstr ""
 msgid "FamilySearch : krei datumbazan tabelon"
 msgstr ""
 
-#: Importo.py:411
+#: Importo.py:421
 msgid "FamilySearch Importo"
 msgstr ""
 
-#: Importo.py:420
-msgid "Konstrui FSID listo (1/10)"
+#: Importo.py:430
+msgid "Konstrui FSID listo (1/11)"
 msgstr ""
 
-#: Importo.py:426
+#: Importo.py:436
 msgid "«FamilySearch» ekzistanta ID"
 msgstr ""
 
-#: Importo.py:428 Importo.py:433
+#: Importo.py:438 Importo.py:442
 #, python-format
 msgid "«FamilySearch» duplikata ID : %s "
 msgstr ""
 
-#: Importo.py:430 Importo.py:442
-msgid "Ne konekta al FamilySearch"
-msgstr ""
-
-#: Importo.py:432
+#: Importo.py:441
 msgid "Duplikata FSFTID"
 msgstr ""
 
-#: Importo.py:434
+#: Importo.py:443
 msgid "_Daŭru averton"
 msgstr ""
 
-#: Importo.py:434
+#: Importo.py:443
 msgid "_Ĉesu averton"
 msgstr ""
 
-#: Importo.py:488
-msgid "Elŝutante personojn… (2/10)"
+#: Importo.py:451
+msgid "Ne konekta al FamilySearch"
 msgstr ""
 
-#: Importo.py:489
+#: Importo.py:453
+msgid "Konstrui FSID listo por lokoj (2/11)"
+msgstr ""
+
+#: Importo.py:507
+msgid "Elŝutante personojn… (3/11)"
+msgstr ""
+
+#: Importo.py:508
 msgid "Elŝutante personon…"
 msgstr ""
 
-#: Importo.py:493
-msgid "Elŝutante ascendantojn… (3/10)"
-msgstr ""
-
-#: Importo.py:502
-#, python-format
-msgid "Elŝutante %s generaciojn de ascendantojn…"
-msgstr ""
-
-#: Importo.py:505
-msgid "Elŝutante posteulojn… (4/10)"
-msgstr ""
-
-#: Importo.py:513
-#, python-format
-msgid "Elŝutante %s generaciojn de posteulojn…"
-msgstr ""
-
-#: Importo.py:520
-msgid "Elŝutante edzojn… (5/10)"
+#: Importo.py:512
+msgid "Elŝutante ascendantojn… (4/11)"
 msgstr ""
 
 #: Importo.py:521
+#, python-format
+msgid "Elŝutante %d generaciojn de ascendantojn…"
+msgstr ""
+
+#: Importo.py:524
+msgid "Elŝutante posteulojn… (5/11)"
+msgstr ""
+
+#: Importo.py:532
+#, python-format
+msgid "Elŝutante %d generaciojn de posteulojn…"
+msgstr ""
+
+#: Importo.py:539
+msgid "Elŝutante edzojn… (6/11)"
+msgstr ""
+
+#: Importo.py:540
 msgid "Elŝutante edzojn…"
 msgstr ""
 
-#: Importo.py:526
-msgid "Elŝutante notojn… (6/10)"
+#: Importo.py:545
+msgid "Elŝutante notojn… (7/11)"
 msgstr ""
 
-#: Importo.py:527
+#: Importo.py:546
 msgid "Elŝutante notojn…"
 msgstr ""
 
-#: Importo.py:544
+#: Importo.py:563
 msgid "Importado…"
 msgstr ""
 
-#: Importo.py:552
-msgid "Importado de lokoj… (7/10)"
+#: Importo.py:571
+msgid "Importado de lokoj… (8/11)"
 msgstr ""
 
-#: Importo.py:553
+#: Importo.py:572
 msgid "Importado de lokoj…"
 msgstr ""
 
-#: Importo.py:557
-msgid "Importado de personoj… (8/10)"
+#: Importo.py:576
+msgid "Importado de personoj… (9/11)"
 msgstr ""
 
-#: Importo.py:558
+#: Importo.py:577
 msgid "Importado de personoj…"
 msgstr ""
 
-#: Importo.py:563
-msgid "Importado de familioj… (9/10)"
+#: Importo.py:582
+msgid "Importado de familioj… (10/11)"
 msgstr ""
 
-#: Importo.py:564
+#: Importo.py:583
 msgid "Importado de familioj…"
 msgstr ""
 
-#: Importo.py:570
-msgid "Importado de infanoj… (10/10)"
+#: Importo.py:589
+msgid "Importado de infanoj… (11/11)"
 msgstr ""
 
-#: Importo.py:571
+#: Importo.py:590
 msgid "Importado de infanoj…"
 msgstr ""
 
-#: Importo.py:616 Importo.py:674
+#: Importo.py:635 Importo.py:693
 msgid "sengepatra familio ???"
 msgstr ""
 
-#: Importo.py:789
+#: Importo.py:808
 msgid "Kromprogramoj"
 msgstr ""
 
-#: Importo.py:796 Importo.py:851
+#: Importo.py:815 Importo.py:870
 msgid "FamilySearch Importo Opcionoj"
 msgstr ""
 
-#: Importo.py:797
+#: Importo.py:816
 msgid "FamilySearch ID"
 msgstr ""
 
-#: Importo.py:798
+#: Importo.py:817
 msgid "identiga numero por esti prenita de FamilySearch retejo"
 msgstr ""
 
-#: Importo.py:800
+#: Importo.py:819
 msgid "Nombro ascentontaj"
 msgstr ""
 
-#: Importo.py:801
+#: Importo.py:820
 msgid "Nombro de generacioj por supreniri"
 msgstr ""
 
-#: Importo.py:803
+#: Importo.py:822
 msgid "Nombro descendontaj"
 msgstr ""
 
-#: Importo.py:804
+#: Importo.py:823
 msgid "Nombro de generacioj descendontaj"
 msgstr ""
 
-#: Importo.py:806
+#: Importo.py:825
 msgid "Ne reimporti ekzistantajn personojn"
 msgstr ""
 
-#: Importo.py:807
+#: Importo.py:826
 msgid "Importi nur neekzistantajn personojn"
 msgstr ""
 
-#: Importo.py:809
+#: Importo.py:828
 msgid "Aldoni geedzoj"
 msgstr ""
 
-#: Importo.py:810
+#: Importo.py:829
 msgid "Aldoni informojn pri geedzoj"
 msgstr ""
 
-#: Importo.py:812 Importo.py:813
+#: Importo.py:831 Importo.py:832
 msgid "Aldoni fontoj"
 msgstr ""
 
-#: Importo.py:815 Importo.py:816
+#: Importo.py:834 Importo.py:835
 msgid "Aldoni notoj"
 msgstr ""
 
-#: Importo.py:818
+#: Importo.py:837
 msgid "Vorteco"
 msgstr ""
 
-#: Importo.py:819
+#: Importo.py:838
 msgid "Vorteca nivelo de 0 (minimuma) ĝis 3 (tre vorta)"
 msgstr ""
 
-#: Importo.py:823
+#: Importo.py:842
 msgid "Menuo Aldonita"
 msgstr ""
 
-#: Importo.py:845
+#: Importo.py:864
 msgid "FamilySearch Import Tool"
 msgstr ""
 
@@ -293,35 +297,35 @@ msgstr ""
 msgid "FamilySearch etikedoj"
 msgstr ""
 
-#: PersonFS.gpr.py:30
+#: PersonFS.gpr.py:32
 msgid "PersonFS"
 msgstr ""
 
-#: PersonFS.gpr.py:31
+#: PersonFS.gpr.py:33
 msgid "interfaco por FamilySearch"
 msgstr ""
 
-#: PersonFS.gpr.py:37
+#: PersonFS.gpr.py:39
 msgid "FS"
 msgstr ""
 
-#: PersonFS.gpr.py:47
+#: PersonFS.gpr.py:49
 msgid "Importo de FamilySearch datumoj"
 msgstr ""
 
-#: PersonFS.gpr.py:48
+#: PersonFS.gpr.py:50
 msgid "FamilySearch."
 msgstr ""
 
-#: PersonFS.gpr.py:61
+#: PersonFS.gpr.py:63
 msgid "FamilySearch : kompari"
 msgstr ""
 
-#: PersonFS.gpr.py:62
+#: PersonFS.gpr.py:64
 msgid "FamilySearch : kompari gramps personojn kun FS personojn."
 msgstr ""
 
-#: PersonFS.py:70
+#: PersonFS.py:76
 #, python-format
 msgid "gedcomx ne trovita aŭ < %s"
 msgstr ""

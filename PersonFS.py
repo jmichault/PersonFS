@@ -977,7 +977,9 @@ class PersonFS(Gramplet):
     importilo = Importo.FsAlGr()
     fsid = get_fsftid(grPersono)
     importilo.importi(self, fsid)
-    self.uistate.set_active(active_handle, 'Person')
+    #import cProfile
+    #cProfile.runctx('importilo.importi(self, fsid)',globals(),locals())
+    #self.uistate.set_active(active_handle, 'Person')
 
   def pref_clicked(self, dummy):
     top = self.top.get_object("PersonFSPrefDialogo")

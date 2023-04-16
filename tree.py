@@ -22,6 +22,8 @@ from typing import Union
 import sys
 import re
 import asyncio
+import email.utils
+import time
 from urllib.parse import unquote
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
@@ -53,9 +55,23 @@ class Tree(gedcomx.Gedcomx):
     self._notes = list()
 
   def add_persono(self, fid):
-    data = _FsSeanco.get_jsonurl( "/platform/tree/persons/" + fid)
+    #data = _FsSeanco.get_jsonurl( "/platform/tree/persons/" + fid)
+    r = _FsSeanco.get_url( "/platform/tree/persons/" + fid)
+    if r:
+      try:
+        data = r.json()
+      except Exception as e:
+        self.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
+        print(r.content)
+        data = None
+
     if data:
       gedcomx.maljsonigi(self,data)
+      fsPersono = gedcomx.Person._indekso[fid]
+      if 'Last-Modified' in r.headers :
+        fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+      if 'Etag' in r.headers :
+        fsPersono._etag = r.headers['Etag']
 
   def add_persons(self, fids):
     """add individuals to the family tree
