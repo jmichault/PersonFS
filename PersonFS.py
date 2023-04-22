@@ -49,7 +49,7 @@ from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Name, NameT
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
-from gramps.gui.dialog import OptionDialog, OkDialog
+from gramps.gui.dialog import OptionDialog, OkDialog , WarningDialog
 from gramps.gui.editors import EditPerson, EditEvent
 #from gramps.gui.listmodel import ListModel, NOSORT, COLOR, TOGGLE
 from mialistmodel import ListModel, NOSORT, COLOR, TOGGLE
@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-mingedcomx="1.0.8"
+mingedcomx="1.0.9"
 import importlib
 from importlib.metadata import version
 try:
@@ -153,7 +153,6 @@ class PersonFS(Gramplet):
         fspv.set_text(PersonFS.fs_pasvorto)
         top.show()
         res = top.run()
-        print ("res = " + str(res))
         top.hide()
         if res == -3:
           PersonFS.fs_sn = fsid.get_text()
@@ -173,6 +172,9 @@ class PersonFS(Gramplet):
         #else :
         #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
       print(" langage session FS = "+tree._FsSeanco.lingvo);
+      if tree._FsSeanco.stato == gedcomx.fs_session.STATO_PASVORTA_ERARO :
+         WarningDialog(_('Pasvorta erraro. La funkcioj de FamilySearch ne estos disponeblaj.'))
+
     return tree._FsSeanco
 
 
@@ -197,7 +199,11 @@ class PersonFS(Gramplet):
       print("konektas al FS")
       #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
       tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
-    if not tree._FsSeanco.logged :
+    if tree._FsSeanco.stato == gedcomx.fs_session.STATO_PASVORTA_ERARO :
+      WarningDialog(_('Pasvorta eraro. La funkcioj de FamilySearch ne estos disponeblaj.'))
+      return
+    elif not tree._FsSeanco.logged :
+      WarningDialog(_('Malsukcesa konekto. La funkcioj de FamilySearch ne estos disponeblaj.'))
       return
     if not PersonFS.fs_Tree:
       PersonFS.fs_Tree = tree.Tree()
@@ -786,7 +792,9 @@ class PersonFS(Gramplet):
     r = tree._FsSeanco.get_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json"}
                 )
-    if r.status_code == 200 :
+    if r == None :
+      OkDialog(_('Eraro: neniuj datumoj.'))
+    elif r.status_code == 200 :
       self.DatRes(r.json())
       self.Dup.show()
       res = self.Dup.run()
@@ -825,14 +833,14 @@ class PersonFS(Gramplet):
       self.top.get_object("fs_sekso_eniro").set_text('Female')
     grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
     if grBirth :
-      birdoDato = grdato_al_formal(grBirth.date)
-      if len(birdoDato) >0 and birdoDato[0] == 'A' : birdoDato = birdoDato[1:]
-      if len(birdoDato) >0 and birdoDato[0] == '/' : birdoDato = birdoDato[1:]
-      posOblikvo = birdoDato.find('/')
-      if posOblikvo > 1 : birdoDato = birdoDato[:posOblikvo]
-      self.top.get_object("fs_birdo_eniro").set_text( birdoDato)
+      naskoDato = grdato_al_formal(grBirth.date)
+      if len(naskoDato) >0 and naskoDato[0] == 'A' : naskoDato = naskoDato[1:]
+      if len(naskoDato) >0 and naskoDato[0] == '/' : naskoDato = naskoDato[1:]
+      posOblikvo = naskoDato.find('/')
+      if posOblikvo > 1 : naskoDato = naskoDato[:posOblikvo]
+      self.top.get_object("fs_nasko_eniro").set_text( naskoDato)
     else:
-      self.top.get_object("fs_birdo_eniro").set_text( '')
+      self.top.get_object("fs_nasko_eniro").set_text( '')
     if grBirth and grBirth.place and grBirth.place != None :
       place = self.dbstate.db.get_place_from_handle(grBirth.place)
       self.top.get_object("fs_loko_eniro").set_text( place.name.value)
@@ -863,9 +871,9 @@ class PersonFS(Gramplet):
     sekso = self.top.get_object("fs_sekso_eniro").get_text()
     if sekso :
       mendo = mendo + "q.sex=%s&" % sekso
-    birdo = self.top.get_object("fs_birdo_eniro").get_text()
-    if birdo :
-      mendo = mendo + "q.birthLikeDate=%s&" % birdo
+    nasko = self.top.get_object("fs_nasko_eniro").get_text()
+    if nasko :
+      mendo = mendo + "q.birthLikeDate=%s&" % nasko
     loko = self.top.get_object("fs_loko_eniro").get_text()
     if loko :
       mendo = mendo + "q.anyPlace=%s&" % loko
@@ -979,7 +987,7 @@ class PersonFS(Gramplet):
     importilo.importi(self, fsid)
     #import cProfile
     #cProfile.runctx('importilo.importi(self, fsid)',globals(),locals())
-    #self.uistate.set_active(active_handle, 'Person')
+    self.uistate.set_active(active_handle, 'Person')
 
   def pref_clicked(self, dummy):
     top = self.top.get_object("PersonFSPrefDialogo")
@@ -1068,7 +1076,7 @@ class PersonFS(Gramplet):
     #
     PersonFS.FSID = self.FSID
     fsPerso = gedcomx.Person()
-    if PersonFS.FSID != '' :
+    if PersonFS.FSID != '' and PersonFS.fs_Tree :
       # ŝarĝante individuan "FamilySearch" :
       PersonFS.fs_Tree.add_persons([fsid])
       #fsPerso = gedcomx.Person._indekso.get(fsid) 
@@ -1099,6 +1107,9 @@ class PersonFS(Gramplet):
       if row[0] == 'red' :
         self.propKomp.expand_row(row.path,1)
     
+    if not PersonFS.fs_Tree:
+      return
+
     box1 = self.top.get_object("Box1")
     if ('FS_Esenco' in kompRet) :
       box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))

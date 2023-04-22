@@ -3,20 +3,15 @@
         ; fsid George Washington : KNDX-MKG
 	; fsid avec parents multiples : 9CSJ-L2D
 	; fsid avec lieu non standardisé : LR24-CQK
+	; fsid avec date intervalle : LTY2-RSM
+	; fsid avec date avant :  KZCP-RPL (Meints, Roelof)
 
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
-  * gramplet, si pas de FSID : 
-    * le conjoint absent côté FS apparaît en vert ???.
-  * gramplet : mariage coté gramps pas affiché si pas de mariage côté FS.
-  * gramplet : copie d'un mariage ou d'un conjoint : plante sur la ligne suivante. CORRIGÉ ? à tester
-  * import : le réimport crée des doublons sur les noms et les évènements dans l'arbre FS.
-  * bogue gramps si case à cocher dans un treeview : sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
   * afficher message quand le mot de passe familysearch est mauvais.
-  * personne fusionnée après son chargement dans le plugin : le rafraîchissement ne change pas le FSFTID. CORRIGÉ ? a tester
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
@@ -37,7 +32,6 @@
     * après création : transférer aussi les faits et noms.
   * plus de critères (au moins décès : date + lieu de décès, et lieu général)
 * import :
-  * détecter les doublons fsid et avertir : à tester.
   * ne pas lancer si pas de fsid.
   * normaliser les noms/prénoms (majuscules et minuscules).
   * importer/mettre à jour l'ID des objets : évènement, famille, source, citation.
@@ -55,6 +49,7 @@
   * PlaceDescription:placeDescriptionInfo
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
+	il faudrait supprimer ceux qui ont été supprimés dans FS.
 * gramplet :
   * rafraichissement sans relecture de FS après saisie dans gramps ?
   * copie des noms vers FS : positionner preferred correctement.
@@ -87,15 +82,17 @@
 * éviter la double comparaison à l'ouverture de gramps
 * import :
   * gestion de l'évènement StillBirth (= enfant mort-né) ?
-  * éviter de créer de nouveaux lieux quand un lieu identique existe déjà
-  * accélérer l'import des lieux.
   * accélérer le chargement des notes et sources.
 
 # à faire pour version 2
 
+* bogue gramps si case à cocher dans un treeview : sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py
+	--> doit être corrigé par gramps-project : https://github.com/gramps-project/gramps/pull/1426
+	--> je pourrais alors supprimer mialistmodel.py
 * gestion pointue des lieux dans l'import , dans le gramplet, dans gedcomx-v1 ?
 * gestion des «memories»
 * module de liaison automatique.
+* module de liaison manuelle, mais à la chaine.
 * module de détection de doublons dans gramps d'après le FSID
 * gramplet :
   * lier un enfant ou conjoint gramps avec un enfant ou conjoint FS

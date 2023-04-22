@@ -350,7 +350,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Birdo :</property>
+                    <property name="label" translatable="yes">Nasko :</property>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
@@ -358,7 +358,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="fs_birdo_eniro">
+                  <object class="GtkEntry" id="fs_nasko_eniro">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>

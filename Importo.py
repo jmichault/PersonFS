@@ -68,14 +68,11 @@ vorteco = 0
 #from objbrowser import browse ;browse(locals())
 
 def kreiLoko(db, txn, fsPlace, parent):
-  print("kreiLoko:"+fsPlace.id+" - "+fsPlace.display.name)
   place = Place()
   url = Url()
   url.path = 'https://api.familysearch.org/platform/places/description/'+fsPlace.id
   url.type = UrlType('FamilySearch')
   place.add_url(url)
-  if FsAlGr.fs_gr_lokoj :
-    FsAlGr.fs_gr_lokoj[url.path] = place.handle
   nomo = fsPlace.display.name
   place_name = PlaceName()
   place_name.set_value( nomo )
@@ -106,6 +103,8 @@ def kreiLoko(db, txn, fsPlace, parent):
   db.add_place(place, txn)
   db.commit_place(place, txn)
   fsPlace._handle = place.handle
+  if FsAlGr.fs_gr_lokoj :
+    FsAlGr.fs_gr_lokoj[url.path] = place.handle
   return place
 
 
@@ -178,13 +177,17 @@ def akiriLokoPerId(db, fsLoko):
     else :
       return None
     
+  FsAlGr.fs_gr_lokoj = dict()
   #print ("sercxi url:"+s_url)
   # sercxi por loko kun cî «id»
   for handle in db.get_place_handles():
     place = db.get_place_from_handle(handle)
     for url in place.urls :
-      if str(url.type) == 'FamilySearch' and url.path == s_url :
-        return place
+      if str(url.type) == 'FamilySearch' :
+          FsAlGr.fs_gr_lokoj[url.path] = handle
+  place_handle=FsAlGr.fs_gr_lokoj.get(s_url)
+  if place_handle :
+    return db.get_place_from_handle(place_handle)
   return None
 
 def aldNoto(db, txn, fsNoto,EkzNotoj):
@@ -215,7 +218,7 @@ def updFakto(db, txn, fsFakto, grFakto):
   if fsFakto.place :
     if not hasattr(fsFakto.place,'normalized') :
       from objbrowser import browse ;browse(locals())
-      print("lieu par normalisé : "+fsFakto.place.original)
+      print("lieu pas normalisé : "+fsFakto.place.original)
       plantage()
     grLoko = akiriLokoPerId(db, fsFakto.place)
     if grLoko:

@@ -27,10 +27,10 @@ def fsdato_al_gr( fsDato) :
       if fsDato.formal.proksimuma :
         grDato.set_modifier(Date.MOD_ABOUT)
       if fsDato.formal.gamo :
-        if not fsDato.formal.unuaDato or fsDato.formal.unuaDato.jaro :
-          grDato.set_modifier(Date.MOD_AFTER)
-        elif not fsDato.formal.finalaDato or fsDato.formal.finalaDato.jaro :
+        if not fsDato.formal.unuaDato or not fsDato.formal.unuaDato.jaro :
           grDato.set_modifier(Date.MOD_BEFORE)
+        elif not fsDato.formal.finalaDato or not fsDato.formal.finalaDato.jaro :
+          grDato.set_modifier(Date.MOD_AFTER)
         else :
           grDato.set_modifier(Date.MOD_RANGE)
           if fsDato.formal.finalaDato and fsDato.formal.finalaDato.jaro :
