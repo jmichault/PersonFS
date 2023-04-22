@@ -8,7 +8,7 @@ warnings :
 
 Ceci est un [gramplet](https://www.gramps-project.org/wiki/index.php/Gramplets) pour interfacer gramps avec familysearch.com.  
 Plus d'informations dans : [LisezMoi.md](LisezMoi.md)  
-Attention : ne marche pas avec la version windows AIO de gramps. Sous windows utilisez gramps avec WSL : voir [Notoj/gramps_wsl.md](Notoj/gramps_wsl.md)
+Attention : ne marche pas avec la version windows AIO de gramps. Sous windows utilisez gramps avec MSYS2 : voir [Notoj/gramps_msys2.md](Notoj/gramps_msys2.md)
 
 
 Ĉi tio estas [gramplet](https://www.gramps-project.org/wiki/index.php/Gramplets) por interligi gramps kun familysearch.com.

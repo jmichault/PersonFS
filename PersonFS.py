@@ -174,6 +174,8 @@ class PersonFS(Gramplet):
       print(" langage session FS = "+tree._FsSeanco.lingvo);
       if tree._FsSeanco.stato == gedcomx.fs_session.STATO_PASVORTA_ERARO :
          WarningDialog(_('Pasvorta erraro. La funkcioj de FamilySearch ne estos disponeblaj.'))
+      elif not tree._FsSeanco.logged :
+        WarningDialog(_('Malsukcesa konekto. La funkcioj de FamilySearch ne estos disponeblaj.'))
 
     return tree._FsSeanco
 
@@ -517,13 +519,22 @@ class PersonFS(Gramplet):
     """
     " kreas GUI interfacon.
     """
-    import locale, os
+    import locale,gettext, os
     self.top = Gtk.Builder()
     self.top.set_translation_domain("addon")
     base = os.path.dirname(__file__)
-    locale.bindtextdomain("addon", base + "/locale")
     glade_file = base + os.sep + "PersonFS.glade"
-    self.top.add_from_file(glade_file)
+    if os.name == 'win32' or os.name == 'nt' :
+      import xml.etree.ElementTree as ET
+      tree = ET.parse(glade_file)
+      for node in tree.iter() :
+        if 'translatable' in node.attrib :
+          node.text = _(node.text)
+      xml_text = ET.tostring(tree.getroot(),encoding='unicode',method='xml')
+      self.top.add_from_string(xml_text)
+    else:
+      locale.bindtextdomain("addon", base + "/locale")
+      self.top.add_from_file(glade_file)
 
     self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
