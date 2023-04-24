@@ -448,7 +448,7 @@ class FsAlGr:
           if not qd.run():
             dupAverto = False
 
-      else :
+      elif fsid != '' :
         self.fs_gr[fsid] = person_handle
     if not PersonFS.PersonFS.aki_sesio():
       WarningDialog(_('Ne konekta al FamilySearch'))

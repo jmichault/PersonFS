@@ -48,7 +48,7 @@ msgstr "«FamilySearch» Existing ID"
 #: Importo.py:441 Importo.py:445
 #, python-format
 msgid "«FamilySearch» duplikata ID : %s "
-msgstr "«FamilySearch» Duplicate ID: %S"
+msgstr "«FamilySearch» Duplicate ID: %s"
 
 #: Importo.py:444
 msgid "Duplikata FSFTID"

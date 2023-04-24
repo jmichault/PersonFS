@@ -11,7 +11,6 @@
 * bogues :
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
-  * afficher message quand le mot de passe familysearch est mauvais.
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
