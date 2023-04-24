@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-mingedcomx="1.0.9"
+mingedcomx="1.0.10"
 import importlib
 from importlib.metadata import version
 try:
