@@ -11,7 +11,6 @@
 * bogues :
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
-  * afficher message quand le mot de passe familysearch est mauvais.
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
@@ -42,7 +41,6 @@
 ## facultatifs
 * maintenir un dictionnaire personne.fsid-handle.
 * maintenir un dictionnaire lieu.fsid-handle.
-* gestion des relevés (= «records» FS)
 * gedcomx : attributs inconnus :
   * Person:fields (dans les recherches ?)
   * Person:Principal, ex. : LR2N-SRM
@@ -56,10 +54,7 @@
 	attention : il doit toujours rester un nom préféré sur FS.
   * comparaison : gérer le drapeau «vivant» sur familysearch.
   * rafraichir : ne recharger la personne que si elle a été modifiée.
-  * faire des listes déroulantes.
-  * copie d'individus FS manquants dans gramps. (pour l'inverse, on va plutôt se déplacer sur la fiche gramps, faire une recherche et créer si pas trouvé)
   * liaison de conjoints FS vers gramps (le conjoint doit exister dans gramps, sinon : message).
-  * suppression d'évènements familysearch.
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
     * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
@@ -70,7 +65,6 @@
 	ou afficher un avertissement.
   * recherche accessible depuis le menu ?
   * recherche : charger les suivants
-* gérer les langues
 * identifier et gérer les pré-requis (requests, gedcomx-v1)
 * synchro :
   * accélérer le traitement :
@@ -79,7 +73,6 @@
     * source à joindre.
     * note à joindre.
 * ne pas se connecter à FamilySearch avant l'ouverture de la BD
-* éviter la double comparaison à l'ouverture de gramps
 * import :
   * gestion de l'évènement StillBirth (= enfant mort-né) ?
   * accélérer le chargement des notes et sources.
@@ -103,11 +96,12 @@
   * gestion des «attribution» ?
   * charger les ID des lieux , sources , Relationship, ChildAndParentsRelationship ?
 * gestion des nicknames à voir
-* chargement du portrait FS vers gramps
+* chargement du portrait FS vers gramps, et réciproquement.
 * chargement des images FS vers gramps
 * chargement des images gramps vers FS
 * création de personne FS : gérer tous les noms, les sources, …
-* effacement de données FS dans le gramplet
-* effacement de données gramps dans le gramplet
+* effacement de données FS dans le gramplet ?
+* effacement de données gramps dans le gramplet ?
+* gestion des relevés (= «records» FS)
 
 

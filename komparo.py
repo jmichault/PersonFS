@@ -149,14 +149,8 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     # procesi
     progress.set_pass(_('Procesante la liston (2/2)'), len(pOrdList))
     print("liste triée : "+str(len(pOrdList)))
-    for paro in pOrdList:
-      if progress.get_cancelled() :
-        self.uistate.set_busy_cursor(False)
-        progress.close()
-        self.dbstate.db.enable_signals()
-        self.dbstate.db.request_rebuild()
-        return
-      progress.step()
+    import asyncio
+    def kompari_paro(paro):
       grPersono = self.db.get_person_from_handle(paro[1])
       fsid = paro[2]
       print("traitement "+grPersono.gramps_id+' '+fsid)
@@ -181,10 +175,37 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
-        continue
+        return
       fsPersono._datemod = datemod
       fsPersono._etag = etag
-      kompariFsGr(fsPersono,grPersono,self.db,dupdok=True)
+    async def kompari_paroj(loop,paroj):
+      farindajxoj = set()
+      for paro in paroj :
+        farindajxoj.add(loop.run_in_executor(None,kompari_paro,paro))
+      for farindajxo in farindajxoj :
+        await farindajxo
+    cnt=0
+    paroj=list()
+    for paro in pOrdList:
+      if progress.get_cancelled() :
+        self.uistate.set_busy_cursor(False)
+        progress.close()
+        self.dbstate.db.enable_signals()
+        self.dbstate.db.request_rebuild()
+        return
+      progress.step()
+      paroj.append(paro)
+      cnt = cnt+1
+      if cnt >= 10 :
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete( kompari_paroj(loop,paroj))
+        cnt=0
+        for paro2 in paroj:
+          kompariFsGr(fsPersono,grPersono,self.db,dupdok=True)
+        paroj=list()
+    if cnt >0 :
+      loop = asyncio.get_event_loop()
+      loop.run_until_complete( kompari_paroj(loop,paroj))
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()

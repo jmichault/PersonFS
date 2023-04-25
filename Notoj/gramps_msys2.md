@@ -1,8 +1,9 @@
 
 d'abord suivre :  
 https://gramps-project.org/wiki/index.php/Gramps_for_Windows_with_MSYS2
+sauf : ne pas installer msys/gcc
 
-note : l'installation de fontconfig échoue.  
+note : l'installation de fontconfig échoue. Pas grave ?  
 
 ensuite :
 
@@ -14,4 +15,5 @@ git checkout v5.1.5
 python3 -m build
 cd gramps/plugins
 wget https://github.com/jmichault/PersonFS/releases/download/v1.4.4/PersonFS.zip
+unzip PersonFS
 ```
