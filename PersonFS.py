@@ -132,30 +132,40 @@ class PersonFS(Gramplet):
   if not lingvo :
     lingvo = glocale.language[0]
 
-  def aki_sesio():
+  def aki_sesio(vokanto):
     if not tree._FsSeanco:
       if PersonFS.fs_sn == '' or PersonFS.fs_pasvorto == '':
         import locale, os
         gtk = Gtk.Builder()
         gtk.set_translation_domain("addon")
         base = os.path.dirname(__file__)
-        locale.bindtextdomain("addon", base + "/locale")
         glade_file = base + os.sep + "PersonFS.glade"
-        gtk.add_from_file(glade_file)
+        if os.name == 'win32' or os.name == 'nt' :
+          import xml.etree.ElementTree as ET
+          xtree = ET.parse(glade_file)
+          for node in xtree.iter() :
+            if 'translatable' in node.attrib :
+              node.text = _(node.text)
+          xml_text = ET.tostring(xtree.getroot(),encoding='unicode',method='xml')
+          gtk.add_from_string(xml_text)
+        else:
+          locale.bindtextdomain("addon", base + "/locale")
+          gtk.add_from_file(glade_file)
+
         top = gtk.get_object("PersonFSPrefDialogo")
-        top.set_transient_for(self.uistate.window)
-        parent_modal = self.uistate.window.get_modal()
+        top.set_transient_for(vokanto.uistate.window)
+        parent_modal = vokanto.uistate.window.get_modal()
         if parent_modal:
-          self.uistate.window.set_modal(False)
-        fsid = gtk.get_object("fsid_eniro")
-        fsid.set_text(PersonFS.fs_sn)
+          vokanto.uistate.window.set_modal(False)
+        xfsid = gtk.get_object("fssn_eniro")
+        xfsid.set_text(PersonFS.fs_sn)
         fspv = gtk.get_object("fspv_eniro")
         fspv.set_text(PersonFS.fs_pasvorto)
         top.show()
         res = top.run()
         top.hide()
         if res == -3:
-          PersonFS.fs_sn = fsid.get_text()
+          PersonFS.fs_sn = xfsid.get_text()
           PersonFS.fs_pasvorto = fspv.get_text()
           CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
@@ -526,11 +536,11 @@ class PersonFS(Gramplet):
     glade_file = base + os.sep + "PersonFS.glade"
     if os.name == 'win32' or os.name == 'nt' :
       import xml.etree.ElementTree as ET
-      tree = ET.parse(glade_file)
-      for node in tree.iter() :
+      xtree = ET.parse(glade_file)
+      for node in xtree.iter() :
         if 'translatable' in node.attrib :
           node.text = _(node.text)
-      xml_text = ET.tostring(tree.getroot(),encoding='unicode',method='xml')
+      xml_text = ET.tostring(xtree.getroot(),encoding='unicode',method='xml')
       self.top.add_from_string(xml_text)
     else:
       locale.bindtextdomain("addon", base + "/locale")

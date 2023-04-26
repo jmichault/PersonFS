@@ -53,16 +53,16 @@ from constants import GEDCOMX_GRAMPS_FAKTOJ
 class FSKomparoOpcionoj(MenuToolOptions):
 
   def __init__(self, name, person_id=None, dbstate=None):
-    print("KO.init")
+    #print("KO.init")
     self.db = dbstate.get_database()
     MenuToolOptions.__init__(self, name, person_id, dbstate)
 
   def add_menu_options(self, menu):
-    print("KO.amo")
+    #print("KO.amo")
     self.__general_options(menu)
 
   def __general_options(self, menu):
-    print("KO.go")
+    #print("KO.go")
     category_name = _("FamilySearch Komparo Opcionoj")
     self.__gui_tagoj = NumberOption(_("Nombro tagoj"), 0, 0, 99) 
     self.__gui_tagoj.set_help(_("Nombro da tagoj inter du komparoj"))
@@ -94,16 +94,16 @@ class FSKomparoOpcionoj(MenuToolOptions):
 class FSKomparo(PluginWindows.ToolManagedWindowBatch):
 
   def get_title(self):
-    print("K.title")
+    #print("K.title")
     return _("FamilySearch Komparo")
 
   def initial_frame(self):
-    print("K.options")
+    #print("K.options")
     return _trans.gettext("Options")
 
   def run(self):
-    print("K.run")
-    if not PersonFS.PersonFS.aki_sesio():
+    #print("K.run")
+    if not PersonFS.PersonFS.aki_sesio(self):
       WarningDialog(_('Ne konektita al FamilySearch'))
       return
     progress = ProgressMeter(_("FamilySearch : Komparo"), _trans.gettext('Starting'),
@@ -150,10 +150,8 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     progress.set_pass(_('Procesante la liston (2/2)'), len(pOrdList))
     print("liste triée : "+str(len(pOrdList)))
     import asyncio
-    def kompari_paro(paro):
-      grPersono = self.db.get_person_from_handle(paro[1])
+    def kompari_paro_p1(paro):
       fsid = paro[2]
-      print("traitement "+grPersono.gramps_id+' '+fsid)
       fsPersono = None
       datemod = None
       etag = None
@@ -164,28 +162,39 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         r = tree._FsSeanco.head_url( mendo )
         while r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
           fsid = r.headers['X-Entity-Forwarded-Id']
-          utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
+          print('kompari_paro_p1 : %s --> %s' % (paro[2],fsid))
+          paro[2]=fsid
           mendo = "/platform/tree/persons/"+fsid
           r = tree._FsSeanco.head_url( mendo )
         if 'Last-Modified' in r.headers :
           datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
         if 'Etag' in r.headers :
           etag = r.headers['Etag']
-        PersonFS.PersonFS.fs_Tree.add_persons([fsid])
+        PersonFS.PersonFS.fs_Tree.add_persono(fsid)
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
       if not fsPersono :
         print (_('FS ID %s ne trovita') % (fsid))
         return
       fsPersono._datemod = datemod
       fsPersono._etag = etag
-    async def kompari_paroj(loop,paroj):
-      farindajxoj = set()
-      for paro in paroj :
-        farindajxoj.add(loop.run_in_executor(None,kompari_paro,paro))
-      for farindajxo in farindajxoj :
-        await farindajxo
-    cnt=0
-    paroj=list()
+    #async def kompari_paroj_p1(loop,paroj):
+    #  farindajxoj = set()
+    #  for paro in paroj :
+    #    farindajxoj.add(loop.run_in_executor(None,kompari_paro_p1,paro))
+    #  for farindajxo in farindajxoj :
+    #    await farindajxo
+    def kompari_paro_p2(paro):
+      grPersono = self.db.get_person_from_handle(paro[1])
+      fsid = paro[2]
+      utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
+      print("traitement "+grPersono.gramps_id+' '+fsid)
+      if fsid in PersonFS.PersonFS.fs_Tree._persons:
+        fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
+        kompariFsGr(fsPersono,grPersono,self.db,dupdok=True)
+      else:
+        print (' kompari_paro_p2 : '+_('FS ID %s ne trovita') % (fsid))
+    #cnt=0
+    #paroj=list()
     for paro in pOrdList:
       if progress.get_cancelled() :
         self.uistate.set_busy_cursor(False)
@@ -194,18 +203,22 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         self.dbstate.db.request_rebuild()
         return
       progress.step()
-      paroj.append(paro)
-      cnt = cnt+1
-      if cnt >= 10 :
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete( kompari_paroj(loop,paroj))
-        cnt=0
-        for paro2 in paroj:
-          kompariFsGr(fsPersono,grPersono,self.db,dupdok=True)
-        paroj=list()
-    if cnt >0 :
-      loop = asyncio.get_event_loop()
-      loop.run_until_complete( kompari_paroj(loop,paroj))
+      kompari_paro_p1(paro)
+      kompari_paro_p2(paro)
+      #paroj.append(paro)
+      #cnt = cnt+1
+      #if cnt >= 10 :
+      #  loop = asyncio.get_event_loop()
+      #  loop.run_until_complete( kompari_paroj_p1(loop,paroj))
+      #  cnt=0
+      #  for paro2 in paroj:
+      #    kompari_paro_p2(paro2)
+      #  paroj=list()
+    #if cnt >0 :
+    #  loop = asyncio.get_event_loop()
+    #  loop.run_until_complete( kompari_paroj_p1(loop,paroj))
+    #for paro2 in paroj:
+    #  kompari_paro_p2(paro2)
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()

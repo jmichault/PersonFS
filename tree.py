@@ -72,6 +72,7 @@ class Tree(gedcomx.Gedcomx):
         fsPersono._last_modified = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
       if 'Etag' in r.headers :
         fsPersono._etag = r.headers['Etag']
+      self._persons[fid]=gedcomx.Person._indekso[fid]
 
   def add_persons(self, fids):
     """add individuals to the family tree

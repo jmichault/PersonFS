@@ -450,7 +450,7 @@ class FsAlGr:
 
       elif fsid != '' :
         self.fs_gr[fsid] = person_handle
-    if not PersonFS.PersonFS.aki_sesio():
+    if not PersonFS.PersonFS.aki_sesio(vokanto):
       WarningDialog(_('Ne konekta al FamilySearch'))
       return
     progress.set_pass(_('Konstrui FSID listo por lokoj (2/11)'), vokanto.dbstate.db.get_number_of_places())
