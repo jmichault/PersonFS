@@ -15,3 +15,27 @@ Notu: la python-skripto [_GetMyAncestors_]() plenigas ĉi tiun atributon.
 Datoj estas montrataj kiam ajn eblas uzante la formato [_“formal”_](https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md) de _familysearch_.
 
 Por povi uzi la gramplet vi bezonas _familysearch_-konton, ĉi tio estas enigota en la preferoj, same kiel la rilata pasvorto.
+
+# instalado
+## antaŭkondiĉoj
+La gramplet uzas la "petojn" kaj "gedcomx-v1" (>=1.0.12) python-modulojn.  
+Tial ĉi tiu kromaĵo ne povas esti uzata kun la oficiala AIO-distribuo de gramps.  
+
+Vi povas instali 'requests' kaj 'gedcomx-v1' permane, aŭ lasi la gramplet instali ilin aŭtomate (postulas pip).  
+
+Por fenestroj, vi povas provi la AIO-distribuon kiu venas kun PersonFS.  
+
+## ŝarĝante la zipon
+Sur la [hejmpaĝo de la projekto] (https://github.com/jmichault/PersonFS), alklaku "Eldonoj" (dekstre), kaj en "Aktivoj" elektu la dosieron PersonFS.zip).  
+Tiam ĉerpi la zip al dosierujo de Gramps-kromaĵoj (~/.gramps/gramps51/plugins por gramps-versio 5.1)  
+
+## kun git
+En terminalo, rulu la jenajn komandojn:  
+
+```
+cd ~/.gramps/gramps51/plugins
+git clone https://github.com/jmichault/PersonFS.git
+```
+(noto: adaptenda se gramps ne estas en versio 5.1)
+
+

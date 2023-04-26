@@ -8,8 +8,12 @@ To be able to use the extension you need a familysearch account, this will be re
 
 #Installation
 ## prerequisites
-The “requests” and “gedcomx-v1” (>=1.0.8) python modules must be installed (under linux: ` pip install --upgrade requests gedcomx-v1 ` ).
-Therefore this plugin cannot be used with the AIO distribution of gramps.
+The gramplet uses “requests” and “gedcomx-v1” (>=1.0.12) python modules.  
+Therefore this plugin cannot be used with the official AIO distribution of gramps.  
+
+You can install 'requests' and 'gedcomx-v1' manually, or let the gramplet install them automatically (requires pip).  
+For windows, you can try the AIO distribution that comes with PersonFS.
+
 
 ## loading the zip
 On the [project homepage](https://github.com/jmichault/PersonFS), click “Releases” (right), and in “Assets” choose the PersonFS.zip file).
@@ -23,14 +27,6 @@ cd ~/.gramps/gramps51/plugins
 git clone https://github.com/jmichault/PersonFS.git
 ```
 (note: to be adapted if gramps is not in version 5.1)
-
-## with git, for the developing branch
-In a terminal, run the following commands:
-
-```
-cd ~/.gramps/gramps51/plugins
-git clone -b dev https://github.com/jmichault/PersonFS.git
-```
 
 # the gramplet
 ## enable
