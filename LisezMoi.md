@@ -15,12 +15,13 @@ De ce fait ce plugin ne peut pas être utilisé avec la distribution officielle 
 
 Vous pouvez installer «requests» et «gedcomx-v1» manuellement, ou laisser le gramplet les installer automatiquement (nécessite pip).  
 
-Pour windows, vous pouvez essayer la distribution AIO fournie avec PersonFS.
+Pour windows, vous pouvez tester la version AIO expérimentale qui se trouve [ici](https://github.com/jmichault/gramps-aio/releases).
 
 
 ## en chargeant le zip
 Sur la [page d'accueil du projet](https://github.com/jmichault/PersonFS), cliquez «Releases» (à droite), et dans «Assets» choisissez le fichier PersonFS.zip).  
 Puis extrayez le zip dans le dossier des plugins de Gramps (~/.gramps/gramps51/plugins pour la version 5.1 de gramps)
+(ou %APPDATA%\gramps\gramps51\plugins sous windows).
 
 ## avec git
 Dans un terminal, exécutez les commandes suivantes :

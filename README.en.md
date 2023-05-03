@@ -12,12 +12,13 @@ The gramplet uses “requests” and “gedcomx-v1” (>=1.0.12) python modules.
 Therefore this plugin cannot be used with the official AIO distribution of gramps.  
 
 You can install 'requests' and 'gedcomx-v1' manually, or let the gramplet install them automatically (requires pip).  
-For windows, you can try the AIO distribution that comes with PersonFS.
+For windows, you can try experimental AIO distribution [here](https://github.com/jmichault/gramps-aio/releases) ).
 
 
 ## loading the zip
 On the [project homepage](https://github.com/jmichault/PersonFS), click “Releases” (right), and in “Assets” choose the PersonFS.zip file).
 Then extract the zip to Gramps plugins folder (~/.gramps/gramps51/plugins for gramps version 5.1)
+(or %APPDATA%\gramps\gramps51\plugins for windows).
 
 ## with git
 In a terminal, run the following commands:
