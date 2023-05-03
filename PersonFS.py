@@ -713,19 +713,20 @@ class PersonFS(Gramplet):
     peto = {'persons' : [gedcomx.jsonigi(fsPerso)]}
     jsonpeto = json.dumps(peto)
     res = tree._FsSeanco.post_url( "/platform/tree/persons", jsonpeto )
-    if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
-      fsid = res.headers['X-Entity-Id']
-      utila.ligi_gr_fs(self.dbstate.db, person, fsid)
-      self.FSID = fsid
-      self.ButRefresxigi_clicked(None)
-    else :
-      print (res.headers)
+    if res :
+      if res.status_code==201 and res.headers and "X-Entity-Id" in res.headers :
+        fsid = res.headers['X-Entity-Id']
+        utila.ligi_gr_fs(self.dbstate.db, person, fsid)
+        self.FSID = fsid
+        self.ButRefresxigi_clicked(None)
+        self.Sercxi.hide()
+      else :
+        print (res.headers)
     #  FARINDAĴOJ :
     #     1-  mettre à jour avec les noms et faits
     #     2-  lier aux parents
     #     3-  lier aux conjoints
     #     4-  lier aux enfants
-    self.Sercxi.hide()
     return
 
   def ButKopii_clicked(self, dummy):
@@ -1105,14 +1106,15 @@ class PersonFS(Gramplet):
       # legas persona kaplinio
       mendo = "/platform/tree/persons/"+fsid
       r = tree._FsSeanco.head_url( mendo )
-      if r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+      if r and r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
         fsid = r.headers['X-Entity-Forwarded-Id']
         PersonFS.FSID = fsid
         utila.ligi_gr_fs(self.dbstate.db, grPersono, fsid)
         mendo = "/platform/tree/persons/"+fsid
         r = tree._FsSeanco.head_url( mendo )
-      datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-      etag = r.headers['Etag']
+      if r :
+        datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
+        etag = r.headers['Etag']
       if not fsPerso :
         PersonFS.fs_Tree.add_persons([fsid])
         fsPerso = gedcomx.Person._indekso.get(fsid) or gedcomx.Person()

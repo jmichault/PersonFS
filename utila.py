@@ -139,3 +139,4 @@ def ligi_gr_fs(db,grPersono,fsid):
       attr.set_value(fsid)
       grPersono.add_attribute(attr)
     db.commit_person(grPersono,txn)
+    db.transaction_commit(txn)
