@@ -55,15 +55,15 @@ class Tree(gedcomx.Gedcomx):
     self._notes = list()
 
   def add_persono(self, fid):
-    #data = _FsSeanco.get_jsonurl( "/platform/tree/persons/" + fid)
     r = _FsSeanco.get_url( "/platform/tree/persons/" + fid)
-    if r:
-      try:
-        data = r.json()
-      except Exception as e:
-        self.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
-        print(r.content)
-        data = None
+    if not r:
+      return
+    try:
+      data = r.json()
+    except Exception as e:
+      self.write_log("WARNING: corrupted file from %s, error: %s" % (url, e))
+      print(r.content)
+      data = None
 
     if data:
       gedcomx.maljsonigi(self,data)

@@ -24,6 +24,7 @@ GEDCOMX_GRAMPS_FAKTOJ = {
   "http://gedcomx.org/Blessing": EventType.BLESS,
   "http://gedcomx.org/Burial": EventType.BURIAL,
   "http://gedcomx.org/Census": EventType.CENSUS,
+  "data:,http://gedcomx.org/Census": EventType.CENSUS,
   "http://gedcomx.org/Christening": EventType.CHRISTEN,
   "http://gedcomx.org/CommonLawMarriage": EventType.MARR_ALT,
   "http://gedcomx.org/Confirmation": EventType.CONFIRMATION,
