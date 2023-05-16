@@ -1124,8 +1124,10 @@ class PersonFS(Gramplet):
       if getfs == True :
         PersonFS.fs_Tree.add_spouses([fsid])
         PersonFS.fs_Tree.add_children([fsid])
-    
-    kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
+    if getfs == True :
+      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,True)
+    else:
+      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,False)
     for row in self.modelKomp.model :
       if row[0] == 'red' :
         self.propKomp.expand_row(row.path,1)

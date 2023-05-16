@@ -1,7 +1,7 @@
 
 * note : fsid fusionné : GZKW-DLY,GJ7P-84L;
         ; fsid George Washington : KNDX-MKG
-	; fsid avec parents multiples : 9CSJ-L2D
+	; fsid avec parents multiples : 9CSJ-L2D (lacour-pijardière : père officiel et père réel)
 	; fsid avec lieu non standardisé : LR24-CQK
 	; fsid avec date intervalle : LTY2-RSM
 	; fsid avec date avant :  KZCP-RPL (Meints, Roelof)
