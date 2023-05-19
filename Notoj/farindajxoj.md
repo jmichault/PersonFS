@@ -12,6 +12,8 @@
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
+  * naissance sans date dans gramps n'apparait pas ?
+  * transfert d'une date «vers xxxx» devient «abt xxxx-00-00» au lieu de "abt xxxx»
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
   * possibilité de renseigner manuellement le \_FSFTID d'une personnes
@@ -42,9 +44,8 @@
 * maintenir un dictionnaire personne.fsid-handle.
 * maintenir un dictionnaire lieu.fsid-handle.
 * gedcomx : attributs inconnus :
-  * Person:fields (dans les recherches ?)
   * Person:Principal, ex. : LR2N-SRM
-  * PlaceDescription:placeDescriptionInfo
+  * Tag:conclusionId G8FW-VTJ
 * exécution de la synchro en arrière-plan ?
 * que faire si une personne a deux attributs \_FSFTID ?
 	il faudrait supprimer ceux qui ont été supprimés dans FS.
