@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-mingedcomx="1.0.12"
+mingedcomx="1.0.13"
 import importlib
 from importlib.metadata import version
 try:
@@ -447,7 +447,7 @@ class PersonFS(Gramplet):
               for fsFakto in fsPersono.facts :
                 if fsFakto.id == fsFakto_id : break
               if fsFakto.id == fsFakto_id :
-                print("importas fakto "+fsFakto_id)
+                print("importas fakto "+fsFakto_id+" por "+self.FSID)
                 if grFaktoH :
                   event = self.dbstate.db.get_event_from_handle(grFaktoH)
                   Importo.updFakto(self.dbstate.db,txn,fsFakto,event)
@@ -854,7 +854,13 @@ class PersonFS(Gramplet):
     elif person.get_gender() == Person.FEMALE :
       self.top.get_object("fs_sekso_eniro").set_text('Female')
     grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BIRTH))
-    if grBirth :
+    if grBirth == None or grBirth.date == None or grBirth.date.is_empty() :
+      grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.CHRISTEN))
+    if grBirth == None or grBirth.date == None or grBirth.date.is_empty() :
+      grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.ADULT_CHRISTEN))
+    if grBirth == None or grBirth.date == None or grBirth.date.is_empty() :
+      grBirth = get_grevent(self.dbstate.db, person, EventType(EventType.BAPTISM))
+    if grBirth and grBirth.date and not grBirth.date.is_empty() :
       naskoDato = grdato_al_formal(grBirth.date)
       if len(naskoDato) >0 and naskoDato[0] == 'A' : naskoDato = naskoDato[1:]
       if len(naskoDato) >0 and naskoDato[0] == '/' : naskoDato = naskoDato[1:]
@@ -863,6 +869,22 @@ class PersonFS(Gramplet):
       self.top.get_object("fs_nasko_eniro").set_text( naskoDato)
     else:
       self.top.get_object("fs_nasko_eniro").set_text( '')
+
+    grDeath = get_grevent(self.dbstate.db, person, EventType(EventType.DEATH))
+    if grDeath == None or grDeath.date == None or grDeath.date.is_empty() :
+      grDeath = get_grevent(self.dbstate.db, person, EventType(EventType.BURIAL))
+    if grDeath == None or grDeath.date == None or grDeath.date.is_empty() :
+      grDeath = get_grevent(self.dbstate.db, person, EventType(EventType.CREMATION))
+    if grDeath and grDeath.date and not grDeath.date.is_empty() :
+      mortoDato = grdato_al_formal(grDeath.date)
+      if len(mortoDato) >0 and mortoDato[0] == 'A' : mortoDato = mortoDato[1:]
+      if len(mortoDato) >0 and mortoDato[0] == '/' : mortoDato = mortoDato[1:]
+      posOblikvo = mortoDato.find('/')
+      if posOblikvo > 1 : mortoDato = mortoDato[:posOblikvo]
+      self.top.get_object("fs_morto_eniro").set_text( mortoDato)
+    else:
+      self.top.get_object("fs_morto_eniro").set_text( '')
+
     if grBirth and grBirth.place and grBirth.place != None :
       place = self.dbstate.db.get_place_from_handle(grBirth.place)
       self.top.get_object("fs_loko_eniro").set_text( place.name.value)
@@ -896,6 +918,9 @@ class PersonFS(Gramplet):
     nasko = self.top.get_object("fs_nasko_eniro").get_text()
     if nasko :
       mendo = mendo + "q.birthLikeDate=%s&" % nasko
+    morto = self.top.get_object("fs_morto_eniro").get_text()
+    if morto :
+      mendo = mendo + "q.deathLikeDate=%s&" % morto
     loko = self.top.get_object("fs_loko_eniro").get_text()
     if loko :
       mendo = mendo + "q.anyPlace=%s&" % loko
@@ -1124,8 +1149,10 @@ class PersonFS(Gramplet):
       if getfs == True :
         PersonFS.fs_Tree.add_spouses([fsid])
         PersonFS.fs_Tree.add_children([fsid])
-    
-    kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp)
+    if getfs == True :
+      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,True)
+    else:
+      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,False)
     for row in self.modelKomp.model :
       if row[0] == 'red' :
         self.propKomp.expand_row(row.path,1)

@@ -41,6 +41,7 @@ GEDCOMX_GRAMPS_FAKTOJ = {
   "http://gedcomx.org/MilitaryService": EventType.MILITARY_SERV,
   "http://gedcomx.org/Marriage": EventType.MARRIAGE,
   "http://gedcomx.org/MarriageBanns": EventType.MARR_BANNS,
+  "data:,Marriage Banns": EventType.MARR_BANNS,
   "http://gedcomx.org/MarriageContract": EventType.MARR_CONTR,
   "http://gedcomx.org/MarriageLicense": EventType.MARR_LIC,
   "http://gedcomx.org/Medical": EventType.MED_INFO,
@@ -58,6 +59,7 @@ GEDCOMX_GRAMPS_FAKTOJ = {
   "http://familysearch.org/v1/TitleOfNobility": EventType.NOB_TITLE,
 #
   "http://familysearch.org/v1/LifeSketch": _('Vivskizo'),
+  "data:,Birth+Registration": _('Deklaro de naskiĝo'),
   "data:,Birth Registration": _('Deklaro de naskiĝo'),
   "data:,Death Registration": _('Deklaro de morto'),
 

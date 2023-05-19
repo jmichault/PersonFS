@@ -160,15 +160,15 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
       if not fsPersono or not hasattr(fsPersono,'_last_modified') or not fsPersono._last_modified :
         mendo = "/platform/tree/persons/"+fsid
         r = tree._FsSeanco.head_url( mendo )
-        while r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
+        while r and r.status_code == 301 and 'X-Entity-Forwarded-Id' in r.headers :
           fsid = r.headers['X-Entity-Forwarded-Id']
           print('kompari_paro_p1 : %s --> %s' % (paro[2],fsid))
           paro[2]=fsid
           mendo = "/platform/tree/persons/"+fsid
           r = tree._FsSeanco.head_url( mendo )
-        if 'Last-Modified' in r.headers :
+        if r and 'Last-Modified' in r.headers :
           datemod = int(time.mktime(email.utils.parsedate(r.headers['Last-Modified'])))
-        if 'Etag' in r.headers :
+        if r and 'Etag' in r.headers :
           etag = r.headers['Etag']
         PersonFS.PersonFS.fs_Tree.add_persono(fsid)
         fsPersono = PersonFS.PersonFS.fs_Tree._persons.get(fsid)
@@ -538,6 +538,8 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       koloro = "yellow"
       if edzoFsid and edzoFsid == fsEdzoId :
         koloro = "green"
+      if edzo_handle == None and fsEdzoId == '' :
+        koloro = "green"
       if PersonFS.PersonFS.fs_Tree :
         fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId) or gedcomx.Person()
       else :
@@ -833,6 +835,12 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
   if fsPersono.id :
     dbPersono.fsid = fsPersono.id
   FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=FS_Dup=FS_Dok=False
+  tag_fs_dok = db.get_tag_from_name('FS_Dok')
+  if tag_fs_dok.handle in grPersono.tag_list:
+    FS_Dok = True
+  tag_fs_dup = db.get_tag_from_name('FS_Dup')
+  if tag_fs_dup.handle in grPersono.tag_list:
+    FS_Dup = True
   # Komparo de esenca eroj
   listres=list()
   res = SeksoKomp(grPersono, fsPersono)
@@ -953,18 +961,22 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
     r = tree._FsSeanco.head_url(
                     mendo ,{"Accept": "application/x-gedcomx-atom+json"}
                 )
-    if r.status_code == 200 :
+    if r and r.status_code == 200 :
       FS_Dup = True
+    if r and r.status_code != 200 :
+      FS_Dup = False
     # Serĉi ĉu FamilySearch ofertas dokumentoj
     mendo = "/service/tree/tree-data/record-matches/"+fsPersono.id
     r = tree._FsSeanco.get_url( mendo ,{"Accept": "application/json,*/*"})
-    if r.status_code == 200 :
+    if r and r.status_code == 200 :
       try:
         j = r.json()
         if ( 'data' in j
             and 'matches' in j['data'] 
             and len(j['data']['matches']) >= 1 ) :
           FS_Dok = True
+        else:
+          FS_Dok = False
       except Exception as e:
         self.write_log("WARNING: corrupted file from %s, error: %s" % (mendo, e))
         print(r.content)
