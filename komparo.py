@@ -149,8 +149,8 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     # procesi
     progress.set_pass(_('Procesante la liston (2/2)'), len(pOrdList))
     print("liste triée : "+str(len(pOrdList)))
-    kop_etik = PersonFS.fs_etikedado
-    PersonFS.fs_etikedado = True
+    kop_etik = PersonFS.PersonFS.fs_etikedado
+    PersonFS.PersonFS.fs_etikedado = True
     import asyncio
     def kompari_paro_p1(paro):
       fsid = paro[2]
@@ -203,7 +203,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         progress.close()
         self.dbstate.db.enable_signals()
         self.dbstate.db.request_rebuild()
-        PersonFS.fs_etikedado = kop_etik
+        PersonFS.PersonFS.fs_etikedado = kop_etik
         return
       progress.step()
       kompari_paro_p1(paro)
@@ -222,7 +222,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     #  loop.run_until_complete( kompari_paroj_p1(loop,paroj))
     #for paro2 in paroj:
     #  kompari_paro_p2(paro2)
-    PersonFS.fs_etikedado = kop_etik
+    PersonFS.PersonFS.fs_etikedado = kop_etik
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()
@@ -999,7 +999,7 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
   else :
     FS_FS = False
   ret = list() 
-  if PersonFS.fs_etikedado :
+  if PersonFS.PersonFS.fs_etikedado :
     if db.transaction :
       intr = True
       txn=db.transaction
