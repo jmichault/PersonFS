@@ -105,6 +105,7 @@ CONFIG = config.register_manager(GRAMPLET_CONFIG_NAME)
 # salutnomo kaj pasvorto por FamilySearch
 CONFIG.register("preferences.fs_sn", '')
 CONFIG.register("preferences.fs_pasvorto", '') #
+CONFIG.register("preferences.fs_etikedado", '') #
 CONFIG.load()
 
 
@@ -115,6 +116,9 @@ class PersonFS(Gramplet):
   fs_sn = CONFIG.get("preferences.fs_sn")
   fs_pasvorto = ''
   fs_pasvorto = CONFIG.get("preferences.fs_pasvorto") #
+  # fs_etikedado = True se ne definita
+  fs_etikedado = not CONFIG.get("preferences.fs_etikedado") == 'False'
+  print("fs_etikedado="+str(fs_etikedado))
   fs_Tree = None
   fs_TreeSercxo = None
   Sercxi = None
@@ -161,14 +165,19 @@ class PersonFS(Gramplet):
         xfsid.set_text(PersonFS.fs_sn)
         fspv = gtk.get_object("fspv_eniro")
         fspv.set_text(PersonFS.fs_pasvorto)
+        fsetik = gtk.get_object("fsetik_eniro")
+        fsetik.set_active(PersonFS.fs_etikedado)
         top.show()
         res = top.run()
         top.hide()
         if res == -3:
           PersonFS.fs_sn = xfsid.get_text()
           PersonFS.fs_pasvorto = fspv.get_text()
+          PersonFS.fs_etikedado = fsetik.get_active()
+          print("PersonFS.fs_etikedado="+str(PersonFS.fs_etikedado))
           CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
           #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+          CONFIG.set("preferences.fs_etikedado", str(PersonFS.fs_etikedado))
           CONFIG.save()
           #if self.vorteco >= 3:
           tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
@@ -1046,15 +1055,20 @@ class PersonFS(Gramplet):
     fssn.set_text(PersonFS.fs_sn)
     fspv = self.top.get_object("fspv_eniro")
     fspv.set_text(PersonFS.fs_pasvorto)
+    fsetik = self.top.get_object("fsetik_eniro")
+    print("fs_etikedado="+str(PersonFS.fs_etikedado))
+    fsetik.set_active(PersonFS.fs_etikedado)
     top.show()
     res = top.run()
-    print ("res = " + str(res))
     top.hide()
     if res == -3:
       PersonFS.fs_sn = fssn.get_text()
       PersonFS.fs_pasvorto = fspv.get_text()
+      PersonFS.fs_etikedado = fsetik.get_active()
+      print("fs_etikedado="+str(PersonFS.fs_etikedado))
       CONFIG.set("preferences.fs_sn", PersonFS.fs_sn)
       #CONFIG.set("preferences.fs_pasvorto", PersonFS.fs_pasvorto) #
+      CONFIG.set("preferences.fs_etikedado", str(PersonFS.fs_etikedado))
       CONFIG.save()
       self.konekti_FS()
     

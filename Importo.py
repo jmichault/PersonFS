@@ -66,6 +66,7 @@ _ = _trans.gettext
 vorteco = 0
 
 #from objbrowser import browse ;browse(locals())
+#import pdb; pdb.set_trace()
 
 def kreiLoko(db, txn, fsPlace, parent):
   place = Place()
@@ -113,9 +114,13 @@ def aldLoko(db, txn, pl):
   if not hasattr(pl,'_handle') :
     pl._handle = None
   if pl._handle :
-    grLoko = db.get_place_from_handle(pl._handle)
-    return grLoko
+    try:
+      grLoko = db.get_place_from_handle(pl._handle)
+      return grLoko
+    except:
+      pass
   # sercxi por loko 
+  #import pdb; pdb.set_trace()
   grLoko = akiriLokoPerId(db, pl)
   if grLoko:
     pl._handle = grLoko.handle
@@ -173,18 +178,23 @@ def akiriLokoPerId(db, fsLoko):
   if FsAlGr.fs_gr_lokoj :
     place_handle=FsAlGr.fs_gr_lokoj.get(s_url)
     if place_handle :
-      return db.get_place_from_handle(place_handle)
+      try :
+        return db.get_place_from_handle(place_handle)
+      except:
+        pass
     else :
       return None
     
+  # krei fs_gr_lokoj
+  print(_('Konstrui FSID listo por lokoj'))
   FsAlGr.fs_gr_lokoj = dict()
   #print ("sercxi url:"+s_url)
-  # sercxi por loko kun cî «id»
   for handle in db.get_place_handles():
     place = db.get_place_from_handle(handle)
     for url in place.urls :
       if str(url.type) == 'FamilySearch' :
           FsAlGr.fs_gr_lokoj[url.path] = handle
+  # sercxi por loko kun cî «id»
   place_handle=FsAlGr.fs_gr_lokoj.get(s_url)
   if place_handle :
     return db.get_place_from_handle(place_handle)
@@ -458,11 +468,9 @@ class FsAlGr:
     for place_handle in vokanto.dbstate.db.get_place_handles() :
       progress.step()
       place = vokanto.dbstate.db.get_place_from_handle(place_handle)
-      fsurl = None
       for url in place.urls :
         if str(url.type) == 'FamilySearch' :
           FsAlGr.fs_gr_lokoj[url.path] = place_handle
-          break
     #if not tree._FsSeanco:
     #  if PersonFS.PersonFS.fs_sn == '' or PersonFS.PersonFS.fs_pasvorto == '':
     #    import locale, os

@@ -149,6 +149,8 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     # procesi
     progress.set_pass(_('Procesante la liston (2/2)'), len(pOrdList))
     print("liste triée : "+str(len(pOrdList)))
+    kop_etik = PersonFS.PersonFS.fs_etikedado
+    PersonFS.PersonFS.fs_etikedado = True
     import asyncio
     def kompari_paro_p1(paro):
       fsid = paro[2]
@@ -201,6 +203,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
         progress.close()
         self.dbstate.db.enable_signals()
         self.dbstate.db.request_rebuild()
+        PersonFS.PersonFS.fs_etikedado = kop_etik
         return
       progress.step()
       kompari_paro_p1(paro)
@@ -219,6 +222,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     #  loop.run_until_complete( kompari_paroj_p1(loop,paroj))
     #for paro2 in paroj:
     #  kompari_paro_p2(paro2)
+    PersonFS.PersonFS.fs_etikedado = kop_etik
     self.uistate.set_busy_cursor(False)
     progress.close()
     self.dbstate.db.enable_signals()
@@ -995,30 +999,31 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
   else :
     FS_FS = False
   ret = list() 
-  if db.transaction :
-    intr = True
-    txn=db.transaction
-  else :
-    intr = False
-    txn = DbTxn(_("FamilySearch etikedoj"), db)
-  # «tags»
-  for t in fs_db.stato_tags:
-    val = locals().get(t[0])
-    if val == None : continue
-    tag_fs = db.get_tag_from_name(t[0])
-    if val : ret.append(t[0])
-    if not val and tag_fs.handle in grPersono.tag_list:
-      grPersono.remove_tag(tag_fs.handle)
-    if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
-      grPersono.add_tag(tag_fs.handle)
-  db.commit_person(grPersono, txn, grPersono.change)
-  dbPersono.gramps_datomod = grPersono.change
-  if fsPersono.id :
-    dbPersono.fs_datomod = fsPersono._last_modified
-  dbPersono.konf_esenco = not FS_Esenco
-  dbPersono.commit(txn)
-  if not intr :
-    db.transaction_commit(txn)
+  if PersonFS.PersonFS.fs_etikedado :
+    if db.transaction :
+      intr = True
+      txn=db.transaction
+    else :
+      intr = False
+      txn = DbTxn(_("FamilySearch etikedoj"), db)
+    # «tags»
+    for t in fs_db.stato_tags:
+      val = locals().get(t[0])
+      if val == None : continue
+      tag_fs = db.get_tag_from_name(t[0])
+      if val : ret.append(t[0])
+      if not val and tag_fs.handle in grPersono.tag_list:
+        grPersono.remove_tag(tag_fs.handle)
+      if tag_fs and val and tag_fs.handle not in grPersono.tag_list:
+        grPersono.add_tag(tag_fs.handle)
+    db.commit_person(grPersono, txn, grPersono.change)
+    dbPersono.gramps_datomod = grPersono.change
+    if fsPersono.id :
+      dbPersono.fs_datomod = fsPersono._last_modified
+    dbPersono.konf_esenco = not FS_Esenco
+    dbPersono.commit(txn)
+    if not intr :
+      db.transaction_commit(txn)
   return ret
 
   # FARINDAĴOJ : fontoj, notoj, memoroj, attributoj …
