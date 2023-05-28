@@ -558,6 +558,7 @@ class PersonFS(Gramplet):
 
     self.res = self.top.get_object("PersonFSTop")
     self.propKomp = self.top.get_object("propKomp")
+    self.cbReg = self.top.get_object("CB_Regximo")
     titles = [  
                 (_('Koloro'), 1, 40,COLOR),
 		( _('Propreco'), 2, 100),
@@ -1166,32 +1167,35 @@ class PersonFS(Gramplet):
       if getfs == True :
         PersonFS.fs_Tree.add_spouses([fsid])
         PersonFS.fs_Tree.add_children([fsid])
-    if getfs == True :
-      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,True)
-    else:
-      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,False)
-    for row in self.modelKomp.model :
-      if row[0] == 'red' :
-        self.propKomp.expand_row(row.path,1)
-    
-    if not PersonFS.fs_Tree:
-      return
-
-    box1 = self.top.get_object("Box1")
-    if ('FS_Esenco' in kompRet) :
-      box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
-    else:
-      box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
-    box2 = self.top.get_object("Box2")
-    if ('FS_Gepatro' in kompRet) or ('FS_Familio' in kompRet) :
-      box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
-    else:
-      box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
-    box3 = self.top.get_object("Box3")
-    if ('FS_Fakto' in kompRet) :
-      box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
-    else:
-      box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+    regximo = self.cbReg.get_active_id()
+    if regximo == 'REG_fontoj' :
+      pass
+    elif regximo == 'REG_notoj' :
+      pass
+    elif regximo == 'REG_bildoj' :
+      pass
+    else :
+      kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,getfs)
+      for row in self.modelKomp.model :
+        if row[0] == 'red' :
+          self.propKomp.expand_row(row.path,1)
+      if not PersonFS.fs_Tree:
+        return
+      box1 = self.top.get_object("Box1")
+      if ('FS_Esenco' in kompRet) :
+        box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+      else:
+        box1.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+      box2 = self.top.get_object("Box2")
+      if ('FS_Gepatro' in kompRet) or ('FS_Familio' in kompRet) :
+        box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+      else:
+        box2.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+      box3 = self.top.get_object("Box3")
+      if ('FS_Fakto' in kompRet) :
+        box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+      else:
+        box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
 
     
 
