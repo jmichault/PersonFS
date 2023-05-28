@@ -93,6 +93,7 @@ import time
 
 
 #from objbrowser import browse ;browse(locals())
+#import pdb; pdb.set_trace()
 
 #-------------------------------------------------------------------------
 #
@@ -296,7 +297,7 @@ class PersonFS(Gramplet):
             fsFakto.date = gedcomx.Date()
             fsFakto.date.original = event.date.text
             if not fsFakto.date.original or fsFakto.date.original=='' :
-              fsFakto.date.original = str (event.date)
+              fsFakto.date.original = get_date(event)
             fsFakto.date.formal = gedcomx.DateFormal(grFaktoDato)
             if str(fsFakto.date.formal) == '' :
               fsFakto.date.formal = None
