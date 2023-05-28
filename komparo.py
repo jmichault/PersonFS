@@ -116,6 +116,7 @@ class FSKomparo(PluginWindows.ToolManagedWindowBatch):
     self.db = self.dbstate.get_database()
     # krei datumbazan tabelon
     fs_db.create_schema(self.db)
+    fs_db.create_tags(self.dbstate.db)
     # krei la ordigitan liston de personoj por procesi
     filter_ = self.options.menu.get_option_by_name('Person').get_filter()
     tagoj = self.options.menu.get_option_by_name('gui_tagoj').get_value()
@@ -840,10 +841,10 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
     dbPersono.fsid = fsPersono.id
   FS_Familio=FS_Esenco=FS_Nomo=FS_Fakto=FS_Gepatro=FS_Dup=FS_Dok=False
   tag_fs_dok = db.get_tag_from_name('FS_Dok')
-  if tag_fs_dok.handle in grPersono.tag_list:
+  if tag_fs_dok and tag_fs_dok.handle in grPersono.tag_list:
     FS_Dok = True
   tag_fs_dup = db.get_tag_from_name('FS_Dup')
-  if tag_fs_dup.handle in grPersono.tag_list:
+  if tag_fs_dup and tag_fs_dup.handle in grPersono.tag_list:
     FS_Dup = True
   # Komparo de esenca eroj
   listres=list()

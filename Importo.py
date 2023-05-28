@@ -576,6 +576,8 @@ class FsAlGr:
     # Komenco de importo
     # krei datumbazan tabelon
     fs_db.create_schema(vokanto.dbstate.db)
+    if PersonFS.PersonFS.fs_etikedado :
+      fs_db.create_tags(self.dbstate.db)
     with DbTxn("FamilySearch import", vokanto.dbstate.db) as txn:
       self.txn = txn
       # importi lokoj

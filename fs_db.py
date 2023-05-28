@@ -55,6 +55,26 @@ stato_tags = (
 ('FS_FS', 'yellow'),
 )
 
+def create_tags(db):
+  if db.transaction :
+    intr = True
+    txn = db.transaction
+  else :
+    intr = False
+    txn = None
+  for t in stato_tags:
+    if not db.get_tag_from_name(t[0]):
+      if txn == None :
+        txn = DbTxn(_("FamilySearch : krei etikadojn"), db) 
+      tag = Tag()
+      tag.set_name(t[0])
+      tag.set_color(t[1])
+      db.add_tag(tag, txn)
+      db.commit_tag(tag, txn)
+  if txn != None and not intr :
+    db.transaction_commit(txn)
+    del txn
+
 def create_schema(db):
   # krei datumbazan tabelon
   if db.transaction :
@@ -76,15 +96,6 @@ def create_schema(db):
                          'konf_esenco CHAR(1),'
                          'konf CHAR(1) '
                          ')')
-  for t in stato_tags:
-    if not db.get_tag_from_name(t[0]):
-      if txn == None :
-        txn = DbTxn(_("FamilySearch : krei datumbazan tabelon"), db) 
-      tag = Tag()
-      tag.set_name(t[0])
-      tag.set_color(t[1])
-      db.add_tag(tag, txn)
-      db.commit_tag(tag, txn)
   if txn != None and not intr :
     db.transaction_commit(txn)
     del txn

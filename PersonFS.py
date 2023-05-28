@@ -1110,6 +1110,8 @@ class PersonFS(Gramplet):
     " Komparas gramps kaj FamilySearch
     """
     fs_db.create_schema(self.dbstate.db)
+    if PersonFS.fs_etikedado :
+      fs_db.create_tags(self.dbstate.db)
     self.FSID = None
     grPersono = self.dbstate.db.get_person_from_handle(person_handle)
     tag_fs = self.dbstate.db.get_tag_from_name('FS_Konf')
