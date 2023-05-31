@@ -59,6 +59,7 @@
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
     * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
+    * --> créer un évènement mariage avec une note qui dit que c'est un contrat ?
   * idem pour les publications de mariage.
 * recherche :
   * bouton d'import sur la recherche ?
