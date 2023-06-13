@@ -1171,7 +1171,29 @@ class PersonFS(Gramplet):
     if regximo == 'REG_fontoj' :
       pass
     elif regximo == 'REG_notoj' :
-      pass
+      if not PersonFS.fs_Tree:
+        colFS = _('Ne konektita al FamilySearch')
+      else :
+        colFS = '===================='
+      nl = grPersono.get_note_list()
+      persono_id = self.modelKomp.add(['white',_('Persono'),'==========','============================','==========',colFS,False,'Persono',None,None,None,None]  )
+      for nh in nl :
+        n = self.dbstate.db.get_note_from_handle(nh)
+        #teksto = n.get_styledtext()
+        teksto = n.get()
+        titolo = _(n.type.xml_str())
+        self.modelKomp.add(['white',titolo,teksto,'============================','==========',colFS,False,'Persono',None,None,None,None] 
+                , node=persono_id )
+      for family_handle in grPersono.get_family_handle_list():
+        family = self.dbstate.db.get_family_from_handle(family_handle)
+        if family :
+          nl = family.get_note_list()
+      for fsFam in fsPerso._paroj :
+        for fsNoto in fsFam.notes :
+          teksto = fsNoto.text
+          titolo = fsNoto.subject
+          self.modelKomp.add(['white','===','===','============================',titolo,teksto,False,'Persono',None,None,None,None] 
+                , node=persono_id )
     elif regximo == 'REG_bildoj' :
       pass
     else :
