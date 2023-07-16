@@ -80,6 +80,8 @@ def kreiLoko(db, txn, fsPlace, parent):
   place.set_name(place_name)
   place.set_title(nomo)
   place_type = None
+  place.lat = str(fsPlace.latitude)
+  place.long = str(fsPlace.longitude)
   if hasattr(fsPlace, 'type'):
     tipo = GEDCOMX_GRAMPS_LOKOJ.get(fsPlace.type)
     if tipo :
@@ -220,6 +222,8 @@ def aldNoto(db, txn, fsNoto,EkzNotoj):
   note.append("\n\n"+(fsNoto.text or ''))
   #note_type = NoteType()
   #note_type.set((note_type, note_cust))
+  #if fsNoto.id :
+  # FARINDAĴO : FSID
   db.add_note(note, txn)
   db.commit_note(note, txn)
   return note
@@ -300,6 +304,7 @@ def aldFakto(db, txn, fsFakto, obj):
     attr = Attribute()
     attr.set_type('_FSFTID')
     attr.set_value(fsFakto.id)
+    event.add_attribute(attr)
   # noto
   for fsNoto in fsFakto.notes:
     noto = aldNoto(db, txn, fsNoto,event.note_list)

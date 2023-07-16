@@ -5,10 +5,18 @@
 	; fsid avec lieu non standardisé : LR24-CQK
 	; fsid avec date intervalle : LTY2-RSM
 	; fsid avec date avant :  KZCP-RPL (Meints, Roelof)
+# fait :
+  * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
+    * --> créer un évènement mariage avec une explication qui dit que c'est un contrat ?
+	c'est la solution choisie : explication ="http://gedcomx.org/MarriageContract\nContrat de mariage."
+    * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
+    * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
+  * idem pour : fiançailles
 
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * mise à jour d'un événement avec changement de lieu : le lieu est parfois effacé ? Si le lieu est nouveau ?
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
@@ -56,11 +64,6 @@
   * comparaison : gérer le drapeau «vivant» sur familysearch.
   * rafraichir : ne recharger la personne que si elle a été modifiée.
   * liaison de conjoints FS vers gramps (le conjoint doit exister dans gramps, sinon : message).
-  * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
-    * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
-    * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
-    * --> créer un évènement mariage avec une note qui dit que c'est un contrat ?
-  * idem pour les publications de mariage.
 * recherche :
   * bouton d'import sur la recherche ?
   * cacher ou désactiver le bouton «Aldoni» si l'attribut \_FSFTID est renseigné

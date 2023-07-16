@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-mingedcomx="1.0.13"
+mingedcomx="1.0.14"
 import importlib
 from importlib.metadata import version
 try:
@@ -284,7 +284,7 @@ class PersonFS(Gramplet):
             grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
           fsFakto = gedcomx.Fact()
           grTag = int(event.type)
-          if grTag:
+          if grTag :
             tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or str(event.type)
           else :
             tipo = str(event.type)
@@ -308,6 +308,15 @@ class PersonFS(Gramplet):
             fsTP.persons.add(fsP)
             fsP.facts.add(fsFakto)
           elif tipolinio == 'edzoFakto' :
+            # FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
+            # ni konvertas MARR_CONTR,ENGAGEMENT al MARRIAGE + klarigo
+            if ( grTag == EventType.MARR_CONTR
+                  or grTag == EventType.MARR_BANNS
+                  or grTag == EventType.ENGAGEMENT ) :
+              tipo = GRAMPS_GEDCOMX_FAKTOJ.get(EventType.MARRIAGE)
+              fsFakto.type = tipo
+              fsFakto.attribution = gedcomx.Attribution()
+              fsFakto.attribution.changeMessage = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) + '\n' + str(event)
             fsTR = gedcomx.Gedcomx()
             grFamilyHandle = linio[10]
             RSfsid = linio[11]
@@ -318,15 +327,17 @@ class PersonFS(Gramplet):
             fsTR.relationships.add(fsRS)
             peto = gedcomx.jsonigi(fsTR)
             jsonpeto = json.dumps(peto)
-            res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
-            if res.status_code == 201 or res.status_code == 204:
-              print("ĝisdatigo sukceso")
-            if res.status_code != 201 and res.status_code != 204 :
-              print("ĝisdatigo rezulto :")
-              print(" jsonpeto = "+jsonpeto)
-              print(" res.status_code="+str(res.status_code))
-              print (res.headers)
-              print (res.text)
+            if RSfsid :
+              res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
+              if res.status_code == 201 or res.status_code == 204:
+                print("ĝisdatigo sukceso")
+              if res.status_code != 201 and res.status_code != 204 :
+                print("ĝisdatigo rezulto :")
+                print(" jsonpeto = "+jsonpeto)
+                print(" res.status_code="+str(res.status_code))
+                print (res.headers)
+                print (res.text)
+            #else : FARINDAĴO
         elif ( (tipolinio == 'nomo' or tipolinio == 'nomo1')
              and linio[8] ) :
           strNomo = linio[8]
@@ -635,7 +646,7 @@ class PersonFS(Gramplet):
         fsPersono._infanojCP = set()
         fsPersono._gepatrojCP=set()
         fsPersono.sortKey = None
-      if self.FSID in PersonFS.fs_Tree._persons :
+      if PersonFS.fs_Tree and self.FSID in PersonFS.fs_Tree._persons :
         PersonFS.fs_Tree._persons.pop(self.FSID)
       PersonFS.fs_Tree.add_persons([self.FSID])
     #rezulto = gedcomx.jsonigi(PersonFS.fs_Tree)
@@ -1171,29 +1182,46 @@ class PersonFS(Gramplet):
     if regximo == 'REG_fontoj' :
       pass
     elif regximo == 'REG_notoj' :
+      datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/persons/%s/notes" % fsPerso.id)
+      gedcomx.maljsonigi(PersonFS.fs_Tree,datumoj)
       if not PersonFS.fs_Tree:
         colFS = _('Ne konektita al FamilySearch')
       else :
         colFS = '===================='
       nl = grPersono.get_note_list()
-      persono_id = self.modelKomp.add(['white',_('Persono'),'==========','============================','==========',colFS,False,'Persono',None,None,None,None]  )
+      persono_id = self.modelKomp.add(['white',_('Persono'),'','============================','',colFS,False,'Persono',None,None,None,None]  )
       for nh in nl :
         n = self.dbstate.db.get_note_from_handle(nh)
         #teksto = n.get_styledtext()
         teksto = n.get()
         titolo = _(n.type.xml_str())
-        self.modelKomp.add(['white',titolo,teksto,'============================','==========',colFS,False,'Persono',None,None,None,None] 
+        self.modelKomp.add(['white',titolo,'',teksto,'==========',colFS,False,'Persono',None,None,None,None] 
                 , node=persono_id )
+      for fsNoto in fsPerso.notes :
+        teksto = fsNoto.text
+        titolo = fsNoto.subject
+        self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'Persono',None,None,None,None] 
+                , node=persono_id )
+      familioj_id = self.modelKomp.add(['white',_('Familioj'),'','============================','',colFS,False,'Familioj',None,None,None,None]  )
       for family_handle in grPersono.get_family_handle_list():
         family = self.dbstate.db.get_family_from_handle(family_handle)
         if family :
           nl = family.get_note_list()
+          for nh in nl :
+            n = self.dbstate.db.get_note_from_handle(nh)
+            #teksto = n.get_styledtext()
+            teksto = n.get()
+            titolo = _(n.type.xml_str())
+            self.modelKomp.add(['white',titolo,'',teksto,'',colFS,False,'Familioj',None,None,None,None] 
+                , node=familioj_id )
       for fsFam in fsPerso._paroj :
+        datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/couple-relationships/%s/notes" % fsFam.id)
+        gedcomx.maljsonigi(PersonFS.fs_Tree,datumoj)
         for fsNoto in fsFam.notes :
           teksto = fsNoto.text
           titolo = fsNoto.subject
-          self.modelKomp.add(['white','===','===','============================',titolo,teksto,False,'Persono',None,None,None,None] 
-                , node=persono_id )
+          self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'Familioj',None,None,None,None] 
+                , node=familioj_id )
     elif regximo == 'REG_bildoj' :
       pass
     else :

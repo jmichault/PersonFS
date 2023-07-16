@@ -47,7 +47,7 @@ import PersonFS
 import fs_db
 import tree
 import utila
-from constants import GEDCOMX_GRAMPS_FAKTOJ
+from constants import GEDCOMX_GRAMPS_FAKTOJ,GRAMPS_GEDCOMX_FAKTOJ
 
 #from objbrowser import browse ;browse(locals())
 class FSKomparoOpcionoj(MenuToolOptions):
@@ -591,6 +591,11 @@ def aldEdzKomp(db, grPersono, fsPerso) :
             else:
               gedTag = fsFakto.type
           grTag = int(event.type) or event.type
+          # Ĉu ĉi tio estas MARR_CONTR aŭ ENGAGEMENT, …  konvertita al MARRIAGE ?
+          if fsFakto.attribution and fsFakto.attribution.changeMessage :
+            linio = fsFakto.attribution.changeMessage.partition('\n')[0]
+            tag = GEDCOMX_GRAMPS_FAKTOJ.get(linio)
+            if tag : gedTag = tag
           if gedTag != grTag :
             continue
           fsFaktoDato = str(fsFakto.date or '')
@@ -691,6 +696,8 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       fsEdzoId = paro.person2.resourceId
     elif paro.person1 :
       fsEdzoId = paro.person1.resourceId
+    else :
+      fsEdzoId = None
     fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId)
     if fsEdzo :
       fsNomo = fsEdzo.akPrefNomo()

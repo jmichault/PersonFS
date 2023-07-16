@@ -59,7 +59,7 @@ La première colonne permet de visualiser rapidement quelles données ne sont pa
 
 Note : le lien avec _familysearch_ se fait grâce à un attribut de clé _«\_FSFTID»_ et ayant pour valeur le N° d'identification _familysearch_.  
 
-Note : pour limiter le temps de chargement, au lancement les données détaillées des conjoints et enfants ne sont pas chargées. Vous pouvez les charger en cliquant sur le bouton «Charger conjoints et enfants».
+Note : pour limiter le temps de chargement, au lancement les données détaillées des conjoints et enfants ne sont pas chargées. Vous pouvez les charger en cliquant sur le bouton «Rafraichir».
 
 Les dates sont affichés chaque fois que c'est possible en utilisant le format [_«formal»_](https://github.com/FamilySearch/gedcomx/blob/master/specifications/date-format-specification.md) de _familysearch_.
 
@@ -71,6 +71,9 @@ Depuis le gramplet, vous pouvez aussi :
 * lancer le module d'import pour importer les données FamilySearch de votre individu, et éventuellement les ancêtres et descendants.
 * copier des noms ou des évènements vers ou depuis FamilySearch en cochant la dernière colonne, puis en utilisant le menu contextuel (clic droit).
   * attention : les lieux qui ne sont pas normalisés dans FamilySearch ne sont pas copiés.
+  * attention : Pour les évènements familiaux, FamilySearch n'accepte que les types suivants :  
+        «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».  
+      pour pouvoir transférer les «Contrat de mariage»,«Fiançailles»,«Publications de mariage», on les transforme en «Mariage» avec une explication «http://gedcomx.org/xxxxx»
 * changer d'individu en double-cliquant sur la ligne correspondante.
 * éditer un évènement de la personne en double-cliquant sur la ligne correspondante.
 
