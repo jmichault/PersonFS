@@ -16,6 +16,7 @@
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * comparaison : la comparaison des mariages n'utilise pas le fsftid
   * mise à jour d'un événement avec changement de lieu : le lieu est parfois effacé ? Si le lieu est nouveau ?
   * import d'une date A/+1736 (pas prévu dans gramps).
   * comparaison : la liste des filtres est celle du premier lancement.
