@@ -38,16 +38,6 @@ from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gui.utils import ProgressMeter
 
-# gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-import importlib
-gedcomx_spec = importlib.util.find_spec("gedcomx")
-if gedcomx_spec and gedcomx_spec.loader:
-  import gedcomx
-else:
-  print ('gedcomx ne trovita')
-  import pip
-  pip.main(['install', '--user', 'gedcomx-v1'])
-  import gedcomx
 
 import fs_db
 import PersonFS
@@ -61,6 +51,23 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
+
+
+# gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
+mingedcomx="1.0.14"
+import importlib
+from importlib.metadata import version
+try:
+  v = version('gedcomx-v1')
+except :
+  v="0.0.0"
+from packaging.version import parse
+if parse(v) < parse(mingedcomx) :
+  print (_('gedcomx ne trovita aŭ < %s' % mingedcomx))
+  import pip
+  pip.main(['install', '--user', '--upgrade', '--break-system-packages', 'gedcomx-v1'])
+import gedcomx
+
 
 # tutmondaj variabloj
 vorteco = 0

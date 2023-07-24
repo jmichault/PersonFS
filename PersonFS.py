@@ -63,7 +63,7 @@ except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
 
-# gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
+# gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
 mingedcomx="1.0.14"
 import importlib
 from importlib.metadata import version
@@ -75,7 +75,7 @@ from packaging.version import parse
 if parse(v) < parse(mingedcomx) :
   print (_('gedcomx ne trovita aŭ < %s' % mingedcomx))
   import pip
-  pip.main(['install', '--user', '--upgrade', 'gedcomx-v1'])
+  pip.main(['install', '--user', '--upgrade', '--break-system-packages', 'gedcomx-v1'])
 import gedcomx
 
 # lokaloj importadoj
