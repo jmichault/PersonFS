@@ -705,7 +705,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
       fsNomo = gedcomx.Name()
     res.append( ( koloro , _trans.gettext('Spouse')
                 , '', ''
-          , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
+          , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + str(fsEdzoId)  + ']'
                 , False, 'edzo', None  ,fsEdzoId , None, paro.id
            ) )
     toRemove=set()
