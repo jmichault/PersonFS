@@ -5,17 +5,20 @@
 	; fsid avec lieu non standardisé : LR24-CQK
 	; fsid avec date intervalle : LTY2-RSM
 	; fsid avec date avant :  KZCP-RPL (Meints, Roelof)
+	; fsid avec «Bref récit biographique» : LRVF-9YS
+    ; fsid avec note d'individu : LRVF-HBK
 # fait :
   * copie d'un contrat de mariage vers FS : ne marche pas car FS n'accepte que les évènements suivants sur un mariage : «Mariage», «Annulation»,«Divorce»,«Mariage de droit coutumier»,«A vécu maritalement», «Aucun enfant».
-    * --> créer un évènement mariage avec une explication qui dit que c'est un contrat ?
-	c'est la solution choisie : explication ="http://gedcomx.org/MarriageContract\nContrat de mariage."
-    * --> lier les autres évènements aux conjoints ? (c'est ce que fait familysearch)
+    * --> créer un évènement mariage avec une explication qui dit que c'est un contrat ?  
+	  c'est la solution choisie : on met en explication :"http://gedcomx.org/MarriageContract\nContrat de mariage."
+    * --> lier ces autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
   * idem pour : fiançailles
 
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * comparaison : fsid G6M3-79W : le conjoint n'apparaît pas car il n'y a pas de lien conjugal dans FS.
   * comparaison : la comparaison des mariages n'utilise pas le fsftid
   * mise à jour d'un événement avec changement de lieu : le lieu est parfois effacé ? Si le lieu est nouveau ?
   * import d'une date A/+1736 (pas prévu dans gramps).
@@ -89,6 +92,7 @@
 	--> doit être corrigé par gramps-project : https://github.com/gramps-project/gramps/pull/1426
 	--> je pourrais alors supprimer mialistmodel.py
 * gestion pointue des lieux dans l'import , dans le gramplet, dans gedcomx-v1 ?
+  - attention, car une refonte en profondeur de la gestion des lieux est prévue pour gramps 2.0…
 * gestion des «memories»
 * module de liaison automatique.
 * module de liaison manuelle, mais à la chaine.
@@ -96,6 +100,9 @@
 * gramplet :
   * lier un enfant ou conjoint gramps avec un enfant ou conjoint FS
   * gestion des sources
+    problème : comment transférer au mieux les sources saisies dans gramps vers FS ?
+      - dans gramps, on a une hiérarchie dépôt --> source --> citation, rien de tel dans FS.
+      - voir Notoj/fontoj.txt
   * gestion des notes
   * gestion des images et du portrait
 * dans l'import :

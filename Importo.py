@@ -623,7 +623,8 @@ class FsAlGr:
     vokanto.uistate.set_busy_cursor(False)
     progress.close()
     vokanto.dbstate.db.enable_signals()
-    vokanto.dbstate.db.request_rebuild()
+#   FARINDAĴO : se neniu filtrilo :
+#    vokanto.dbstate.db.request_rebuild()
 
   def aldInfano(self,fsCpr):
     if fsCpr.parent1:

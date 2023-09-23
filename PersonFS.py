@@ -1190,14 +1190,26 @@ class PersonFS(Gramplet):
         colFS = '===================='
       nl = grPersono.get_note_list()
       persono_id = self.modelKomp.add(['white',_('Persono'),'','============================','',colFS,False,'Persono',None,None,None,None]  )
+      fsNotoj = fsPerso.notes.copy()
       for nh in nl :
         n = self.dbstate.db.get_note_from_handle(nh)
         #teksto = n.get_styledtext()
         teksto = n.get()
+        fsTeksto = colFS
         titolo = _(n.type.xml_str())
-        self.modelKomp.add(['white',titolo,'',teksto,'==========',colFS,False,'Persono',None,None,None,None] 
+        koloro = "white"
+        for x in fsNotoj :
+          if x.subject == titolo :
+            fsTeksto = x.text
+            if fsTeksto == teksto :
+              koloro = "green"
+            else :
+              koloro = "yellow"
+            fsNotoj.remove(x)
+            break
+        self.modelKomp.add([koloro,titolo,'',teksto,'==========',fsTeksto,False,'Persono',None,None,None,None] 
                 , node=persono_id )
-      for fsNoto in fsPerso.notes :
+      for fsNoto in fsNotoj :
         teksto = fsNoto.text
         titolo = fsNoto.subject
         self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'Persono',None,None,None,None] 
@@ -1212,6 +1224,7 @@ class PersonFS(Gramplet):
             #teksto = n.get_styledtext()
             teksto = n.get()
             titolo = _(n.type.xml_str())
+            koloro = "white"
             self.modelKomp.add(['white',titolo,'',teksto,'',colFS,False,'Familioj',None,None,None,None] 
                 , node=familioj_id )
       for fsFam in fsPerso._paroj :
@@ -1224,7 +1237,7 @@ class PersonFS(Gramplet):
                 , node=familioj_id )
     elif regximo == 'REG_bildoj' :
       pass
-    else :
+    else : # REG_cxefa
       kompRet = komparo.kompariFsGr(fsPerso, grPersono, self.dbstate.db, self.modelKomp,getfs)
       for row in self.modelKomp.model :
         if row[0] == 'red' :

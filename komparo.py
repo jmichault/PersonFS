@@ -498,6 +498,86 @@ def aldGepKomp(db, grPersono, fsPersono ) :
         ) )
   return res
 
+def aldEdzKompNotoj(db, grPersono, fsPerso) :
+  """
+  " aldonas edzan komparon
+  """
+  grFamilioj = grPersono.get_family_handle_list()
+  fsEdzoj = fsPerso._paroj.copy()
+  fsInfanoj = fsPerso._infanojCP.copy()
+  fsid = fsPerso.id
+  res = list()
+  
+  for family_handle in grPersono.get_family_handle_list():
+    family = db.get_family_from_handle(family_handle)
+    if family :
+      edzo_handle = family.mother_handle
+      if edzo_handle == grPersono.handle :
+        edzo_handle = family.father_handle
+      if edzo_handle :
+        edzo = db.get_person_from_handle(edzo_handle)
+      else :
+        edzo = Person()
+      edzoNomo = edzo.primary_name
+      edzoFsid = utila.get_fsftid(edzo)
+      fsEdzoId = ''
+      fsEdzTrio = None
+      fsParo = None
+      fsParoId = None
+      for paro in fsEdzoj :
+        if ( (paro.person1 and paro.person1.resourceId == edzoFsid)
+            or( (paro.person1==None or paro.person1.resourceId== '') and edzoFsid == '')) :
+          fsEdzoId = edzoFsid
+          fsParo = paro
+          fsParoId = paro.id
+          fsEdzoj.remove(paro)
+          break
+        elif ( (paro.person2 and paro.person2.resourceId == edzoFsid)
+            or( (paro.person2==None or paro.person2.resourceId== '') and edzoFsid == '')) :
+          fsEdzoId = edzoFsid
+          fsParo = paro
+          fsParoId = paro.id
+          fsEdzoj.remove(paro)
+          break
+      koloro = "yellow"
+      if edzoFsid and edzoFsid == fsEdzoId :
+        koloro = "green"
+      if edzo_handle == None and fsEdzoId == '' :
+        koloro = "green"
+      if PersonFS.PersonFS.fs_Tree :
+        fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId) or gedcomx.Person()
+      else :
+        fsEdzo = gedcomx.Person()
+      fsNomo = fsEdzo.akPrefNomo()
+      res.append( ( koloro , _trans.gettext('Spouse')
+                , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+          , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
+          , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
+           ) )
+      # familiaj notoj
+  koloro = "yellow3"
+  for paro in fsEdzoj :
+    if paro.person1 and paro.person1.resourceId == fsid :
+      fsEdzoId = paro.person2.resourceId
+    elif paro.person1 :
+      fsEdzoId = paro.person1.resourceId
+    else :
+      fsEdzoId = None
+    fsEdzo = PersonFS.PersonFS.fs_Tree._persons.get(fsEdzoId)
+    if fsEdzo :
+      fsNomo = fsEdzo.akPrefNomo()
+    else :
+      fsNomo = gedcomx.Name()
+    res.append( ( koloro , _trans.gettext('Spouse')
+                , '', ''
+          , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + str(fsEdzoId)  + ']'
+                , False, 'edzo', None  ,fsEdzoId , None, paro.id
+           ) )
+  return res
+
+
+
+
 def aldEdzKomp(db, grPersono, fsPerso) :
   """
   " aldonas edzan komparon
