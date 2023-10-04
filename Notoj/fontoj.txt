@@ -16,8 +16,9 @@ dans FS, on a pour les sources saisies manuellement :
     * raison de la modification (texte multiligne)
   * des références de source, qui ont comme propriétés :
     * la source
+    * le référent : individu, couple, …
     * des signets
-      * pour une référence vers un individu : nom, sexe, naissance, baptême, décès, enterrement.
+      * pour une référence vers un individu : nom, sexe, naissance, baptême, décès, enterrement, service militaire, ….
     * raison de la référence (texte multiligne)
     note : les sources peuvent être référencées par :
       * un individu

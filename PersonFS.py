@@ -256,8 +256,12 @@ class PersonFS(Gramplet):
     model = self.modelKomp.model
     active_handle = self.get_active('Person')
     grPersono = self.dbstate.db.get_person_from_handle(active_handle)
+    # on va construire 2 gedcomx :
+    # fsTP va contenir la personne principale, avec ses évènements, notes, …
     fsTP = gedcomx.Gedcomx()
+    # fsTR va contenir les personnes reliées, avec leurs évènement, notes, …
     fsTR = gedcomx.Gedcomx()
+    # fsP est la personne principale
     fsP = gedcomx.Person()
     for x in model:
      l = [x]
@@ -283,6 +287,9 @@ class PersonFS(Gramplet):
           else :
             grValoro = grFaktoPriskribo +' @ '+ grFaktoLoko
           fsFakto = gedcomx.Fact()
+          fsFaktoId = get_fsftid(event)
+          if fsFaktoId != '' :
+            fsFakto.id = fsFaktoId
           grTag = int(event.type)
           if grTag :
             tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or str(event.type)
@@ -420,6 +427,33 @@ class PersonFS(Gramplet):
             print(" res.status_code="+str(res.status_code))
             print (res.headers)
             print (res.text)
+        elif ( (tipolinio == 'NotoF' )
+             and linio[11] ) :
+          print("NotoF")
+          #  self.modelKomp.add(['white',titolo,'',teksto,'',colFS,False,'NotoF',None,None,None,None] 
+          fsNoto = gedcomx.Note()
+          fsNoto.subject = linio[1]
+          fsNoto.text = linio[3]
+          fsTR = gedcomx.Gedcomx()
+          grFamilyHandle = linio[10]
+          RSfsid = linio[11]
+          grFamily = self.dbstate.db.get_family_from_handle(grFamilyHandle)
+          fsRS = gedcomx.Relationship()
+          fsRS.id = RSfsid
+          fsRS.notes.add(fsNoto)
+          fsTR.relationships.add(fsRS)
+          peto = gedcomx.jsonigi(fsTR)
+          jsonpeto = json.dumps(peto)
+          if RSfsid :
+            res = tree._FsSeanco.post_url( "/platform/tree/couple-relationships/"+RSfsid, jsonpeto )
+            if res.status_code == 201 or res.status_code == 204:
+              print("ĝisdatigo sukceso")
+            if res.status_code != 201 and res.status_code != 204 :
+              print("ĝisdatigo rezulto :")
+              print(" jsonpeto = "+jsonpeto)
+              print(" res.status_code="+str(res.status_code))
+              print (res.headers)
+              print (res.text)
       # FARINDAĴO : gepatroj, infanoj,…
 
     if len(fsTP.persons) >0 :
@@ -607,7 +641,9 @@ class PersonFS(Gramplet):
     row = self.modelKomp.model.get_iter((path,))
     tipo=self.modelKomp.model.get_value(row, 7)
     #if tipo != 'fakto' and tipo != 'edzoFakto' :
-    if tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' and tipo != 'edzo' :
+    if (     tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' and tipo != 'edzo' 
+         and tipo != 'NotoP' and tipo != 'NotoF'
+       ) :
       self.modelKomp.model.set_value(row, 6, False)
       OkDialog(_('Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj.'))
       print("  toggled:tipo="+tipo)
@@ -1207,17 +1243,62 @@ class PersonFS(Gramplet):
               koloro = "yellow"
             fsNotoj.remove(x)
             break
-        self.modelKomp.add([koloro,titolo,'',teksto,'==========',fsTeksto,False,'Persono',None,None,None,None] 
+        self.modelKomp.add([koloro,titolo,'',teksto,'==========',fsTeksto,False,'NotoP',None,None,None,None] 
                 , node=persono_id )
       for fsNoto in fsNotoj :
         teksto = fsNoto.text
         titolo = fsNoto.subject
-        self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'Persono',None,None,None,None] 
+        self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'NotoP',None,None,None,None] 
                 , node=persono_id )
       familioj_id = self.modelKomp.add(['white',_('Familioj'),'','============================','',colFS,False,'Familioj',None,None,None,None]  )
+      fsEdzoj = fsPerso._paroj.copy()
       for family_handle in grPersono.get_family_handle_list():
         family = self.dbstate.db.get_family_from_handle(family_handle)
         if family :
+          edzo_handle = family.mother_handle
+          if edzo_handle == grPersono.handle :
+            edzo_handle = family.father_handle
+          if edzo_handle :
+            edzo = self.dbstate.db.get_person_from_handle(edzo_handle)
+          else :
+            edzo = Person()
+          edzoNomo = edzo.primary_name
+          edzoFsid = utila.get_fsftid(edzo)
+          fsEdzoId = ''
+          fsParo = None
+          fsParoId = None
+          for paro in fsEdzoj :
+            if ( (paro.person1 and paro.person1.resourceId == edzoFsid)
+                or( (paro.person1==None or paro.person1.resourceId== '') and edzoFsid == '')) :
+              fsEdzoId = edzoFsid
+              fsParo = paro
+              fsParoId = paro.id
+              fsEdzoj.remove(paro)
+              break
+            elif ( (paro.person2 and paro.person2.resourceId == edzoFsid)
+                or( (paro.person2==None or paro.person2.resourceId== '') and edzoFsid == '')) :
+              fsEdzoId = edzoFsid
+              fsParo = paro
+              fsParoId = paro.id
+              fsEdzoj.remove(paro)
+              break
+          if fsParo :
+            datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/couple-relationships/%s/notes" % fsParo.id)
+            gedcomx.maljsonigi(PersonFS.fs_Tree,datumoj)
+            fsNotoj = fsParo.notes.copy()
+          else :
+            fsNotoj = set()
+          if PersonFS.fs_Tree :
+            fsEdzo = PersonFS.fs_Tree._persons.get(fsEdzoId) or gedcomx.Person()
+          else :
+            fsEdzo = gedcomx.Person()
+          fsNomo = fsEdzo.akPrefNomo()
+          self.modelKomp.add(['white',_trans.gettext('Spouse')
+                , komparo.grperso_datoj(self.dbstate.db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+          , komparo.fsperso_datoj(self.dbstate.db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
+          , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
+           ], node=familioj_id )
+
           nl = family.get_note_list()
           for nh in nl :
             n = self.dbstate.db.get_note_from_handle(nh)
@@ -1225,15 +1306,25 @@ class PersonFS(Gramplet):
             teksto = n.get()
             titolo = _(n.type.xml_str())
             koloro = "white"
-            self.modelKomp.add(['white',titolo,'',teksto,'',colFS,False,'Familioj',None,None,None,None] 
+            fsTeksto = colFS
+            for fsNoto in fsNotoj :
+              if fsNoto.subject == titolo :
+                fsTeksto = fsNoto.text
+                fsNotoj.remove(fsNoto)
+                break
+            self.modelKomp.add(['white',titolo,'',teksto,'',fsTeksto,False,'NotoF',None,None,family_handle,fsParoId] 
                 , node=familioj_id )
-      for fsFam in fsPerso._paroj :
+            for fsNoto in fsNotoj :
+              self.modelKomp.add(['white',fsNoto.text,'','============================','',fsNoto.subject,False,'NotoF',None,None,family_handle,fsParoId] 
+                , node=familioj_id )
+          #, False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
+      for fsFam in fsEdzoj :
         datumoj = tree._FsSeanco.get_jsonurl("/platform/tree/couple-relationships/%s/notes" % fsFam.id)
         gedcomx.maljsonigi(PersonFS.fs_Tree,datumoj)
         for fsNoto in fsFam.notes :
           teksto = fsNoto.text
           titolo = fsNoto.subject
-          self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'Familioj',None,None,None,None] 
+          self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'NotoF',None,None,None,fsFam.id] 
                 , node=familioj_id )
     elif regximo == 'REG_bildoj' :
       pass

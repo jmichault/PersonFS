@@ -42,4 +42,4 @@ Et inversement ?
   * texte gramps <--> texte FS
   * on suppose que le type/titre est unique pour un individu ou une famille (mais c'est faux aussi bien dans gramps que FS…)
 * pour les notes évènement/référence d'évènement, nom
-  * concaténation des (type+texte) gramps <--> changeMessage FS.
+  * concaténation des (type+texte) gramps, triés par type <--> changeMessage FS.

@@ -50,6 +50,8 @@ import utila
 from constants import GEDCOMX_GRAMPS_FAKTOJ,GRAMPS_GEDCOMX_FAKTOJ
 
 #from objbrowser import browse ;browse(locals())
+#import pdb; pdb.set_trace()
+
 class FSKomparoOpcionoj(MenuToolOptions):
 
   def __init__(self, name, person_id=None, dbstate=None):
@@ -834,6 +836,7 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     titolo = str(EventType(event.type))
     grFaktoPriskribo = event.description or ''
     grFaktoDato = utila.grdato_al_formal(event.date)
+    grFaktoId = utila.get_fsftid(event)
     if event.place and event.place != None :
       place = db.get_place_from_handle(event.place)
       #grFaktoLoko = place.name.value
@@ -850,8 +853,18 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
     fsFaktoDato = ''
     fsFaktoLoko = ''
     fsFaktoPriskribo = ''
+    # chercher d'abord un fait avec le même id
+    #from objbrowser import browse
+    #import pdb; pdb.set_trace()
+    #from objbrowser import browse ;browse(locals())
     for fsFakto in fsFaktoj :
-      fsFakto_id = fsFakto.id
+      if fsFakto.id == grFaktoId :
+        fsFakto_id = fsFakto.id
+        fsFaktoj.remove(fsFakto)
+        break
+    # sinon chercher un fait avec même tag et même date
+    if grFaktoId == '' and not fsFakto_id :
+     for fsFakto in fsFaktoj :
       gedTag = GEDCOMX_GRAMPS_FAKTOJ.get(unquote(fsFakto.type))
       if not gedTag:
         if fsFakto.type[:6] == 'data:,':
@@ -868,12 +881,18 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       if (fsFaktoDato != grFaktoDato) :
         fsFaktoDato = ''
         continue
+      fsFakto_id = fsFakto.id
+      fsFaktoj.remove(fsFakto)
+      break
+    if fsFakto_id :
+      koloro = "green"
+      if fsFakto and fsFakto.date :
+        fsFaktoDato = str(fsFakto.date)
       if fsFakto and fsFakto.place :
         fsFaktoLoko = fsFakto.place.original or ''
       fsFaktoPriskribo = fsFakto.value or ''
-      koloro = "green"
-      fsFaktoj.remove(fsFakto)
-      break
+      if (grFaktoDato != fsFaktoDato) :
+        koloro = "orange"
     if fsFaktoLoko == '' :
       fsValoro = fsFaktoPriskribo
     else :

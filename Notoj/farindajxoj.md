@@ -14,10 +14,12 @@
     * --> lier ces autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
   * idem pour : fiançailles
+  * copie des notes familiales de gramps vers FS.
 
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * si connexion FS perdue : reconnecter correctement (actuellement, il faut rafraîchir une deuxième fois).
   * comparaison : fsid G6M3-79W : le conjoint n'apparaît pas car il n'y a pas de lien conjugal dans FS.
   * comparaison : la comparaison des mariages n'utilise pas le fsftid
   * mise à jour d'un événement avec changement de lieu : le lieu est parfois effacé ? Si le lieu est nouveau ?
@@ -28,11 +30,12 @@
   * transfert d'une date «vers xxxx» devient «abt xxxx-00-00» au lieu de "abt xxxx»
 * gramplet :
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
+  * transfert d'un enfant de gramps vers FS.
   * possibilité de renseigner manuellement le \_FSFTID d'une personnes
   * si coche d'une ligne de regroupement : cocher tout le groupe.
   * si coche d'un parent, enfant ou conjoint :
     * si absent de FS mais a un FSFTID : accepter.
-    * si absent de FS et pas de FSFTID : suggérer d'aller sur la fiche.
+    * si absent de FS et pas de FSFTID : suggérer d'aller sur la fiche et demander confirmation.
     * si absent de gramps : chercher le FSFTID dans gramps.
       * si absent : suggérer l'import.
       * si présent : accepter.
@@ -88,6 +91,7 @@
 
 # à faire pour version 2
 
+* rafraîchir quand on change de régime.
 * bogue gramps si case à cocher dans un treeview : sudo sed -i 's/int(path)/path/' /usr/lib/python3/dist-packages/gramps/gui/listmodel.py
 	--> doit être corrigé par gramps-project : https://github.com/gramps-project/gramps/pull/1426
 	--> je pourrais alors supprimer mialistmodel.py
