@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
-mingedcomx="1.0.14"
+mingedcomx="1.0.15"
 import importlib
 from importlib.metadata import version
 try:
@@ -427,6 +427,42 @@ class PersonFS(Gramplet):
             print(" res.status_code="+str(res.status_code))
             print (res.headers)
             print (res.text)
+        elif ( (tipolinio == 'infano' )
+             and linio[8] and linio[9] == '') : # infano estas en gramps, ne en FS.
+          grFamilyHandle = linio[10]
+          fsFamId = linio[11]
+          child_ref = linio[8]
+          fsTR = gedcomx.Gedcomx()
+          fsCPRS = gedcomx.ChildAndParentsRelationship()
+          grFamily = self.dbstate.db.get_family_from_handle(grFamilyHandle)
+          child = self.dbstate.db.get_person_from_handle(child_ref)
+          fsCPRS.child = gedcomx.ResourceReference()
+          fsCPRS.child.resourceId = utila.get_fsftid(child)
+          fsCPRS.child.resource = "https://api.familysearch.org/platform/tree/persons/" + fsCPRS.child.resourceId
+          grhusband_handle = grFamily.get_father_handle()
+          if grhusband_handle :
+            gepatro1 = self.dbstate.db.get_person_from_handle(grhusband_handle)
+            fsCPRS.parent1 = gedcomx.ResourceReference()
+            fsCPRS.parent1.resourceId = utila.get_fsftid(gepatro1)
+            fsCPRS.parent1.resource = "https://api.familysearch.org/platform/tree/persons/" + fsCPRS.parent1.resourceId
+          spouse_handle = grFamily.get_mother_handle()
+          if spouse_handle :
+            gepatro2 = self.dbstate.db.get_person_from_handle(spouse_handle)
+            fsCPRS.parent2 = gedcomx.ResourceReference()
+            fsCPRS.parent2.resourceId = utila.get_fsftid(gepatro2)
+            fsCPRS.parent2.resource = "https://api.familysearch.org/platform/tree/persons/" + fsCPRS.parent2.resourceId
+          fsTR.childAndParentsRelationships.add(fsCPRS)
+          peto = gedcomx.jsonigi(fsTR)
+          jsonpeto = json.dumps(peto)
+          res = tree._FsSeanco.post_url( "/platform/tree/relationships", jsonpeto )
+          if res.status_code == 201 or res.status_code == 204:
+            print("ĝisdatigo sukceso")
+          if res.status_code != 201 and res.status_code != 204 :
+            print("ĝisdatigo rezulto :")
+            print(" jsonpeto = "+jsonpeto)
+            print(" res.status_code="+str(res.status_code))
+            print (res.headers)
+            print (res.text)
         elif ( (tipolinio == 'NotoF' )
              and linio[11] ) :
           print("NotoF")
@@ -643,6 +679,7 @@ class PersonFS(Gramplet):
     #if tipo != 'fakto' and tipo != 'edzoFakto' :
     if (     tipo != 'fakto' and tipo != 'edzoFakto' and tipo != 'nomo' and tipo != 'nomo1' and tipo != 'edzo' 
          and tipo != 'NotoP' and tipo != 'NotoF'
+         and tipo != 'infano'
        ) :
       self.modelKomp.model.set_value(row, 6, False)
       OkDialog(_('Pardonu, nur edzaj, eventaj or nomaj linioj povas esti elektitaj.'))

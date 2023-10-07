@@ -750,7 +750,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , grperso_datoj(db, infano) , infanoNomo.get_primary_surname().surname + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
-          , False, 'infano', child_ref.ref  ,fsInfanoId
+          , False, 'infano', child_ref.ref  ,fsInfanoId, family.handle, fsParoId
            ) )
       toRemove=set()
       for triopo in fsInfanoj :
@@ -767,7 +767,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
             res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
-                , False, 'infano', None  ,fsInfanoId
+                , False, 'infano', None  ,fsInfanoId, family.handle, fsParoId
                ) )
             toRemove.add(triopo)
       for triopo in toRemove :
@@ -804,7 +804,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         res.append( ( koloro ,'    '+ _trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
-                , False, 'infano', None  ,fsInfanoId
+                , False, 'infano', None  ,fsInfanoId, None, paro.id
               ) )
         toRemove.add(triopo)
     for triopo in toRemove :
@@ -819,7 +819,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
     res.append( ( koloro ,_trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
-                , False, 'infano', None  ,fsInfanoId
+                , False, 'infano', None  ,fsInfanoId, None, paro.id
            ) )
   return res
 
@@ -897,6 +897,9 @@ def aldAliajFaktojKomp(db, person, fsPerso ) :
       fsValoro = fsFaktoPriskribo
     else :
       fsValoro = fsFaktoPriskribo +' @ '+ fsFaktoLoko
+    if koloro == "green" and grFaktoId == '' and fsFakto_id :
+      print("liaison "+fsFakto_id)
+      utila.ligi_gr_fs(db,event,fsFakto_id)
     res.append( [ koloro , titolo
         , grFaktoDato , grValoro
         , fsFaktoDato , fsValoro

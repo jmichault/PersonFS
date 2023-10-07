@@ -54,7 +54,7 @@ _ = _trans.gettext
 
 
 # gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
-mingedcomx="1.0.14"
+mingedcomx="1.0.15"
 import importlib
 from importlib.metadata import version
 try:

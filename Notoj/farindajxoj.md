@@ -19,6 +19,7 @@
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * affichage court des annèes : transformer les dates républicaines (voir Libaros, Jean : son fils Frix affiché 0005-1882 au lieu de 1797-1882)
   * si connexion FS perdue : reconnecter correctement (actuellement, il faut rafraîchir une deuxième fois).
   * comparaison : fsid G6M3-79W : le conjoint n'apparaît pas car il n'y a pas de lien conjugal dans FS.
   * comparaison : la comparaison des mariages n'utilise pas le fsftid
@@ -28,7 +29,9 @@
   * import 1 clic : quelquefois les enfants ne sont pas tous importés.
   * naissance sans date dans gramps n'apparait pas ?
   * transfert d'une date «vers xxxx» devient «abt xxxx-00-00» au lieu de "abt xxxx»
+  * positionner la langue lors des transferts vers FS. Notamment pour les noms.
 * gramplet :
+  * lors de la création dans FS : une fois la personne créée, faire le transfert de ses évènements.
   * renseigner le FSFTID des évènements lors de la comparaison s'il n'y est pas.
   * transfert d'un enfant de gramps vers FS.
   * possibilité de renseigner manuellement le \_FSFTID d'une personnes
