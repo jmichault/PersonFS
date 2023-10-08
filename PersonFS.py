@@ -291,10 +291,7 @@ class PersonFS(Gramplet):
           if fsFaktoId != '' :
             fsFakto.id = fsFaktoId
           grTag = int(event.type)
-          if grTag :
-            tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or str(event.type)
-          else :
-            tipo = str(event.type)
+          tipo = GRAMPS_GEDCOMX_FAKTOJ.get(grTag) or GRAMPS_GEDCOMX_FAKTOJ.get(str(event.type)) or str(event.type)
           if tipo[:6] == 'http:/' or tipo[:6] == 'data:,' :
             fsFakto.type = tipo
           else :
