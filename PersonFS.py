@@ -1384,6 +1384,16 @@ class PersonFS(Gramplet):
         box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
       else:
         box3.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+      box4 = self.top.get_object("Box4")
+      if ('FS_Dok' in kompRet) :
+        box4.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+      else:
+        box4.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
+      box5 = self.top.get_object("Box5")
+      if ('FS_Dup' in kompRet) :
+        box5.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(1.0, 0.0, 0.0, 1.0))
+      else:
+        box5.override_background_color(Gtk.StateType.NORMAL, Gdk.RGBA(0.0, 1.0, 0.0, 1.0))
 
     
 

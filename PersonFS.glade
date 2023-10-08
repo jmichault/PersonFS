@@ -790,6 +790,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box1">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -809,7 +810,6 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box2">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="margin-start">1</property>
                     <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
@@ -830,6 +830,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box3">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -843,6 +844,46 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEventBox" id="Box4">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Statuso de dokumentoj</property>
+                        <property name="width-chars">3</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEventBox" id="Box5">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Statuso de duploj</property>
+                        <property name="width-chars">3</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
