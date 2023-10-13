@@ -251,6 +251,28 @@ class PersonFS(Gramplet):
 
 
 
+  def redakti(self, treeview):
+    (model, iter_) = treeview.get_selection().get_selected()
+    if not iter_:
+      return
+    tipo=model.get_value(iter_, 7)
+    handle = model.get_value(iter_, 8)
+    if ( handle
+         and ( tipo == 'infano' or tipo == 'patro'
+            or tipo == 'patrino' or tipo == 'edzo')) :
+      person = self.dbstate.db.get_person_from_handle(handle)
+      try:
+        EditPerson(self.dbstate, self.uistate, [], person)
+      except WindowActiveError:
+        pass
+    elif ( handle
+         and (tipo == 'fakto' or tipo == 'edzoFakto')) :
+      event = self.dbstate.db.get_event_from_handle(handle)
+      try:
+        EditEvent(self.dbstate, self.uistate, [], event)
+      except WindowActiveError:
+        pass
+
   def kopii_al_FS(self, treeview):
     print("kopii_al_FS")
     model = self.modelKomp.model
@@ -599,6 +621,20 @@ class PersonFS(Gramplet):
   def l_dekstra_klako(self, treeview, event):
     menu = Gtk.Menu()
     menu.set_reserve_toggle_size(False)
+    (model, iter_) = treeview.get_selection().get_selected()
+    if iter_:
+      tipo=model.get_value(iter_, 7)
+      handle = model.get_value(iter_, 8)
+      if ( handle
+         and (    tipo == 'infano' or tipo == 'patro'
+               or tipo == 'patrino' or tipo == 'edzo'
+               or tipo == 'fakto' or tipo == 'edzoFakto'
+            )) :
+        item  = Gtk.MenuItem(label=_('Redakti : %s - %s - %s')% (model.get_value(iter_,1),model.get_value(iter_,2),model.get_value(iter_,3)))
+        item.set_sensitive(1)
+        item.connect("activate",lambda obj: self.redakti(treeview))
+        item.show()
+        menu.append(item)
     item  = Gtk.MenuItem(label=_('Kopii elekton de gramps al FS'))
     item.set_sensitive(1)
     item.connect("activate",lambda obj: self.kopii_al_FS(treeview))

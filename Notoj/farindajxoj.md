@@ -19,6 +19,7 @@
 # à faire pour version 1.5
 ## prioritaires
 * bogues :
+  * il faut rafraichir après transfert d'un enfant vers FS.
   * affichage court des annèes : transformer les dates républicaines (voir Libaros, Jean : son fils Frix affiché 0005-1882 au lieu de 1797-1882)
   * si connexion FS perdue : reconnecter correctement (actuellement, il faut rafraîchir une deuxième fois).
   * comparaison : fsid G6M3-79W : le conjoint n'apparaît pas car il n'y a pas de lien conjugal dans FS.
