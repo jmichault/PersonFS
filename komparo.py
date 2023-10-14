@@ -819,7 +819,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
     res.append( ( koloro ,_trans.gettext('Child')
                 , '', ''
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
-                , False, 'infano', None  ,fsInfanoId, None, paro.id
+                , False, 'infano', None  ,fsInfanoId, None, None
            ) )
   return res
 

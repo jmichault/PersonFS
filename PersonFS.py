@@ -509,6 +509,15 @@ class PersonFS(Gramplet):
               print(" res.status_code="+str(res.status_code))
               print (res.headers)
               print (res.text)
+        elif ( (tipolinio == 'NotoP' )
+              ) :
+          print("NotoP")
+          fsNoto = gedcomx.Note()
+          fsNoto.subject = linio[1]
+          fsNoto.text = linio[3]
+          fsP.notes.add(fsNoto)
+          fsP.id = self.FSID
+          fsTP.persons.add(fsP)
       # FARINDAĴO : gepatroj, infanoj,…
 
     if len(fsTP.persons) >0 :

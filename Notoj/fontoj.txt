@@ -132,10 +132,12 @@ exemple de saisie typique dans gramps : gestion de la source «Famille (DE) BASS
 On voit que le traitement des sources est très différent dans gramps et FS. Du coup l'interface entre les deux ne pourra être que très partielle : on perdra énormément d'informations dans un sens comme dans l'autre.
 similitudes entre les deux façons de gérer les sources :
 * lieu FS ~ dépôt
-* collection : pas d'équivalent
+* collection : ~ dépôt, mais pas de hiérarchie possible dans gramps…
 * dossier numérique (film) FS ~ source
 * document FS ~ citation gramps
 * source FS ~ citation gramps
+
+il faudrait arriver à ne pas dupliquer les sources dans FS.
 
 incompatibilités (à compléter) :
 * dans le sens FS-->gramps pour les documents fournis par FS :

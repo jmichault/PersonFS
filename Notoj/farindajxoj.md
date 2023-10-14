@@ -14,7 +14,7 @@
     * --> lier ces autres évènements aux conjoints ? (c'est ce que fait familysearch)
     * --> transformer les autres évènements en note (pb : pas de date sur les notes, il faut la rajouter dans le texte)?
   * idem pour : fiançailles
-  * copie des notes familiales de gramps vers FS.
+  * copie des notes personnepersonne et famillee de gramps vers FS.
 
 # à faire pour version 1.5
 ## prioritaires
