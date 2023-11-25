@@ -38,16 +38,6 @@ from gramps.gui.dialog import WarningDialog, QuestionDialog2
 from gramps.gui.plug import MenuToolOptions, PluginWindows
 from gramps.gui.utils import ProgressMeter
 
-# gedcomx biblioteko. Instalu kun `pip install gedcomx-v1`
-import importlib
-gedcomx_spec = importlib.util.find_spec("gedcomx")
-if gedcomx_spec and gedcomx_spec.loader:
-  import gedcomx
-else:
-  print ('gedcomx ne trovita')
-  import pip
-  pip.main(['install', '--user', 'gedcomx-v1'])
-  import gedcomx
 
 import fs_db
 import PersonFS
@@ -61,6 +51,23 @@ try:
 except ValueError:
     _trans = glocale.translation
 _ = _trans.gettext
+
+
+# gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
+mingedcomx="1.0.18"
+import importlib
+from importlib.metadata import version
+try:
+  v = version('gedcomx-v1')
+except :
+  v="0.0.0"
+from packaging.version import parse
+if parse(v) < parse(mingedcomx) :
+  print (_('gedcomx ne trovita aŭ < %s' % mingedcomx))
+  import pip
+  pip.main(['install', '--user', '--upgrade', '--break-system-packages', 'gedcomx-v1'])
+import gedcomx
+
 
 # tutmondaj variabloj
 vorteco = 0
@@ -80,6 +87,8 @@ def kreiLoko(db, txn, fsPlace, parent):
   place.set_name(place_name)
   place.set_title(nomo)
   place_type = None
+  place.lat = str(fsPlace.latitude)
+  place.long = str(fsPlace.longitude)
   if hasattr(fsPlace, 'type'):
     tipo = GEDCOMX_GRAMPS_LOKOJ.get(fsPlace.type)
     if tipo :
@@ -220,6 +229,8 @@ def aldNoto(db, txn, fsNoto,EkzNotoj):
   note.append("\n\n"+(fsNoto.text or ''))
   #note_type = NoteType()
   #note_type.set((note_type, note_cust))
+  #if fsNoto.id :
+  # FARINDAĴO : FSID
   db.add_note(note, txn)
   db.commit_note(note, txn)
   return note
@@ -300,6 +311,7 @@ def aldFakto(db, txn, fsFakto, obj):
     attr = Attribute()
     attr.set_type('_FSFTID')
     attr.set_value(fsFakto.id)
+    event.add_attribute(attr)
   # noto
   for fsNoto in fsFakto.notes:
     noto = aldNoto(db, txn, fsNoto,event.note_list)
@@ -611,7 +623,8 @@ class FsAlGr:
     vokanto.uistate.set_busy_cursor(False)
     progress.close()
     vokanto.dbstate.db.enable_signals()
-    vokanto.dbstate.db.request_rebuild()
+#   FARINDAĴO : se neniu filtrilo :
+#    vokanto.dbstate.db.request_rebuild()
 
   def aldInfano(self,fsCpr):
     if fsCpr.parent1:

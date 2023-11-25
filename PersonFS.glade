@@ -645,40 +645,6 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="hexpand">True</property>
-              </object>
-              <packing>
-                <property name="left-attach">2</property>
-                <property name="top-attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-              </object>
-              <packing>
-                <property name="left-attach">2</property>
-                <property name="top-attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="ButSercxi">
-                <property name="label" translatable="yes">Serĉi</property>
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="receives-default">True</property>
-                <signal name="clicked" handler="on_ButSercxi_clicked" swapped="no"/>
-              </object>
-              <packing>
-                <property name="left-attach">1</property>
-                <property name="top-attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="hexpand">True</property>
                 <property name="width-chars">2</property>
               </object>
               <packing>
@@ -824,6 +790,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box1">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -843,7 +810,6 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box2">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="margin-start">1</property>
                     <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
@@ -864,6 +830,7 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                   <object class="GtkEventBox" id="Box3">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
@@ -877,6 +844,46 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEventBox" id="Box4">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Statuso de dokumentoj</property>
+                        <property name="width-chars">3</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEventBox" id="Box5">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-end">1</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="tooltip-text" translatable="yes">Statuso de duploj</property>
+                        <property name="width-chars">3</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
@@ -898,6 +905,51 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <property name="left-attach">7</property>
                 <property name="top-attach">1</property>
                 <property name="width">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="ButSercxi">
+                <property name="label" translatable="yes">Serĉi</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_ButSercxi_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBoxText" id="CB_Regximo">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="halign">start</property>
+                <property name="active">0</property>
+                <property name="active-id">REG_cxefa</property>
+                <items>
+                  <item id="REG_cxefa" translatable="yes">Ĉefa</item>
+                  <item id="REG_notoj" translatable="yes">Notoj</item>
+                  <!--
+                  <item id="REG_fontoj" translatable="yes">Fontoj</item>
+                  <item id="REG_bildoj" translatable="yes">Bildoj</item>
+                  -->
+                </items>
+              </object>
+              <packing>
+                <property name="left-attach">2</property>
+                <property name="top-attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Reĝimo :  </property>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">0</property>
               </packing>
             </child>
             <child>

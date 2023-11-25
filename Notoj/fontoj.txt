@@ -1,0 +1,158 @@
+
+
+Comment transférer au mieux les sources saisies dans gramps vers FS ?  
+
+Dans gramps, on a une hiérarchie dépôt --> source --> citation 
+, rien de tel dans FS pour les sources saisies manuellement : il n'existe que l'équivalent de la citation.
+
+dans FS, on a pour les sources saisies manuellement :
+  * des dossiers personnels pour regrouper les sources, invisibles des autres utilisateurs.
+  * des sources qui ont comme propriétés :
+    * date
+    * titre (texte monoligne)
+    * une url, ou un souvenir
+    * référence (texte multiligne)
+    * note (texte multiligne)
+    * raison de la modification (texte multiligne)
+  * des références de source, qui ont comme propriétés :
+    * la source
+    * le référent : individu, couple, …
+    * des signets
+      * pour une référence vers un individu : nom, sexe, naissance, baptême, décès, enterrement, service militaire, ….
+    * raison de la référence (texte multiligne)
+    note : les sources peuvent être référencées par :
+      * un individu
+      * un couple
+      …
+
+Dans le cas des sources fournies par FS, c'est beaucoup plus riche , on a :
+  * des lieux (dépôts ou lieux des évènements)
+  * des auteurs
+  * des collections , qui ont comme propriétés (à compléter/vérifier) :
+    * N° (--> https://www.familysearch.org/search/collection/N°) (ex. : 2796817 --> https://www.familysearch.org/search/collection/2796817)
+	--> https://www.familysearch.org/search/catalog/N°
+    * titre (ex. : «France, Dordogne, Registres Paroissiaux et Etat-Civil, 1540-1896»)
+    * Title Also Known As:
+    * auteur
+    * format
+    * physical (description du support physique)
+    * language
+    * publication
+    * notes (ex. : «Registres paroissiaux et d'état civil de la Dordogne, avec baptêmes, naissances, mariages et décès.»)
+    * subjects
+    * références (ex. : lien vers un autre catalogue dont il fait partie)
+    * records (liens vers les sous-catalogues ou les microfilms)
+	--> https://www.familysearch.org/search/catalog/822462?availability=Family%20History%20Library
+  * des films (ou fichiers numériques) (à compléter/vérifier) :
+    * N° 
+    * image group number (DGS)
+    * url ?
+    * lieu (de stockage)
+    * film
+    * index : liste des personnes indexées du film (voir plus bas)
+    * informations :
+      * catalog record
+      * item number
+      * film/digital note
+  * des images
+
+  * des documents, qui ont comme propriétés (à compléter/vérifier) :
+    * le N° collection
+    * filmNumber = Numéro du dossier numérique
+    * N° d'image dans le film
+    * lien vers l'image ?
+    * personne(s) principale(s) :
+      * informations importantes :
+        * noms (au moins 1?) : type, nom de famille, prénom, nom, préfixe du nom, suffixe du nom
+        * sexe
+        * race
+      * âge :
+        * Âge
+        * Âge - années
+        * Âge - code
+        * Âge - heures
+        * Âge - minutes
+        * Âge - secondes
+        * Âge - mois
+        * Âge - semaines
+      * liens de parenté :
+        * type de lien (époux, père, mère, …)
+        * lien vers l'autre personne
+      * évènements :
+        * type (naissance, décès, …)
+        * date
+        * …
+      * autres renseignements
+        * type (couleur des yeux, sait lire, …)
+        * …
+    * autres personnes : mêmes renseignements
+  * des sources comme ci-dessus, seule différence : l'url et la référence sont ceux du document et ne sont pas modifiables.
+  * des références, comme ci-dessus.
+
+Dans gramps, on a :
+* des dépôts, qui ont comme propriétés :
+  * nom
+  * ID
+  * type (bibliothèque, archive, site internet, …)
+  * des adresses
+  * des liens internet
+  * des notes
+  * des références = liste des sources qui le référencent.
+* des sources, qui ont comme propriétés :
+  * ID
+  * titre
+  * auteur
+  * info de publication (par ex. lien internet et/ou N° ISBN et/ou éditeur …)
+  * abbréviation
+  * des notes
+  * des galeries (images)
+  * des attributs
+  * des dépôts
+  * des références = liste des citations qui la référencent.
+* des citations, qui ont comme propriétés :
+  * une source
+  * ID
+  * date
+  * volume/page
+  * niveau de confiance
+  * des notes
+  * des galeries
+  * des attributs
+  * des références = liste des individus, lieux et évènements qui la référencent.
+
+
+exemple de saisie typique dans gramps : gestion de la source «Famille (DE) BASSECOURT», par Didier Bouquet :
+* dépôt : geneanet.org
+* source : «Famille (DE) BASSECOURT», auteur=
+* citation : page 7/9, V-2) Hugues DE BASSECOURT, …
+
+
+
+
+On voit que le traitement des sources est très différent dans gramps et FS. Du coup l'interface entre les deux ne pourra être que très partielle : on perdra énormément d'informations dans un sens comme dans l'autre.
+similitudes entre les deux façons de gérer les sources :
+* lieu FS ~ dépôt
+* collection : ~ dépôt, mais pas de hiérarchie possible dans gramps…
+* dossier numérique (film) FS ~ source
+* document FS ~ citation gramps
+* source FS ~ citation gramps
+
+il faudrait arriver à ne pas dupliquer les sources dans FS.
+
+incompatibilités (à compléter) :
+* dans le sens FS-->gramps pour les documents fournis par FS :
+  * perte de la notion de collections contenant d'autres collections
+  * perte de la notion de la raison de la référence.
+  * documents et sources correspondant tous les deux à la citation gramps.
+* dans le sens FS-->gramps pour les sources saisies :
+  * pas de notion de dépôt, ni de source.
+  * perte de la notion de la raison de la référence.
+
+* dans le sens gramps-->FS :
+  * pas de notion de dépôt dans FS.
+    * il va falloir recopier les infos du dépôt dans chaque source FS. À mettre dans la zone référence.
+  * on ne peut pas créer de film dans FS, donc on perd la notion de source.
+    * il va falloir recopier les infos de la source dans chaque source FS. À mettre dans la zone référence.
+  * dans FS, il n'y a qu'une seule note par source, dans gramps on peut en metttre plusieurs
+    * il va falloir regrouper toutes les notes source+citation dans la zone notes.
+

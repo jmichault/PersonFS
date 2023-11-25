@@ -126,17 +126,29 @@ def get_grevent(db, person, event_type):
         return event
   return None
 
-def ligi_gr_fs(db,grPersono,fsid):
+def ligi_gr_fs(db,grObjekto,fsid):
   attr = None
-  with DbTxn(_("Aldoni FamilySearch ID"), db) as txn:
-    for attr in grPersono.get_attribute_list():
+  if db.transaction :
+    intr = True
+    txn=db.transaction
+  else :
+    intr = False
+    txn = DbTxn(_("FamilySearch etikedoj"), db)
+  for attr in grObjekto.get_attribute_list():
       if attr.get_type() == '_FSFTID':
         attr.set_value(fsid)
         break
-    if not attr or attr.get_type() != '_FSFTID' :
+  if not attr or attr.get_type() != '_FSFTID' :
       attr = Attribute()
       attr.set_type('_FSFTID')
       attr.set_value(fsid)
-      grPersono.add_attribute(attr)
-    db.commit_person(grPersono,txn)
+      grObjekto.add_attribute(attr)
+  match  grObjekto.__class__.__name__ :
+    case 'Person' :
+      db.commit_person(grObjekto,txn)
+    case 'Event' :
+      db.commit_event(grObjekto,txn)
+    case _ :
+      print ("utila.ligi_gr_fs : klaso ne trakta : " + grObjekto.__class__.__name__)
+  if not intr :
     db.transaction_commit(txn)
