@@ -928,10 +928,12 @@ PersonFS uzos ĉi tiujn informojn konforme al iliaj respektivaj servokondiĉoj k
                 <property name="active">0</property>
                 <property name="active-id">REG_cxefa</property>
                 <items>
-                  <item id="REG_cxefa" translatable="yes">Cêfa</item>
+                  <item id="REG_cxefa" translatable="yes">Ĉefa</item>
                   <item id="REG_notoj" translatable="yes">Notoj</item>
+                  <!--
                   <item id="REG_fontoj" translatable="yes">Fontoj</item>
                   <item id="REG_bildoj" translatable="yes">Bildoj</item>
+                  -->
                 </items>
               </object>
               <packing>

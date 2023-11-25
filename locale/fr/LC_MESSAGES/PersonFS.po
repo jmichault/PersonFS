@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-14 18:20+0200\n"
-"PO-Revision-Date: 2023-10-14 18:19+0200\n"
+"POT-Creation-Date: 2023-10-14 18:45+0200\n"
+"PO-Revision-Date: 2023-10-14 18:45+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -550,7 +550,7 @@ msgstr "Statut de documents"
 
 #: PersonFS.glade:878
 msgid "Statuso de duploj"
-msgstr "Statut de duplice"
+msgstr "Statut des doublons"
 
 #: PersonFS.glade:897
 msgid "FamilySearch Identiga N° :"
@@ -565,24 +565,25 @@ msgid "Serĉi"
 msgstr "Chercher"
 
 #: PersonFS.glade:931
-msgid "Cêfa"
+msgid "Ĉefa"
 msgstr "Principal"
 
 #: PersonFS.glade:932
 msgid "Notoj"
 msgstr "Notes"
 
-#: PersonFS.glade:933
-msgid "Fontoj"
-msgstr "Sources"
-
-#: PersonFS.glade:934
-msgid "Bildoj"
-msgstr "Des photos"
-
-#: PersonFS.glade:946
+#: PersonFS.glade:948
 msgid "Reĝimo :  "
-msgstr "Régime : "
+msgstr "Mode : "
+
+#~ msgid "Fontoj"
+#~ msgstr "Sources"
+
+#~ msgid "Bildoj"
+#~ msgstr "Media"
+
+#~ msgid "Cêfa"
+#~ msgstr "Principal"
 
 #~ msgid "FamilySearch : krei datumbazan tabelon"
 #~ msgstr "FamilySearch : création de la base de données"

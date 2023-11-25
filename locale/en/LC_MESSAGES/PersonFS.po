@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gramps 51\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-14 18:20+0200\n"
-"PO-Revision-Date: 2023-04-03 21:15+0200\n"
+"POT-Creation-Date: 2023-10-14 18:45+0200\n"
+"PO-Revision-Date: 2023-10-14 18:36+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
 "Language: en\n"
@@ -16,6 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #: constants.py:61
 msgid "Vivskizo"
@@ -36,7 +37,7 @@ msgstr "FamilySearch: Create ethics"
 #: Importo.py:66 PersonFS.py:76
 #, python-format
 msgid "gedcomx ne trovita aŭ < %s"
-msgstr "GEDCOMX not found or < %s"
+msgstr "gedcomx not found or < %s"
 
 #: Importo.py:198
 msgid "Konstrui FSID listo por lokoj"
@@ -57,7 +58,7 @@ msgstr "«FamilySearch» Existing ID"
 #: Importo.py:463 Importo.py:467
 #, python-format
 msgid "«FamilySearch» duplikata ID : %s "
-msgstr "«FamilySearch» Duplicate ID: %s"
+msgstr "«FamilySearch» duplicated ID: %s "
 
 #: Importo.py:466
 msgid "Duplikata FSFTID"
@@ -85,7 +86,7 @@ msgstr "Downloading people ... (3/11)"
 
 #: Importo.py:531
 msgid "Elŝutante personon…"
-msgstr "Downloading a person ..."
+msgstr "Downloading a person…"
 
 #: Importo.py:535
 msgid "Elŝutante ascendantojn… (4/11)"
@@ -94,7 +95,7 @@ msgstr "Downloading ascendants… (4/11)"
 #: Importo.py:544
 #, python-format
 msgid "Elŝutante %d generaciojn de ascendantojn…"
-msgstr "Downloading %d generations of ascendants ..."
+msgstr "Downloading %d generations of ascendants…"
 
 #: Importo.py:547
 msgid "Elŝutante posteulojn… (5/11)"
@@ -103,7 +104,7 @@ msgstr "Downloading descendants ... (5/11)"
 #: Importo.py:555
 #, python-format
 msgid "Elŝutante %d generaciojn de posteulojn…"
-msgstr "Downloading %d generations of descendants ..."
+msgstr "Downloading %d generations of descendants…"
 
 #: Importo.py:562
 msgid "Elŝutante edzojn… (6/11)"
@@ -111,7 +112,7 @@ msgstr "Downloading husbands ... (6/11)"
 
 #: Importo.py:563
 msgid "Elŝutante edzojn…"
-msgstr "Downloading husbands ..."
+msgstr "Downloading husbands…"
 
 #: Importo.py:568
 msgid "Elŝutante notojn… (7/11)"
@@ -119,11 +120,11 @@ msgstr "Downloading Notes… (7/11)"
 
 #: Importo.py:569
 msgid "Elŝutante notojn…"
-msgstr "Downloading notes ..."
+msgstr "Downloading notes…"
 
 #: Importo.py:586
 msgid "Importado…"
-msgstr "Import ..."
+msgstr "Import…"
 
 #: Importo.py:596
 msgid "Importado de lokoj… (8/11)"
@@ -131,7 +132,7 @@ msgstr "Importing places… (8/11)"
 
 #: Importo.py:597
 msgid "Importado de lokoj…"
-msgstr "Importing places ..."
+msgstr "Importing places…"
 
 #: Importo.py:601
 msgid "Importado de personoj… (9/11)"
@@ -139,7 +140,7 @@ msgstr "Importing persons ... (9/11)"
 
 #: Importo.py:602
 msgid "Importado de personoj…"
-msgstr "Importing people ..."
+msgstr "Importing people…"
 
 #: Importo.py:607
 msgid "Importado de familioj… (10/11)"
@@ -147,7 +148,7 @@ msgstr "Importing families ... (10/11)"
 
 #: Importo.py:608
 msgid "Importado de familioj…"
-msgstr "Importing families ..."
+msgstr "Importing families…"
 
 #: Importo.py:614
 msgid "Importado de infanoj… (11/11)"
@@ -155,11 +156,11 @@ msgstr "Importing children ... (11/11)"
 
 #: Importo.py:615
 msgid "Importado de infanoj…"
-msgstr "Importing children ..."
+msgstr "Importing children…"
 
 #: Importo.py:661 Importo.py:719
 msgid "sengepatra familio ???"
-msgstr "Parent family ???"
+msgstr "family without parent ???"
 
 #: Importo.py:834
 msgid "Kromprogramoj"
@@ -175,7 +176,7 @@ msgstr "FamilySearch ID"
 
 #: Importo.py:843
 msgid "identiga numero por esti prenita de FamilySearch retejo"
-msgstr "Identification number to be taken from FamilySearch website"
+msgstr "identification number to be taken from FamilySearch website"
 
 #: Importo.py:845
 msgid "Nombro ascentontaj"
@@ -312,7 +313,7 @@ msgstr "PersonFS"
 
 #: PersonFS.gpr.py:33
 msgid "interfaco por FamilySearch"
-msgstr "Interface for FamilySearch"
+msgstr "interface for FamilySearch"
 
 #: PersonFS.gpr.py:39
 msgid "FS"
@@ -389,7 +390,7 @@ msgstr "Fs value"
 
 #: PersonFS.py:693
 msgid "xTipo"
-msgstr "XTIPO"
+msgstr "xTipo"
 
 #: PersonFS.py:694
 msgid "xGr"
@@ -521,7 +522,7 @@ msgstr "Import husbands, parents and children with one clique"
 
 #: PersonFS.glade:706
 msgid "importi"
-msgstr "Import"
+msgstr "import"
 
 #: PersonFS.glade:760
 msgid "Vidi FS duplikatojn"
@@ -564,24 +565,25 @@ msgid "Serĉi"
 msgstr "Search"
 
 #: PersonFS.glade:931
-msgid "Cêfa"
-msgstr "Cêfa"
+msgid "Ĉefa"
+msgstr "Main"
 
 #: PersonFS.glade:932
 msgid "Notoj"
 msgstr "Notes"
 
-#: PersonFS.glade:933
-msgid "Fontoj"
-msgstr "Sources"
-
-#: PersonFS.glade:934
-msgid "Bildoj"
-msgstr "Pictures"
-
-#: PersonFS.glade:946
+#: PersonFS.glade:948
 msgid "Reĝimo :  "
-msgstr "Regime:"
+msgstr "Mode: "
+
+#~ msgid "Fontoj"
+#~ msgstr "Sources"
+
+#~ msgid "Bildoj"
+#~ msgstr "Pictures"
+
+#~ msgid "Cêfa"
+#~ msgstr "Cêfa"
 
 #~ msgid "FamilySearch : krei datumbazan tabelon"
 #~ msgstr "FamilySearch: Create a database table"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-14 18:20+0200\n"
+"POT-Creation-Date: 2023-10-14 18:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -564,21 +564,13 @@ msgid "Serĉi"
 msgstr ""
 
 #: PersonFS.glade:931
-msgid "Cêfa"
+msgid "Ĉefa"
 msgstr ""
 
 #: PersonFS.glade:932
 msgid "Notoj"
 msgstr ""
 
-#: PersonFS.glade:933
-msgid "Fontoj"
-msgstr ""
-
-#: PersonFS.glade:934
-msgid "Bildoj"
-msgstr ""
-
-#: PersonFS.glade:946
+#: PersonFS.glade:948
 msgid "Reĝimo :  "
 msgstr ""

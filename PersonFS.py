@@ -45,7 +45,7 @@ from gramps.gen.datehandler import get_date
 from gramps.gen.display.name import displayer as name_displayer
 from gramps.gen.display.place import displayer as _pd
 from gramps.gen.errors import WindowActiveError
-from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Name, NameType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag
+from gramps.gen.lib import Date, EventRef, EventType, EventRoleType, Name, NameType, Person, StyledText, StyledTextTag, StyledTextTagType, Tag, Note
 from gramps.gen.plug import Gramplet, PluginRegister
 from gramps.gen.utils.db import get_birth_or_fallback, get_death_or_fallback
 
@@ -64,7 +64,7 @@ except ValueError:
 _ = _trans.gettext
 
 # gedcomx biblioteko. Instalu kun `pip install --user --upgrade --break-system-packages gedcomx-v1`
-mingedcomx="1.0.15"
+mingedcomx="1.0.18"
 import importlib
 from importlib.metadata import version
 try:
@@ -184,6 +184,7 @@ class PersonFS(Gramplet):
           tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
           #else :
           #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
+          tree._FsSeanco.login()
         else :
           print("Vi devas enigi la ID kaj pasvorton")
       else:
@@ -191,6 +192,7 @@ class PersonFS(Gramplet):
         tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
         #else :
         #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
+        tree._FsSeanco.login()
       print(" langage session FS = "+tree._FsSeanco.lingvo);
       if tree._FsSeanco.stato == gedcomx.fs_session.STATO_PASVORTA_ERARO :
          WarningDialog(_('Pasvorta erraro. La funkcioj de FamilySearch ne estos disponeblaj.'))
@@ -221,6 +223,7 @@ class PersonFS(Gramplet):
       print("konektas al FS")
       #tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, True, False, 2, PersonFS.lingvo)
       tree._FsSeanco = gedcomx.FsSession(PersonFS.fs_sn, PersonFS.fs_pasvorto, False, False, 2, PersonFS.lingvo)
+      tree._FsSeanco.login()
     if tree._FsSeanco.stato == gedcomx.fs_session.STATO_PASVORTA_ERARO :
       WarningDialog(_('Pasvorta eraro. La funkcioj de FamilySearch ne estos disponeblaj.'))
       return
@@ -510,7 +513,7 @@ class PersonFS(Gramplet):
               print (res.headers)
               print (res.text)
         elif ( (tipolinio == 'NotoP' )
-              ) :
+             and linio[3] ) :
           print("NotoP")
           fsNoto = gedcomx.Note()
           fsNoto.subject = linio[1]
@@ -623,6 +626,15 @@ class PersonFS(Gramplet):
             for fsNomo in fsPersono.names :
               if fsNomo.id == fsNomo_id : break
             Importo.aldNomo(self.dbstate.db, txn, fsNomo, grPersono)
+          elif ( (tipolinio == 'NotoP' )
+             and linio[3] ) :
+            print("NotoP")
+            grNoto = Note()
+            grNoto.Type = linio[1]
+            grNoto.Text = linio[3]
+            self.dbstate.db.add_note(grNoto, txn)
+            self.dbstate.db.commit_note(grNoto, txn)
+            grPersono.add_note(grNoto.handle)
       self.dbstate.db.commit_person(grPersono,txn)
       self.dbstate.db.transaction_commit(txn)
     self.ButRefresxigi_clicked(None)
@@ -1325,6 +1337,8 @@ class PersonFS(Gramplet):
         self.modelKomp.add([koloro,titolo,'',teksto,'==========',fsTeksto,False,'NotoP',None,None,None,None] 
                 , node=persono_id )
       for fsNoto in fsNotoj :
+        if fsNoto.id :
+          print ("Note avec Id : "+fsNoto.id)
         teksto = fsNoto.text
         titolo = fsNoto.subject
         self.modelKomp.add(['white',titolo,'','============================','',teksto,False,'NotoP',None,None,None,None] 
