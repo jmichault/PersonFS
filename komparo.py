@@ -304,13 +304,13 @@ def NomojKomp(grPersono, fsPerso ) :
     grNomo = grPersono.primary_name
     fsNomo = fsPerso.akPrefNomo()
     koloro = "red"
-    if (grNomo.get_primary_surname().surname == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
+    if (grNomo.get_surname() == fsNomo.akSurname()) and (grNomo.first_name == fsNomo.akGiven()) :
       koloro = "green"
     res = list()
     res.append ( ( koloro , _trans.gettext('Name')
-        , '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+        , '', grNomo.get_surname() + ', ' + grNomo.first_name 
         , '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo1', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
+        , False, 'nomo1', str(grNomo), fsNomo.id, grNomo.get_surname(), grNomo.first_name
         ))
     fsNomoj = fsPerso.names.copy()
     if fsNomo and fsNomo in fsNomoj: fsNomoj.remove(fsNomo)
@@ -318,15 +318,15 @@ def NomojKomp(grPersono, fsPerso ) :
       fsNomo = gedcomx.Name()
       koloro = "yellow"
       for x in fsNomoj :
-        if (grNomo.get_primary_surname().surname == x.akSurname()) and (grNomo.first_name == x.akGiven()) :
+        if (grNomo.get_surname() == x.akSurname()) and (grNomo.first_name == x.akGiven()) :
           fsNomo = x
           koloro = "green"
           fsNomoj.remove(x)
           break
       res.append (( koloro , '  ' + _trans.gettext('Name')
-        , '', grNomo.get_primary_surname().surname + ', ' + grNomo.first_name 
+        , '', grNomo.get_surname() + ', ' + grNomo.first_name 
         , '', fsNomo.akSurname() +  ', ' + fsNomo.akGiven()
-        , False, 'nomo', str(grNomo), fsNomo.id, grNomo.get_primary_surname().surname, grNomo.first_name
+        , False, 'nomo', str(grNomo), fsNomo.id, grNomo.get_surname(), grNomo.first_name
         ))
     koloro = "yellow3"
     for fsN in fsNomoj :
@@ -552,7 +552,7 @@ def aldEdzKompNotoj(db, grPersono, fsPerso) :
         fsEdzo = gedcomx.Person()
       fsNomo = fsEdzo.akPrefNomo()
       res.append( ( koloro , _trans.gettext('Spouse')
-                , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+                , grperso_datoj(db, edzo) , edzoNomo.get_surname() + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
           , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
           , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
            ) )
@@ -633,7 +633,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
         fsEdzo = gedcomx.Person()
       fsNomo = fsEdzo.akPrefNomo()
       res.append( ( koloro , _trans.gettext('Spouse')
-                , grperso_datoj(db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+                , grperso_datoj(db, edzo) , edzoNomo.get_surname() + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
           , fsperso_datoj(db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
           , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
            ) )
@@ -748,7 +748,7 @@ def aldEdzKomp(db, grPersono, fsPerso) :
           fsInfano = gedcomx.Person()
         fsNomo = fsInfano.akPrefNomo()
         res.append( ( koloro ,'    '+ _trans.gettext('Child')
-                , grperso_datoj(db, infano) , infanoNomo.get_primary_surname().surname + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
+                , grperso_datoj(db, infano) , infanoNomo.get_surname() + ', ' + infanoNomo.first_name + ' [' + infanoFsid + ']'
                 , fsperso_datoj(db, fsInfano), fsNomo.akSurname() +  ', ' + fsNomo.akGiven() + ' [' + fsInfanoId + ']'
           , False, 'infano', child_ref.ref  ,fsInfanoId, family.handle, fsParoId
            ) )
@@ -1109,7 +1109,8 @@ def kompariFsGr(fsPersono,grPersono,db,model=None,dupdok=False):
   else :
     FS_FS = False
   ret = list() 
-  if PersonFS.PersonFS.fs_etikedado :
+  fsid = utila.get_fsftid(grPersono)
+  if fsid != '' and PersonFS.PersonFS.fs_etikedado :
     if db.transaction :
       intr = True
       txn=db.transaction

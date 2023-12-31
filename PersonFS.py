@@ -383,7 +383,7 @@ class PersonFS(Gramplet):
                 break
             if not grNomo :
               for grNomo in grPersono.alternate_names :
-                if (     grNomo.get_primary_surname().surname == grSurname
+                if (     grNomo.get_surname() == grSurname
                      and grNomo.first_name == grGiven) :
                   break
           fsNomo = gedcomx.Name()
@@ -827,7 +827,7 @@ class PersonFS(Gramplet):
     nf.parts.add(np1)
     np2=gedcomx.NamePart()
     np2.type = "http://gedcomx.org/Surname"
-    np2.value = grNomo.get_primary_surname().surname
+    np2.value = grNomo.get_surname()
     nf.parts.add(np2)
     nomo.preferred = True
     fsPerso.names.add(nomo)
@@ -996,7 +996,7 @@ class PersonFS(Gramplet):
     active_handle = self.get_active('Person')
     person = self.dbstate.db.get_person_from_handle(active_handle)
     grNomo = person.primary_name
-    self.top.get_object("fs_nomo_eniro").set_text(person.primary_name.get_primary_surname().surname)
+    self.top.get_object("fs_nomo_eniro").set_text(person.primary_name.get_surname())
     self.top.get_object("fs_anomo_eniro").set_text(person.primary_name.first_name)
     if person.get_gender() == Person.MALE :
       self.top.get_object("fs_sekso_eniro").set_text('Male')
@@ -1387,7 +1387,7 @@ class PersonFS(Gramplet):
             fsEdzo = gedcomx.Person()
           fsNomo = fsEdzo.akPrefNomo()
           self.modelKomp.add(['white',_trans.gettext('Spouse')
-                , komparo.grperso_datoj(self.dbstate.db, edzo) , edzoNomo.get_primary_surname().surname + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
+                , komparo.grperso_datoj(self.dbstate.db, edzo) , edzoNomo.get_surname() + ', ' + edzoNomo.first_name + ' [' + edzoFsid + ']'
           , komparo.fsperso_datoj(self.dbstate.db, fsEdzo) , fsNomo.akSurname() +  ', ' + fsNomo.akGiven()  + ' [' + fsEdzoId  + ']'
           , False, 'edzo', edzo_handle ,fsEdzoId , family.handle, fsParoId
            ], node=familioj_id )
