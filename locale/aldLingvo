@@ -1,7 +1,0 @@
-#!/bin/bash
-
-
-lingvo=$1
-mkdir -p locale/$lingvo/LC_MESSAGES
-locale/skripto
-
